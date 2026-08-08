@@ -1,0 +1,34 @@
+{
+  "run": "8B",
+  "status": "fail_naive_rpq",
+  "best_under_gate": {
+    "stages": 3,
+    "target_nominal_bpw_excluding_codebook_rms": 2.0,
+    "vq_payload": {
+      "vectors": 3317760,
+      "matrices": 210,
+      "scale_bytes": 6635520,
+      "index_bytes": 19906560,
+      "codebook_bytes": 645120,
+      "activation_rms_bytes": 299520,
+      "total_vq_bytes": 27486720,
+      "nominal_target_bpw": 2.0
+    },
+    "nll": 14.648526191711426,
+    "delta_nats_vs_fp32": 11.059061288833618,
+    "ppl_ratio_vs_fp32": 63516.899849463676,
+    "delta_nats_vs_row_q4": 9.773282527923584,
+    "ppl_ratio_vs_row_q4": 17558.308363984197,
+    "modeled_candidate_weight_bytes": 41811072,
+    "whole_model_weight_reduction_x": 1.6196559609856451,
+    "target_matrix_reduction_x": 1.9425817267393126,
+    "assignment_trace_sha256_through_stage": "788db917c2372b534ecc6d516d2dc7cdba659e7ba1f98e9f42205dfd36687277"
+  },
+  "precommitted_thresholds": {
+    "strong": ">=2.00x whole-model reduction and <=1.50x PPL vs FP32",
+    "useful": ">=1.70x and <=2.00x",
+    "borderline": ">=1.50x and <=2.50x"
+  },
+  "note": "Thresholds committed before the first RPQ result. Modeled bytes are not RSS/VRAM.",
+  "next_step": "move to second-order/outlier-aware VQ or structured sparse residuals; do not spend more work on naive Euclidean product codebooks"
+}

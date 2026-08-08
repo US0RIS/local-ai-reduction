@@ -1,0 +1,40 @@
+name: Materialize Run 8 benchmark artifacts
+
+on:
+  push:
+    branches:
+      - larc-run8-additive-vq
+    paths:
+      - '.github/workflows/materialize-run8-results.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: larc-run8-additive-vq
+      - name: Download exact successful workflow artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/a /tmp/b
+          gh api repos/${GITHUB_REPOSITORY}/actions/artifacts/9027108607/zip > /tmp/run8a.zip
+          gh api repos/${GITHUB_REPOSITORY}/actions/artifacts/9027156972/zip > /tmp/run8b.zip
+          unzip -o -j /tmp/run8a.zip -d /tmp/a
+          unzip -o -j /tmp/run8b.zip -d /tmp/b
+          cp /tmp/a/run8_additive_vq_real_model.json benchmarks/
+          cp /tmp/a/RUN8_GATE.json benchmarks/
+          cp /tmp/b/run8_residual_pq_real_model.json benchmarks/
+          cp /tmp/b/RUN8_RPQ_GATE.json benchmarks/
+      - name: Commit exact benchmark outputs
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add benchmarks/run8_additive_vq_real_model.json benchmarks/RUN8_GATE.json benchmarks/run8_residual_pq_real_model.json benchmarks/RUN8_RPQ_GATE.json benchmarks/RUN8_FINAL_STATUS.json
+          git commit -m 'Record Run 8 real-model VQ evidence'
+          git push origin HEAD:larc-run8-additive-vq

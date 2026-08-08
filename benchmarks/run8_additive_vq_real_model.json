@@ -1,0 +1,1335 @@
+{
+  "run": 8,
+  "evidence_level": "L3-precheck real pretrained additive-vector-quantization experiment",
+  "model": "HuggingFaceTB/SmolLM2-135M",
+  "model_commit": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "protocol": {
+    "calibration_tokens": 128,
+    "evaluation_tokens": 512,
+    "vector_dim": 32,
+    "codebook_size": 16,
+    "max_stages": 8,
+    "checkpoints": [
+      2,
+      4,
+      6,
+      8
+    ],
+    "layer_group_size": 10,
+    "sample_vectors_per_site_group": 8192,
+    "kmeans_iters": 7,
+    "target_sites": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ],
+    "source_weights": "FP32 pretrained projection matrices",
+    "activation_weighting": "per-layer input-feature RMS (diagonal Hessian proxy)",
+    "per_vector_magnitude": "FP16 in activation-weighted space",
+    "codebooks": "FP16 residual codebooks shared by operator and 10-layer depth group",
+    "indices": "4 bits per residual stage per 32-weight vector",
+    "non_target_representation": "simple row-Q4 matrices and FP16 1-D parameters",
+    "execution": "exact dense reconstruction of stored semantics for quality only"
+  },
+  "baselines": {
+    "fp32_nll": 3.5894739627838135,
+    "row_q4_nll": 4.875250816345215,
+    "row_q4_ppl_ratio_vs_fp32": 3.6174771159044834,
+    "modeled_row_q4_weight_bytes": 67719552,
+    "target_projection_row_q4_bytes": 53395200
+  },
+  "codebook_fit_diagnostics": {
+    "q_proj:0": {
+      "layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8069503903388977,
+          "sample_residual_energy_fraction": 0.8069483637809753
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.6968998312950134,
+          "sample_residual_energy_fraction": 0.6968980431556702
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.6078470945358276,
+          "sample_residual_energy_fraction": 0.6078455448150635
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5316504240036011,
+          "sample_residual_energy_fraction": 0.5316490530967712
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.46649235486984253,
+          "sample_residual_energy_fraction": 0.466491162776947
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.40932726860046387,
+          "sample_residual_energy_fraction": 0.4093262553215027
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.3597395718097687,
+          "sample_residual_energy_fraction": 0.35973867774009705
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.31602975726127625,
+          "sample_residual_energy_fraction": 0.3160289525985718
+        }
+      ]
+    },
+    "q_proj:1": {
+      "layers": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8043624758720398,
+          "sample_residual_energy_fraction": 0.8043644428253174
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7018444538116455,
+          "sample_residual_energy_fraction": 0.701846182346344
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.6153914332389832,
+          "sample_residual_energy_fraction": 0.6153929233551025
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5408989787101746,
+          "sample_residual_energy_fraction": 0.5409002900123596
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.47474223375320435,
+          "sample_residual_energy_fraction": 0.47474342584609985
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.41730231046676636,
+          "sample_residual_energy_fraction": 0.4173033535480499
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.3658907413482666,
+          "sample_residual_energy_fraction": 0.3658916652202606
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.321699857711792,
+          "sample_residual_energy_fraction": 0.32170066237449646
+        }
+      ]
+    },
+    "q_proj:2": {
+      "layers": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8252384662628174,
+          "sample_residual_energy_fraction": 0.8252319097518921
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7098358869552612,
+          "sample_residual_energy_fraction": 0.7098302245140076
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.6189994215965271,
+          "sample_residual_energy_fraction": 0.6189944744110107
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5407678484916687,
+          "sample_residual_energy_fraction": 0.5407635569572449
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.4743640720844269,
+          "sample_residual_energy_fraction": 0.47436028718948364
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.4157492220401764,
+          "sample_residual_energy_fraction": 0.41574588418006897
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.3650655448436737,
+          "sample_residual_energy_fraction": 0.3650626242160797
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.3202209174633026,
+          "sample_residual_energy_fraction": 0.32021835446357727
+        }
+      ]
+    },
+    "k_proj:0": {
+      "layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.7925739884376526,
+          "sample_residual_energy_fraction": 0.7925770878791809
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.6837857365608215,
+          "sample_residual_energy_fraction": 0.6837883591651917
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.5949488282203674,
+          "sample_residual_energy_fraction": 0.5949511528015137
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5207241177558899,
+          "sample_residual_energy_fraction": 0.5207261443138123
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.4563811123371124,
+          "sample_residual_energy_fraction": 0.4563828706741333
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.4002282917499542,
+          "sample_residual_energy_fraction": 0.4002298414707184
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.35131120681762695,
+          "sample_residual_energy_fraction": 0.3513125777244568
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.3086802661418915,
+          "sample_residual_energy_fraction": 0.308681458234787
+        }
+      ]
+    },
+    "k_proj:1": {
+      "layers": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.7937158346176147,
+          "sample_residual_energy_fraction": 0.7937183380126953
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.6926075220108032,
+          "sample_residual_energy_fraction": 0.6926097273826599
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.6068627834320068,
+          "sample_residual_energy_fraction": 0.6068646907806396
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5326805710792542,
+          "sample_residual_energy_fraction": 0.5326822400093079
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.46755340695381165,
+          "sample_residual_energy_fraction": 0.46755489706993103
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.4101482629776001,
+          "sample_residual_energy_fraction": 0.41014954447746277
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.36058104038238525,
+          "sample_residual_energy_fraction": 0.360582172870636
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.3166758716106415,
+          "sample_residual_energy_fraction": 0.31667688488960266
+        }
+      ]
+    },
+    "k_proj:2": {
+      "layers": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.7985629439353943,
+          "sample_residual_energy_fraction": 0.7985605001449585
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.6839724183082581,
+          "sample_residual_energy_fraction": 0.6839703321456909
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.5925807356834412,
+          "sample_residual_energy_fraction": 0.5925789475440979
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5192971229553223,
+          "sample_residual_energy_fraction": 0.5192955732345581
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.4546975791454315,
+          "sample_residual_energy_fraction": 0.4546961784362793
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.3988551199436188,
+          "sample_residual_energy_fraction": 0.39885392785072327
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.3502383232116699,
+          "sample_residual_energy_fraction": 0.35023725032806396
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.3074266016483307,
+          "sample_residual_energy_fraction": 0.30742567777633667
+        }
+      ]
+    },
+    "v_proj:0": {
+      "layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8710098266601562,
+          "sample_residual_energy_fraction": 0.8710092902183533
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7587453126907349,
+          "sample_residual_energy_fraction": 0.7587448358535767
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.664868175983429,
+          "sample_residual_energy_fraction": 0.6648678183555603
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.581725537776947,
+          "sample_residual_energy_fraction": 0.5817251801490784
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.5099940299987793,
+          "sample_residual_energy_fraction": 0.5099937319755554
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.44667455554008484,
+          "sample_residual_energy_fraction": 0.44667428731918335
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.39137205481529236,
+          "sample_residual_energy_fraction": 0.39137181639671326
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.3434513211250305,
+          "sample_residual_energy_fraction": 0.3434511125087738
+        }
+      ]
+    },
+    "v_proj:1": {
+      "layers": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8655274510383606,
+          "sample_residual_energy_fraction": 0.8655277490615845
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.758954644203186,
+          "sample_residual_energy_fraction": 0.7589548230171204
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.663750946521759,
+          "sample_residual_energy_fraction": 0.6637511253356934
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5816396474838257,
+          "sample_residual_energy_fraction": 0.58163982629776
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.508741021156311,
+          "sample_residual_energy_fraction": 0.5087411403656006
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.44631436467170715,
+          "sample_residual_energy_fraction": 0.4463145136833191
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.39149609208106995,
+          "sample_residual_energy_fraction": 0.3914962112903595
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.34306108951568604,
+          "sample_residual_energy_fraction": 0.3430612087249756
+        }
+      ]
+    },
+    "v_proj:2": {
+      "layers": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8725950717926025,
+          "sample_residual_energy_fraction": 0.8725969195365906
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7605432868003845,
+          "sample_residual_energy_fraction": 0.7605448961257935
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.6627284288406372,
+          "sample_residual_energy_fraction": 0.662729799747467
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5791456699371338,
+          "sample_residual_energy_fraction": 0.5791468620300293
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.5067600607872009,
+          "sample_residual_energy_fraction": 0.5067610740661621
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.4436711072921753,
+          "sample_residual_energy_fraction": 0.4436720311641693
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.38856959342956543,
+          "sample_residual_energy_fraction": 0.3885703980922699
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.34074947237968445,
+          "sample_residual_energy_fraction": 0.34075018763542175
+        }
+      ]
+    },
+    "o_proj:0": {
+      "layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8437725305557251,
+          "sample_residual_energy_fraction": 0.8437677025794983
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7169471383094788,
+          "sample_residual_energy_fraction": 0.7169430255889893
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.6196376085281372,
+          "sample_residual_energy_fraction": 0.6196340918540955
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5366895198822021,
+          "sample_residual_energy_fraction": 0.5366864800453186
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.46849340200424194,
+          "sample_residual_energy_fraction": 0.46849071979522705
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.4092619717121124,
+          "sample_residual_energy_fraction": 0.4092596173286438
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.35928598046302795,
+          "sample_residual_energy_fraction": 0.3592839241027832
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.31555110216140747,
+          "sample_residual_energy_fraction": 0.3155492842197418
+        }
+      ]
+    },
+    "o_proj:1": {
+      "layers": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8685264587402344,
+          "sample_residual_energy_fraction": 0.8685331344604492
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7565010786056519,
+          "sample_residual_energy_fraction": 0.7565068006515503
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.659177839756012,
+          "sample_residual_energy_fraction": 0.6591828465461731
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5761183500289917,
+          "sample_residual_energy_fraction": 0.5761227607727051
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.5036396384239197,
+          "sample_residual_energy_fraction": 0.5036434531211853
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.44074657559394836,
+          "sample_residual_energy_fraction": 0.4407499134540558
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.3867641091346741,
+          "sample_residual_energy_fraction": 0.38676705956459045
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.3388018310070038,
+          "sample_residual_energy_fraction": 0.3388044238090515
+        }
+      ]
+    },
+    "o_proj:2": {
+      "layers": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8759396076202393,
+          "sample_residual_energy_fraction": 0.8759406208992004
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7656499147415161,
+          "sample_residual_energy_fraction": 0.7656508088111877
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.6706131100654602,
+          "sample_residual_energy_fraction": 0.6706138849258423
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5861125588417053,
+          "sample_residual_energy_fraction": 0.5861132144927979
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.5132596492767334,
+          "sample_residual_energy_fraction": 0.5132603049278259
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.4497949779033661,
+          "sample_residual_energy_fraction": 0.44979551434516907
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.3944951295852661,
+          "sample_residual_energy_fraction": 0.39449557662010193
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.3456968069076538,
+          "sample_residual_energy_fraction": 0.34569722414016724
+        }
+      ]
+    },
+    "gate_proj:0": {
+      "layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8323768377304077,
+          "sample_residual_energy_fraction": 0.8323788642883301
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7313085198402405,
+          "sample_residual_energy_fraction": 0.7313103079795837
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.6418027281761169,
+          "sample_residual_energy_fraction": 0.6418042778968811
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5634328126907349,
+          "sample_residual_energy_fraction": 0.5634341239929199
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.49441832304000854,
+          "sample_residual_energy_fraction": 0.49441951513290405
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.43276432156562805,
+          "sample_residual_energy_fraction": 0.4327653646469116
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.3801766037940979,
+          "sample_residual_energy_fraction": 0.3801775276660919
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.3337530493736267,
+          "sample_residual_energy_fraction": 0.3337538540363312
+        }
+      ]
+    },
+    "gate_proj:1": {
+      "layers": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8281821608543396,
+          "sample_residual_energy_fraction": 0.8281781077384949
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7250728607177734,
+          "sample_residual_energy_fraction": 0.7250692844390869
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.6356759071350098,
+          "sample_residual_energy_fraction": 0.6356728076934814
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5575497150421143,
+          "sample_residual_energy_fraction": 0.5575469732284546
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.4889807105064392,
+          "sample_residual_energy_fraction": 0.4889783263206482
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.42916861176490784,
+          "sample_residual_energy_fraction": 0.4291664958000183
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.377024382352829,
+          "sample_residual_energy_fraction": 0.37702253460884094
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.3308652639389038,
+          "sample_residual_energy_fraction": 0.3308636546134949
+        }
+      ]
+    },
+    "gate_proj:2": {
+      "layers": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8373998403549194,
+          "sample_residual_energy_fraction": 0.8373954892158508
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7195590734481812,
+          "sample_residual_energy_fraction": 0.7195553779602051
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.6281337141990662,
+          "sample_residual_energy_fraction": 0.6281304359436035
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.547977864742279,
+          "sample_residual_energy_fraction": 0.5479750037193298
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.47960618138313293,
+          "sample_residual_energy_fraction": 0.47960367798805237
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.4204329252243042,
+          "sample_residual_energy_fraction": 0.4204307496547699
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.36851760745048523,
+          "sample_residual_energy_fraction": 0.3685157001018524
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.32291439175605774,
+          "sample_residual_energy_fraction": 0.32291272282600403
+        }
+      ]
+    },
+    "up_proj:0": {
+      "layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8731938004493713,
+          "sample_residual_energy_fraction": 0.8731942772865295
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7660643458366394,
+          "sample_residual_energy_fraction": 0.7660647630691528
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.6701468229293823,
+          "sample_residual_energy_fraction": 0.6701472401618958
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5876580476760864,
+          "sample_residual_energy_fraction": 0.5876584053039551
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.5152682662010193,
+          "sample_residual_energy_fraction": 0.5152685642242432
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.45124194025993347,
+          "sample_residual_energy_fraction": 0.45124220848083496
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.3947063982486725,
+          "sample_residual_energy_fraction": 0.3947066366672516
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.3459942936897278,
+          "sample_residual_energy_fraction": 0.3459945023059845
+        }
+      ]
+    },
+    "up_proj:1": {
+      "layers": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8612637519836426,
+          "sample_residual_energy_fraction": 0.8612634539604187
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7536854147911072,
+          "sample_residual_energy_fraction": 0.7536851763725281
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.661443293094635,
+          "sample_residual_energy_fraction": 0.6614430546760559
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.57981938123703,
+          "sample_residual_energy_fraction": 0.5798191428184509
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.5076646208763123,
+          "sample_residual_energy_fraction": 0.5076644420623779
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.4446609914302826,
+          "sample_residual_energy_fraction": 0.44466081261634827
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.3891168534755707,
+          "sample_residual_energy_fraction": 0.38911670446395874
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.3407943844795227,
+          "sample_residual_energy_fraction": 0.34079426527023315
+        }
+      ]
+    },
+    "up_proj:2": {
+      "layers": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8541960120201111,
+          "sample_residual_energy_fraction": 0.854194700717926
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7389529347419739,
+          "sample_residual_energy_fraction": 0.7389518022537231
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.647278368473053,
+          "sample_residual_energy_fraction": 0.6472773551940918
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5664082765579224,
+          "sample_residual_energy_fraction": 0.5664073824882507
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.4964740574359894,
+          "sample_residual_energy_fraction": 0.4964732825756073
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.43640241026878357,
+          "sample_residual_energy_fraction": 0.43640172481536865
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.3818097710609436,
+          "sample_residual_energy_fraction": 0.38180917501449585
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.3351030647754669,
+          "sample_residual_energy_fraction": 0.33510255813598633
+        }
+      ]
+    },
+    "down_proj:0": {
+      "layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8805272579193115,
+          "sample_residual_energy_fraction": 0.8805251121520996
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7713344097137451,
+          "sample_residual_energy_fraction": 0.7713326215744019
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.6733741760253906,
+          "sample_residual_energy_fraction": 0.6733725666999817
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5887165665626526,
+          "sample_residual_energy_fraction": 0.5887151956558228
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.5156764984130859,
+          "sample_residual_energy_fraction": 0.5156753063201904
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.45109978318214417,
+          "sample_residual_energy_fraction": 0.4510987102985382
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.39541715383529663,
+          "sample_residual_energy_fraction": 0.3954162299633026
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.34701332449913025,
+          "sample_residual_energy_fraction": 0.3470124900341034
+        }
+      ]
+    },
+    "down_proj:1": {
+      "layers": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8778841495513916,
+          "sample_residual_energy_fraction": 0.877885103225708
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7656068205833435,
+          "sample_residual_energy_fraction": 0.7656076550483704
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.6689188480377197,
+          "sample_residual_energy_fraction": 0.668919563293457
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5849167108535767,
+          "sample_residual_energy_fraction": 0.5849173069000244
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.512226939201355,
+          "sample_residual_energy_fraction": 0.512227475643158
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.4477089047431946,
+          "sample_residual_energy_fraction": 0.4477093815803528
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.3922290503978729,
+          "sample_residual_energy_fraction": 0.39222946763038635
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.34413477778434753,
+          "sample_residual_energy_fraction": 0.3441351652145386
+        }
+      ]
+    },
+    "down_proj:2": {
+      "layers": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ],
+      "sample_vectors": 8190,
+      "stages": [
+        {
+          "stage": 1,
+          "sample_residual_mse": 0.8679137825965881,
+          "sample_residual_energy_fraction": 0.867911159992218
+        },
+        {
+          "stage": 2,
+          "sample_residual_mse": 0.7470837831497192,
+          "sample_residual_energy_fraction": 0.7470815181732178
+        },
+        {
+          "stage": 3,
+          "sample_residual_mse": 0.6389201283454895,
+          "sample_residual_energy_fraction": 0.6389181613922119
+        },
+        {
+          "stage": 4,
+          "sample_residual_mse": 0.5515701174736023,
+          "sample_residual_energy_fraction": 0.5515684485435486
+        },
+        {
+          "stage": 5,
+          "sample_residual_mse": 0.4782123863697052,
+          "sample_residual_energy_fraction": 0.4782109260559082
+        },
+        {
+          "stage": 6,
+          "sample_residual_mse": 0.4188402593135834,
+          "sample_residual_energy_fraction": 0.4188389778137207
+        },
+        {
+          "stage": 7,
+          "sample_residual_mse": 0.3673143684864044,
+          "sample_residual_energy_fraction": 0.3673132658004761
+        },
+        {
+          "stage": 8,
+          "sample_residual_mse": 0.32137206196784973,
+          "sample_residual_energy_fraction": 0.32137107849121094
+        }
+      ]
+    }
+  },
+  "stage_results": [
+    {
+      "stages": 2,
+      "target_nominal_bpw_excluding_codebook_rms": 0.75,
+      "vq_payload": {
+        "vectors": 3317760,
+        "scale_bytes": 6635520,
+        "index_bytes": 3317760,
+        "codebook_bytes": 43008,
+        "activation_rms_bytes": 299520,
+        "total_vq_bytes": 10295808,
+        "nominal_target_bpw": 0.75
+      },
+      "nll": 18.067638397216797,
+      "delta_nats_vs_fp32": 14.478164434432983,
+      "ppl_ratio_vs_fp32": 1939933.853711025,
+      "delta_nats_vs_row_q4": 13.192387580871582,
+      "ppl_ratio_vs_row_q4": 536267.0699925023,
+      "modeled_candidate_weight_bytes": 24620160,
+      "whole_model_weight_reduction_x": 2.7505731888013725,
+      "target_matrix_reduction_x": 5.186110696702968,
+      "assignment_trace_sha256_through_stage": "58ab9972b39028fb1f760d6e1f4bef68bbe8b7b8c974b2441314f568995c573f"
+    },
+    {
+      "stages": 4,
+      "target_nominal_bpw_excluding_codebook_rms": 1.0,
+      "vq_payload": {
+        "vectors": 3317760,
+        "scale_bytes": 6635520,
+        "index_bytes": 6635520,
+        "codebook_bytes": 86016,
+        "activation_rms_bytes": 299520,
+        "total_vq_bytes": 13656576,
+        "nominal_target_bpw": 1.0
+      },
+      "nll": 30.790809631347656,
+      "delta_nats_vs_fp32": 27.201335668563843,
+      "ppl_ratio_vs_fp32": 650713746258.4973,
+      "delta_nats_vs_row_q4": 25.91555881500244,
+      "ppl_ratio_vs_row_q4": 179880542546.51404,
+      "modeled_candidate_weight_bytes": 27980928,
+      "whole_model_weight_reduction_x": 2.4202039331933523,
+      "target_matrix_reduction_x": 3.9098526599932515,
+      "assignment_trace_sha256_through_stage": "f019b7f3f2a5aabe171e626fc9628e77f5b71d15c7c58744f2a06010a5ead832"
+    },
+    {
+      "stages": 6,
+      "target_nominal_bpw_excluding_codebook_rms": 1.25,
+      "vq_payload": {
+        "vectors": 3317760,
+        "scale_bytes": 6635520,
+        "index_bytes": 9953280,
+        "codebook_bytes": 129024,
+        "activation_rms_bytes": 299520,
+        "total_vq_bytes": 17017344,
+        "nominal_target_bpw": 1.25
+      },
+      "nll": 30.55563735961914,
+      "delta_nats_vs_fp32": 26.966163396835327,
+      "ppl_ratio_vs_fp32": 514346704216.1731,
+      "delta_nats_vs_row_q4": 25.680386543273926,
+      "ppl_ratio_vs_row_q4": 142183816990.80084,
+      "modeled_candidate_weight_bytes": 31341696,
+      "whole_model_weight_reduction_x": 2.1606856246707262,
+      "target_matrix_reduction_x": 3.1376929325751424,
+      "assignment_trace_sha256_through_stage": "5b0f9868f3e747e2171bf2f40a5bbe47702c8e295f41fc93d697852fce01f850"
+    },
+    {
+      "stages": 8,
+      "target_nominal_bpw_excluding_codebook_rms": 1.5,
+      "vq_payload": {
+        "vectors": 3317760,
+        "scale_bytes": 6635520,
+        "index_bytes": 13271040,
+        "codebook_bytes": 172032,
+        "activation_rms_bytes": 299520,
+        "total_vq_bytes": 20378112,
+        "nominal_target_bpw": 1.5
+      },
+      "nll": 17.627399444580078,
+      "delta_nats_vs_fp32": 14.037925481796265,
+      "ppl_ratio_vs_fp32": 1249089.5473779067,
+      "delta_nats_vs_row_q4": 12.752148628234863,
+      "ppl_ratio_vs_row_q4": 345293.00596987875,
+      "modeled_candidate_weight_bytes": 34702464,
+      "whole_model_weight_reduction_x": 1.9514335350942227,
+      "target_matrix_reduction_x": 2.620223109972111,
+      "assignment_trace_sha256_through_stage": "c3c909a732d091c9c7b43bae8e81854429b569c8af8b60abe2b00aa41e7ce7f7"
+    }
+  ],
+  "claim_boundary": "Real-model compressed-representation quality and modeled weight bytes only. No packed lookup kernel, measured RSS/VRAM, Q4_K_M baseline, standard benchmark suite, or complete LARC runtime claim."
+}

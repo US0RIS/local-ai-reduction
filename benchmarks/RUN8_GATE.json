@@ -1,0 +1,33 @@
+{
+  "run": 8,
+  "status": "fail_naive_additive_vq",
+  "best_under_gate": {
+    "stages": 8,
+    "target_nominal_bpw_excluding_codebook_rms": 1.5,
+    "vq_payload": {
+      "vectors": 3317760,
+      "scale_bytes": 6635520,
+      "index_bytes": 13271040,
+      "codebook_bytes": 172032,
+      "activation_rms_bytes": 299520,
+      "total_vq_bytes": 20378112,
+      "nominal_target_bpw": 1.5
+    },
+    "nll": 17.627399444580078,
+    "delta_nats_vs_fp32": 14.037925481796265,
+    "ppl_ratio_vs_fp32": 1249089.5473779067,
+    "delta_nats_vs_row_q4": 12.752148628234863,
+    "ppl_ratio_vs_row_q4": 345293.00596987875,
+    "modeled_candidate_weight_bytes": 34702464,
+    "whole_model_weight_reduction_x": 1.9514335350942227,
+    "target_matrix_reduction_x": 2.620223109972111,
+    "assignment_trace_sha256_through_stage": "c3c909a732d091c9c7b43bae8e81854429b569c8af8b60abe2b00aa41e7ce7f7"
+  },
+  "precommitted_thresholds": {
+    "strong": "whole-model modeled weight reduction >=2.00x and PPL <=1.50x FP32",
+    "useful": "whole-model modeled weight reduction >=1.70x and PPL <=2.00x FP32",
+    "borderline": "whole-model modeled weight reduction >=1.50x and PPL <=2.50x FP32"
+  },
+  "note": "Thresholds were committed before the first Run-8 SmolLM2 result. Row-Q4 is reported but is too weak on this short slice to define success alone. Modeled bytes are not RSS/VRAM.",
+  "next_step": "do not claim sub-bit/low-bit VQ transfer; test second-order/outlier-aware VQ or structured sparsity with a competitive Q4 baseline"
+}
