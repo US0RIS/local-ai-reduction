@@ -305,7 +305,7 @@ The harness measures baseline NLL/perplexity, captures calibration activations, 
 
 - Local execution environment cannot retrieve Hugging Face/Xet model payloads.
 - GitHub Actions jobs failed **before any workflow step was allocated**, even after replacing all reusable actions with pure `run:` steps.
-- A smaller external TinyStories-260K checkpoint is visible and its model card reports validation loss 1.2968, but its 1.06 MB checkpoint is also Xet-backed; direct binary retrieval is blocked here.
+- A smaller external TinyStories-260K checkpoint is visible and its model card reports validation loss 1.2968, but its checkpoint is Xet-backed; direct binary retrieval is blocked here.
 
 No external checkpoint conversion actually ran. L3 is therefore **unpassed**, not experimentally failed.
 
@@ -391,8 +391,27 @@ Use relaxed-recursive/cross-layer-sharing methods rather than raw averaging for 
 - `benchmarks/run2_kivi_latent_kv_synthetic.json`
 - `benchmarks/run2_kivi_memory_plan_rank16.json`
 
+## 13. Post-merge external validation attempts
+
+After merging v0.2 into `main`, additional attempts were made specifically to close L3/L4 rather than running more synthetic compression work:
+
+- direct raw GitHub retrieval of a committed TinyStories-15M INT4 model binary,
+- direct Hugging Face Download-link retrieval of `ggml-org/tiny-llamas/stories260K.gguf`,
+- an installable-plugin search for Hugging Face/model-registry/GPU/cloud-GPU execution access.
+
+Observed environment failures:
+
+- the compute container cannot resolve public GitHub hosts directly,
+- the Hugging Face model page and Xet metadata are accessible, but the signed Xet object cannot be consumed by the sandbox,
+- no installable model-registry/GPU plugin is exposed in this session,
+- no CUDA or Metal accelerator is exposed.
+
+These attempts produced **no LARC model-quality failure**; the external bytes/hardware were never available to the benchmark. Detailed records are in `benchmarks/RUN2_BLOCKERS.md`, `benchmarks/RUN2_POSTMERGE_NOTE.md`, `docs/VALIDATION_GATES.md`, and `docs/L3_L4_CHECKLIST.md`.
+
+Machine-readable final gate status: `benchmarks/RUN2_FINAL_STATUS.json`.
+
 ## Current conclusion
 
-LARC has now demonstrated the complete requested **10× class memory reduction + bounded quality loss** in two executable controlled language-model settings, including one where the baseline model was conventionally pretrained with independent layers and compressed only afterward. The CPU packed-domain execution path and paged format are implemented.
+LARC has demonstrated the complete requested **10× class memory reduction + bounded quality loss** in two executable controlled language-model settings, including a post-training conversion where the baseline model was conventionally pretrained with independent layers and compressed only afterward. The CPU packed-domain execution path and paged format are implemented and merged into `main`.
 
-The project is **not yet entitled to claim that arbitrary real-world GGUF models use 10–30× less GPU VRAM**. The remaining proof is L3/L4: an independently hosted general pretrained checkpoint and measured target-hardware GPU/Metal memory. Those are the controlling next milestones.
+The project is **not yet entitled to claim that arbitrary real-world GGUF models use 10–30× less GPU VRAM**. The remaining proof is L3/L4: an independently hosted general pretrained checkpoint and measured target-hardware GPU/Metal memory. All execution routes available in this session for obtaining those two resources were attempted and are blocked by the environment rather than by an observed LARC quality or memory failure.
