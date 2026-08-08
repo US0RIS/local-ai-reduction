@@ -1,6 +1,6 @@
 # LARC Action Sheet
 
-Canonical technical record for **LARC — Local Adaptive Representation & Compute**. Artifact authority is `benchmarks/INDEX.json`. Current real-model summaries include `RUN6_FINAL_STATUS.json`, `RUN7_FINAL_STATUS.json`, `RUN8_FINAL_STATUS.json`, and `RUN11_FINAL_STATUS.json`. Run 5 remains historical controlled-model evidence rather than a transferable real-model architecture.
+Canonical technical record for **LARC — Local Adaptive Representation & Compute**. Artifact authority is `benchmarks/INDEX.json`. Current real-model summaries include `RUN6_FINAL_STATUS.json`, `RUN7_FINAL_STATUS.json`, `RUN8_FINAL_STATUS.json`, `RUN11_FINAL_STATUS.json`, and `RUN13_FINAL_STATUS.json`. Run 5 remains historical controlled-model evidence rather than a transferable real-model architecture.
 
 ## Objective
 
@@ -8,216 +8,161 @@ Reduce local-LLM **peak resident inference memory by roughly 10–30× versus a 
 
 Evidence levels: **L0** format, **L1** operator/runtime, **L2** controlled model, **L2C** controlled post-training conversion, **L3** independent pretrained LLM, **L4** measured deployment hardware.
 
-The project is now explicitly evidence-driven: a positive operator diagnostic is not an end-to-end model result, a synthetic result cannot override a negative real-model result, and no new real-model compression claim may be promoted before a competitive external baseline exists.
+Evidence rules now include: synthetic success cannot override negative real-model evidence; operator-level success is not end-to-end model quality; quality representation must match byte accounting; calibration/evaluation must be disjoint; and cross-operator gates must not hide normalized site errors behind raw output-energy weighting.
 
 ---
 
-# Historical controlled result retained — Run 5
+# Run 5 — historical controlled result
 
-Run 5 established that the project machinery can produce an internally consistent aggressive representation on a synthetic character LM:
+Synthetic character-LM result:
 
 - teacher-layer function prefit + hard-projected `Q4_GROUP64` shared weights;
-- rank16 Q2/E4M3 latent KV with deterministic Q4 bases and both inverse-Grams;
+- rank16 Q2/E4M3 latent KV with deterministic Q4 bases and K/V inverse-Grams;
 - five seeds `3,7,11,19,23`;
-- mean PPL ratio **1.01208×** the project's simple row-Q4 teacher at context64;
+- mean PPL ratio **1.01208×** internal row-Q4 at context64;
 - mean PPL ratio **1.33287×** FP32 teacher;
 - modeled packed reduction **11.825×** at context64 and **10.499×** at context8K;
-- separate native CPU L1 primitives for group64-Q4 GEMV and packed Q2/E4M3 latent attention.
+- native CPU L1 group64-Q4 GEMV and packed Q2/E4M3 latent-attention primitives exist separately.
 
-This remains useful codec/runtime engineering evidence. It is **not** evidence that its recurrent sharing or universal low-rank assumptions transfer to pretrained LLMs.
+This remains useful codec/runtime engineering evidence. Its universal low-rank and recurrent-sharing assumptions are **not** promoted to pretrained LLMs.
 
 Key artifacts: `run5_e4m3_multiseed.json`, `run5_packed_context_sweep.json`, `run5_native_q4_group64.json`, `run4_native_q2_attention.json`.
 
 ---
 
-# Run 6 — first real pretrained falsification
+# Run 6 — real pretrained falsification
 
-Model: **`HuggingFaceTB/SmolLM2-135M`**, checkpoint `93efa2f097d58c2a74874c7e644dbc9b0cee75a2`.
+Model: `HuggingFaceTB/SmolLM2-135M`, checkpoint `93efa2f097d58c2a74874c7e644dbc9b0cee75a2`.
 
-Run 6 attacked the two assumptions carrying most of Run 5's compression ratio: broadly low-dimensional operator geometry and aggressive cross-depth block sharing.
+Activation-aware reduced-rank tests across 49 real q/k/v/o/gate/up/down sites:
 
-## Activation-aware reduced rank
+- rank32 median held-out operator NMSE **0.28662**; only **8.16%** below 0.05;
+- rank64 median **0.24243**; only **20.41%** below 0.05.
 
-49 real projection sites across layers 0/5/10/15/20/25/29 and q/k/v/o/gate/up/down:
+Gate: `fail_low_rank_projection`.
 
-- rank32 median held-out operator NMSE **0.28662**;
-- rank32 fraction below 0.05 NMSE **8.16%**;
-- rank64 median **0.24243**;
-- rank64 fraction below 0.05 **20.41%**.
+Cross-depth sharing:
 
-Precommitted gate: **`fail_low_rank_projection`**.
+- neighboring single-layer replacement median PPL ratio **1.261×**;
+- exact share layers8–9 **29.56× PPL**;
+- exact share layers14–17 **5.42×**;
+- exact share layers22–25 **5.82×**.
 
-The failure was operator-specific. At rank128 K was strongest and Q was partially viable; V/O/MLP, especially down, remained materially worse. The conclusion is that low rank can be a local/operator-specific property but is not a universal LARC weight representation.
-
-## Cross-depth sharing
-
-Single neighboring-layer replacement had median PPL ratio **1.261×**. Exact contiguous sharing was severe:
-
-- layers 8–9: **29.56× PPL**;
-- layers 14–17: **5.42×**;
-- layers 22–25: **5.82×**.
-
-Layers 14–17 were then collapsed 4→1, initialized from the FP32 parameter mean, hard-projected to group64 Q4, and recovered for 24 QAT/distillation steps against a row-Q4 teacher:
+Recovered 4→1 layers14–17:
 
 - group weight reduction **3.787×**;
-- whole-model modeled weight reduction from this one group **1.084×**;
+- whole-model modeled weight reduction **1.084×**;
 - row-Q4 teacher NLL **4.96356**;
 - recovered shared NLL **5.63537**;
-- PPL ratio vs row-Q4 **1.95778×**.
+- PPL **1.95778×** row-Q4.
 
-Precommitted gate: **`fail_current_sharing_recipe`**.
+Gate: `fail_current_sharing_recipe`.
 
-**Run-6 conclusion:** direct post-hoc whole-block sharing and universal low-rank activation projection are falsified on SmolLM2-135M under the tested protocol.
-
-Artifacts: `run6_real_model_falsification.json`, `run6_activation_aware_projection.json`, `run6_partial_real_conversion.json`, `RUN6_GATE.json`, `RUN6_FINAL_STATUS.json`.
+**Conclusion:** universal low-rank activation projection and direct post-hoc whole-block sharing are falsified for this real model under the tested protocol.
 
 ---
 
-# Run 7 — segmented shared-basis follow-up
+# Run 7 — segmented shared output bases
 
-Run 7 preserved layer-specific functions using like-operator shared output bases:
+Representation `W_i ≈ B_g C_i` retained layer-specific coefficients around like-operator/depth shared bases.
 
-`W_i ≈ B_g C_i`
-
-with one basis `B_g` per operator/depth group and unique coefficients `C_i` per logical layer. FP32 and row-Q4 representations were fitted independently; deployment ranks were chosen from held-out post-quantization operator error.
-
-The project's simple row-Q4 baseline on the fixed slice was itself weak:
-
-- FP32 NLL **3.88795**;
-- simple row-Q4 NLL **5.09597**;
-- row-Q4 PPL ratio vs FP32 **3.34683×**.
+The internal row-Q4 baseline was itself weak: FP32 NLL **3.88795**, row-Q4 **5.09597**, PPL ratio **3.34683×** FP32.
 
 Results:
 
-- strict gate: no group qualifies;
-- balanced: six Q/K groups, whole-model modeled reduction **1.02718×**, Q4-factor PPL **2.25610×** row-Q4;
+- strict: no group qualified;
+- balanced: six Q/K groups, only **1.02718×** whole-model modeled reduction, PPL **2.25610×** row-Q4;
 - aggressive: eight Q/K/O groups, **1.08716×** modeled reduction, PPL **3.74837×** row-Q4.
 
-Precommitted gate: **`fail_current_shared_basis_recipe`**.
+Gate: `fail_current_shared_basis_recipe`.
 
-**Run-7 conclusion:** Q/K contain useful shared structure, but their byte pool is too small to drive extreme whole-model compression. The dominant MLP matrices do not tolerate this shared-basis recipe at useful ranks.
-
-Artifacts: `run7_shared_basis_real_model.json`, `RUN7_GATE.json`, `RUN7_FINAL_STATUS.json`.
+**Conclusion:** Q/K show useful shared structure, but are too small a byte pool; dominant MLP matrices do not tolerate this representation at useful ranks.
 
 ---
 
-# Run 8 — aggressive layer-preserving vector quantization
+# Run 8 — layer-preserving vector quantization
 
-Run 8 abandoned low-rank sharing and targeted the dominant projection byte pool while keeping every logical matrix distinct.
+## 8A additive residual VQ
 
-## Run 8A — residual VQ
+32-weight vectors, activation-RMS weighting, FP16 magnitude, shared 16-entry residual dictionaries, 4-bit indices.
 
-Representation:
+At nominal **0.75 bpw**, modeled whole-weight reduction was ~**2.75×** vs FP16 but NLL rose from ~**3.589** to ~**18.07**. Residual energy decreased monotonically, so this was not a trivial reconstruction bug.
 
-- 32-weight vectors;
-- input-RMS activation weighting as a diagonal-Hessian proxy;
-- FP16 per-vector magnitude;
-- 16-entry FP16 residual codebooks shared by like operator / 10-layer group;
-- 4-bit residual-stage indices.
+Gate: `fail_naive_additive_vq`.
 
-At the most aggressive tested point the nominal target was **0.75 bpw** and modeled whole-model weight reduction was about **2.75×**, but NLL rose from FP32 ~**3.589** to ~**18.07**. Calibration residual energy decreased monotonically, ruling out a trivial sign/scale reconstruction failure. The 32-D 16-way dictionary simply left far too much important geometry unexplained.
+## 8B residual product quantization
 
-Gate: **`fail_naive_additive_vq`**.
+Four 8-D subspaces with per-layer/per-operator codebooks:
 
-## Run 8B — residual product quantization
-
-The 32-D direction was split into four independently coded 8-D subspaces with per-layer/per-operator codebooks.
-
-| nominal target payload | modeled whole-weight reduction | NLL | PPL ratio vs FP32 |
+| target | modeled whole-weight reduction | NLL | PPL ratio vs FP32 |
 |---:|---:|---:|---:|
 | 1.0 bpw | **2.409×** | **16.6705** | ~479,749× |
 | 1.5 bpw | **1.937×** | **19.8977** | ~12.1M× |
 | 2.0 bpw | **1.620×** | **14.6485** | ~63,517× |
 
-Even the richest RPQ point left roughly 20% activation-weighted vector residual energy for much of the model, which was still catastrophic end-to-end.
+Gate: `fail_naive_rpq`.
 
-Gate: **`fail_naive_rpq`**.
-
-**Run-8 conclusion:** naive Euclidean/diagonal-RMS vector dictionaries are not a credible primary extreme-weight codec for this model. More centroids or more greedy residual stages are not the preferred direction.
-
-Artifacts: `run8_additive_vq_real_model.json`, `RUN8_GATE.json`, `run8_residual_pq_real_model.json`, `RUN8_RPQ_GATE.json`, `RUN8_FINAL_STATUS.json`.
+**Conclusion:** naive Euclidean/diagonal-RMS residual dictionaries are not a credible extreme-weight codec.
 
 ---
 
 # Run 9 — competitive llama.cpp deployment baseline — in progress
 
-Branch/PR: `larc-run9-competitive-baseline`, PR #17.
-
-Run 9 is intended to replace the project's weak research row-Q4 reference with an actual mature deployment target on the same SmolLM2-135M checkpoint:
+PR #17. This is the blocking external deployment baseline:
 
 - F16 GGUF quality reference;
 - **Q4_K_M** named competitive Q4 baseline;
 - **Q2_K** mature low-bit comparison;
-- full WikiText-2 `llama perplexity` at context512;
-- exact GGUF bytes and SHA256;
-- GNU `time -v` process MaxRSS at context64/2048/8192, mmap and no-mmap, three repetitions;
-- llama.cpp-reported model/KV/compute buffer diagnostics kept separate from process MaxRSS;
-- `llama bench` prompt processing at 64/2048/8192 and tg128 after depth64/2048/8064;
-- exact llama.cpp commit and runner hardware metadata.
+- complete WikiText-2 `llama perplexity` at context512;
+- exact GGUF bytes/SHA256;
+- GNU `time -v` process MaxRSS at context64/2048/8192, mmap and no-mmap, three reps;
+- llama.cpp-reported allocator pools kept distinct from process MaxRSS;
+- `llama bench` PP at 64/2048/8192 and tg128 after depth64/2048/8064;
+- exact llama.cpp commit and CPU-runner provenance.
 
-Implementation has been adapted to current llama.cpp's unified `llama` executable. Two early workflow failures were tooling/build-interface failures, not benchmark results:
+Two infrastructure-only failures were corrected: current llama.cpp uses the unified `llama` app, and that app requires its CLI/server implementation libraries at link time. The current run has successfully built llama.cpp, converted/quantized SmolLM2, fetched the corpus, and captured provenance; full PPL measurement is in progress.
 
-1. current upstream removed the old standalone `llama-cli` build target;
-2. the unified app requires its server/CLI implementation libraries, so disabling `LLAMA_BUILD_SERVER` prevented final linkage.
-
-Both were corrected. The latest workflow uses the unified app with required dependencies enabled. **No Run-9 numeric baseline is promoted until the completed artifact is inspected.**
-
-Artifacts/protocol pending: `run9_llamacpp_baseline.json`, `RUN9_STATUS.json`, `docs/RUN9_COMPETITIVE_BASELINE.md`.
+No Run-9 numeric baseline is promoted until the artifact completes.
 
 ---
 
 # Run 10 — maintained optimized W2A16G64 reference — in progress
 
-Branch/PR: `larc-run10-strong-w2-reference`, PR #18.
-
-Run 10 asks how much quality a maintained optimization-aware 2-bit PTQ system can retain before LARC invents another custom W2/sub-W2 codec.
-
-Reference: Intel AutoRound `W2A16G64`.
+PR #18. Reference: Intel AutoRound `W2A16G64`.
 
 Tracks:
 
-- source SmolLM2 checkpoint under one HF evaluator;
+- source SmolLM2 under one HF evaluator;
 - pure RTN W2 floor;
-- tuned AutoRound W2: 200 iterations, 128 calibration samples, sequence length 2048, `enable_alg_ext=true`.
+- tuned W2: 200 iterations, 128 calibration samples, sequence length2048, `enable_alg_ext=true`.
 
-All quality comparisons use the same tokenizer and complete WikiText-2 test stream at context512. Absolute PPL is not directly substituted for llama.cpp's Run-9 PPL; within-runtime ratios are the relevant comparison.
+All three use identical tokenizer/corpus/context boundaries on the full WikiText-2 test stream. The evaluator was changed from serial windows to batches of four **without changing token IDs or 512-token boundaries**, and asserts that predicted-token count equals corpus tokens minus one.
 
-Upstream explicitly recommends the more expensive AutoRoundBest + algorithm-extension path for maximum W2 accuracy. The current tuned run is the first serious W2 point. If it moves W2 into a useful regime, full best-quality compute is justified; if it collapses badly, that is strong evidence that the remaining 10–30× target is not a simple PTQ codec problem.
+If tuned W2 enters a useful regime, escalate to the more expensive AutoRoundBest/maximum-quality path. If competent W2 remains poor, the 10–30× objective is increasingly a trained-structure problem rather than another post-training rounding problem.
 
-**No Run-10 numeric result is promoted until its artifact completes.**
-
-Pending artifact: `run10_w2_reference.json`.
+No Run-10 numeric result is promoted until the artifact completes.
 
 ---
 
-# Run 11 — second-order, rotation, and outlier W2 diagnostic
+# Run 11 — second-order + structured rotation W2 diagnostic
 
-Run 11 tested a fundamentally different question from Run 8: whether real 2-bit operator fidelity improves when compression uses **block activation covariance, structured orthogonal rotation, and explicit outlier accounting** rather than only Euclidean/diagonal-RMS geometry.
+49 real sites at layers0/5/10/15/20/25/29, calibrated on WikiText-2 train and evaluated on disjoint test activations.
 
-Protocol:
+Diagnostic Q2 contract: asymmetric four-level group64 + FP16 min/scale, approximately **2.5 bpw / 6.4× matrix reduction vs FP16**.
 
-- SmolLM2-135M checkpoint `93efa2f097d58c2a74874c7e644dbc9b0cee75a2`;
-- layers 0/5/10/15/20/25/29;
-- q/k/v/o/gate/up/down = **49 real projection sites**;
-- calibration: WikiText-2 raw train, 256 activation rows/site;
-- held-out evaluation: disjoint WikiText-2 raw test, 64 rows/site;
-- diagnostic Q2: four asymmetric levels, group64, FP16 min+scale metadata, ~2.5 bpw / ~6.4× matrix reduction vs FP16.
+Aggregate:
 
-## Aggregate result
+| representation | median held-out output NMSE | fraction <0.05 | matrix reduction vs FP16 |
+|---|---:|---:|---:|
+| plain Q2 | **0.16072** | 6.12% | 6.400× |
+| block-GPTQ-style Q2 | 0.16527 | 6.12% | 6.400× |
+| Hadamard Q2 | 0.15555 | 6.12% | 6.396× |
+| **Hadamard + block-GPTQ Q2** | **0.09555** | **36.73%** | **6.396×** |
+| dense learned orthogonal ceiling | 0.15907 | 6.12% | 3.740× |
 
-| representation | median held-out output NMSE | mean NMSE | fraction <0.05 | matrix reduction vs FP16 |
-|---|---:|---:|---:|---:|
-| plain Q2 | **0.16072** | 0.25129 | 6.12% | **6.400×** |
-| block-GPTQ-style Q2 | 0.16527 | 0.23174 | 6.12% | **6.400×** |
-| Hadamard Q2 | 0.15555 | 0.20998 | 6.12% | **6.396×** |
-| **Hadamard + block-GPTQ Q2** | **0.09555** | **0.10649** | **36.73%** | **6.396×** |
-| dense learned orthogonal Q2 ceiling | 0.15907 | 0.24625 | 6.12% | 3.740× |
+Hadamard + second-order error feedback improves median NMSE **40.55%** at essentially unchanged bytes.
 
-The combined structured rotation + second-order error-feedback mechanism cuts median held-out output NMSE by **40.55%** relative to plain Q2 at essentially unchanged representation bytes. Neither Hadamard alone nor block-GPTQ alone produces the gain.
-
-## Operator structure
-
-Hadamard + block-GPTQ median NMSE by family:
+Operator medians for the best mechanism:
 
 - Q **0.03909**;
 - K **0.02994**;
@@ -227,106 +172,153 @@ Hadamard + block-GPTQ median NMSE by family:
 - up **0.15635**;
 - down **0.15705**.
 
-This is the first positive real-model weight-compression mechanism after Runs 6–8, but it is **not a usable whole-model W2 codec**. Q/K look plausible for aggressive W2. The dominant V/O/up/down pools remain too inaccurate.
+Simple 1–5% FP16 outlier-column escape worsened the best aggregate error/byte point. Dense learned covariance rotations also did not justify transform bytes.
 
-## Outlier and learned-rotation controls
+**Decision:** promote Hadamard + block second-order rounding as a **component mechanism only**. Do not promote all-W2, simple FP16 escape, or dense learned rotations.
 
-Simple activation-weighted FP16 outlier escape did not improve the best combined error/byte point:
-
-- no escape: median NMSE **0.09555**, ~6.396×;
-- +1% FP16 columns: **0.10671**, ~5.995×;
-- +2%: **0.10686**, ~5.642×;
-- +5%: **0.10414**, ~4.836×.
-
-Therefore this escape strategy is not promoted.
-
-The dense covariance-eigenvector rotation ceiling also failed to justify its representation cost: median NMSE **0.15907**, only **3.740×** vs FP16 after transform bytes. The positive result is specifically the cheap structured Hadamard + covariance-aware rounding interaction.
-
-## Run-11 decision
-
-**Promote as a component mechanism:** structured Hadamard rotation + block second-order/GPTQ-style rounding/error feedback.
-
-**Do not promote as an end-to-end codec:** only 36.7% of sites pass 0.05 NMSE; V/O/up/down remain weak.
-
-**Do not promote:** tested dense learned rotation or 1–5% FP16 outlier escape.
-
-Canonical summary: `RUN11_FINAL_STATUS.json`. Generator: `tools/run11_second_order_diagnostic.py`. Workflow run `31278590079`, artifact `9027744924`, digest `sha256:ef4145385d3ed5ce7761ba8ead540226bb0f3e9f85fe79cb15d4f61b83ee2192`.
+Canonical artifact: `RUN11_FINAL_STATUS.json`.
 
 ---
 
-# Current real-model conclusion after Runs 6–8 and 11
+# Run 12 — exact Q4-relative feasibility bound — calculator committed, awaiting Run 9
 
-The following mechanisms are falsified as **broad post-training solutions** on SmolLM2-135M under the tested protocols:
+The calculator was merged to `main` **before Run-9 results were observed**.
+
+Once Run 9 completes it will calculate, from exact Q4_K_M bytes and llama-bench parameter count:
+
+- Q4 effective total-file bits/original-parameter;
+- exact 10×/20×/30× candidate file budgets;
+- required effective total-file bpw at each target;
+- impossible-best-case zero-metadata same-parameter bounds for 4/3/2.5/2/1.58/1/0.5/0.25 bpw;
+- an explicitly illustrative total-RSS floor model, kept separate from measured allocator/RSS evidence.
+
+Known structural arithmetic independent of Run 9:
+
+- Q+K are only **12.5%** of SmolLM2's seven main decoder projection parameters;
+- gate/up/down are **75%**.
+
+Therefore aggressive Q/K W2 cannot by itself explain a 10× whole-model/Q4 result.
+
+Generator: `tools/run12_feasibility_bound.py`.
+
+---
+
+# Run 13 — full-rank shared base + low-rank layer residuals
+
+Hypothesis:
+
+`W_layer ≈ B_group + U_layer V_layer^T`
+
+This was intentionally distinct from Run6/7: the common component stayed **full-rank**, while only inter-layer differences were constrained to rank8/16/32.
+
+Scope:
+
+- all 30 decoder layers;
+- all q/k/v/o/gate/up/down = **210 logical matrices**;
+- 2/3/6 physical bases = 15/10/5 logical layers/base;
+- activation-aware residual fitting using disjoint WikiText-2 train/test activations;
+- representation-matched packed gate: Q4_GROUP64 bases + Q4_GROUP64 U/V factors versus independent Q4_GROUP64 logical matrices.
+
+## Byte economics
+
+The structural idea had the required order of magnitude:
+
+- 2 bases / rank8: **10.583×** main-projection reduction;
+- 2 bases / rank16: **8.561×**;
+- 2 bases / rank32: **6.194×**;
+- 3 bases / rank8: **7.823×**;
+- 3 bases / rank16: **6.660×**;
+- 3 bases / rank32: **5.134×**;
+- 6 bases / rank8: **4.389×**;
+- 6 bases / rank16: **3.998×**;
+- 6 bases / rank32: **3.392×**.
+
+These ratios apply only to the seven main decoder projection pools, not the entire model.
+
+## Formal gate versus validity audit
+
+The precommitted gate used **raw-energy-summed global operator NMSE**. By that definition six configurations formally passed because global values were ~0.019–0.021.
+
+That gate metric was discovered to be invalid for heterogeneous operator families: summing raw numerator/denominator across sites weights operators by arbitrary absolute output energy and masks large normalized errors elsewhere. The formal output is preserved for auditability, but **is not accepted as a mechanism success**.
+
+Normalized site evidence:
+
+- 2 bases / rank8, **10.583×**: median site NMSE **0.5042**, only **3.33%** sites <0.05;
+- 2 bases / rank32, **6.194×**: median **0.4004**;
+- 3 bases / rank32, **5.134×**: median **0.3783**, only **3.81%** <0.05;
+- least aggressive 6 bases / rank32, **3.392×**: median **0.3402**, only **3.81%** <0.05.
+
+At the 5.134× point, operator medians were:
+
+- Q **0.1291**;
+- K **0.1085**;
+- V **0.5630**;
+- O **0.4010**;
+- gate **0.3016**;
+- up **0.5245**;
+- down **0.6530**.
+
+Most importantly, the **unquantized FP32 residual-factor ceilings are nearly as bad**. Example: at 3 bases/rank32 median ceiling NMSE is **0.3745** versus packed **0.3783**. At 6 bases/rank32 the ceiling is **0.3330** versus packed **0.3402**.
+
+Therefore factor Q4 is not the primary failure. Rank≤32 inter-layer residual structure simply does not reproduce most layer functions well enough.
+
+**Substantive decision:** `fail_current_additive_residual_sharing_ranks_le_32`.
+
+Run-13 lesson: strong structural byte economics alone are insufficient; future structural gates must aggregate **site-normalized** errors first and include operator-family guardrails. Raw cross-operator energy-summed NMSE may not be used as the sole quality gate again.
+
+Canonical summary: `RUN13_FINAL_STATUS.json`; workflow run `31279213965`, artifact `9027937891`, digest `sha256:465c0e157012c1d7d39d93d4baf6325a3dac72550ef211cebf8d6fa1dd6eb9e4`.
+
+---
+
+# Current real-model conclusion after Runs 6–8, 11, and 13
+
+Falsified as broad post-training solutions under tested protocols:
 
 1. universal low-rank activation projection;
-2. direct whole-block cross-depth sharing;
-3. segmented shared output bases as the main weight codec;
-4. naive sub-2-bit residual vector quantization;
-5. naive residual product quantization.
+2. direct whole-block post-hoc depth sharing;
+3. shared low-rank output bases as the main codec;
+4. naive additive residual VQ;
+5. naive residual product quantization;
+6. full-rank shared bases with rank≤32 post-hoc inter-layer residual adapters at the 5–15-layer sharing spans needed for extreme structural reduction.
 
-Run 11 adds an important positive qualification:
+Positive reusable findings:
 
-- **structured Hadamard rotation + second-order block error feedback materially improves real W2 operator fidelity without a dense-transform byte penalty**;
-- Q/K are consistently easier across Runs 6, 7, and 11;
-- the dominant MLP/V/O byte pools remain the compression bottleneck.
-
-The strongest reusable components are now:
-
-- native group64-Q4 weight GEMV;
+- native group64-Q4 GEMV;
 - native packed Q2/E4M3 latent-attention arithmetic;
-- real-model evidence that Q/K can tolerate substantially more aggressive representation than MLP/V/O;
-- Run-11 evidence for structured rotation + covariance-aware rounding;
-- the experiment/provenance infrastructure for representation-matched real-model testing.
+- Q/K repeatedly appear more compressible than V/O/MLP;
+- Hadamard rotation + block second-order error feedback materially improves W2 operator fidelity;
+- rigorous real-model experiment/provenance infrastructure;
+- exact evidence that structural sharing can produce 5–10× projection-byte economics, but the current post-hoc low-rank residual model cannot preserve functions.
 
-The Run-5 recurrent/shared architecture must **not** be revived as though real transfer merely needs more tuning.
-
----
-
-# Competitive-baseline gap
-
-The project still lacks a **completed committed** optimized deployment baseline. This blocks any new real-model compression claim even though Run 11 found a positive mechanism.
-
-Run 9 must establish actual llama.cpp Q4_K_M/Q2_K:
-
-- exact GGUF bytes/hashes;
-- full WikiText-2 PPL;
-- MaxRSS at 64/2K/8K;
-- mmap/non-mmap;
-- llama.cpp allocator pools;
-- PP/TG throughput;
-- exact runtime/hardware provenance.
-
-Run 10 must independently establish what competent W2A16G64 optimization can retain.
-
-Only after those two results are known can a LARC representation be judged against the real frontier rather than the project's weak row-Q4 research reference.
+The evidence is increasingly pointing away from **post-hoc structural conversion** and toward either a much stronger optimized W2/mixed representation or a model **trained/distilled from the outset** for parameter reuse/compressibility.
 
 ---
 
 # Current claim boundary
 
-> **No usable real-pretrained LARC candidate exists yet.** The ~10.5–11.8× result remains controlled/synthetic evidence only. Runs 6–8 falsified the mechanisms responsible for most of that ratio as broad post-hoc real-model techniques. Run 11 found a genuine positive operator-level mechanism—Hadamard rotation plus second-order error feedback—but it has not passed end-to-end quality and does not solve the dominant MLP/V/O operators.
+> **No usable real-pretrained LARC candidate exists yet.** The ~10.5–11.8× result remains controlled/synthetic evidence only. Run 11 found a useful real operator mechanism, but not a whole-model codec. Run 13 demonstrated structurally relevant byte ratios but failed normalized held-out operator fidelity even before factor quantization. Runs 9 and 10 remain the critical external baselines.
 
 Do not claim:
 
 - 10× real-model compression;
 - Q4_K_M parity;
 - measured LARC RSS/VRAM savings;
-- whole-model W2 viability from Run 11;
-- that a 6.396× **matrix-vs-FP16** Run-11 ratio is a whole-model or Q4-relative compression ratio;
-- native end-to-end LARC inference;
-- that naive low-rank/shared/VQ mechanisms remain preferred.
+- whole-model W2 viability from Run11;
+- Run13 formal gate success as substantive viability;
+- that 6.4× Run11 matrix-vs-FP16 or 5–10× Run13 projection-pool ratios are whole-model/Q4-relative reductions;
+- native end-to-end LARC inference.
 
 ---
 
 # Highest-priority work now
 
-1. **Finish Run 9:** actual current llama.cpp Q4_K_M/Q2_K deployment baseline at 64/2K/8K, including WikiText-2 PPL, process MaxRSS, allocator pools, and throughput.
-2. **Finish Run 10:** tuned AutoRound W2A16G64 on the same checkpoint/corpus. If tuned W2 is promising, escalate to AutoRoundBest/maximum-quality W2 rather than guessing at the PTQ frontier.
-3. **Build the first operator-adaptive end-to-end candidate only after 1–2:** Run 11 supports aggressive Hadamard+second-order W2 for Q/K, but V/O/up/down must retain more capacity. Test mixed precision/optimized rounding with exact bytes and end-to-end WikiText quality. No promotion from operator NMSE alone.
-4. **Use second-order/rotation insight, not more naive dictionaries:** if custom PTQ continues, candidate mechanisms are structured rotations, Hessian-aware/discrete rounding, operator-specific bit allocation, and training-aware recovery. The tested simple FP16 outlier escape is not preferred.
-5. **Escalate to a learned/distilled architecture path if competent W2 remains far from useful quality:** >10× versus Q4 may be a training/distillation problem rather than a post-training codec problem. A model trained from the outset for recurrent/shared/dictionary/low-bit structure remains a distinct open hypothesis even though direct post-hoc sharing failed.
-6. **Runtime integration:** once a real weight representation passes end-to-end quality, integrate it with the existing packed Q2/E4M3 KV primitive and measure actual RSS/TTFT/tokens/s under the same protocol as Q4_K_M.
-7. **Standard evaluation:** real candidates must survive WikiText-2 plus task/generation/rare-token tests before L3 promotion.
-8. **L4 hardware:** CUDA/Metal/consumer-CPU measurements only become decisive after a real L3 representation survives quality.
+1. **Finish Run 9**: real Q4_K_M/Q2_K bytes, full WikiText-2 PPL, allocator pools, MaxRSS at64/2K/8K, mmap/no-mmap, throughput.
+2. **Immediately execute Run 12** on the completed Run-9 artifact to determine the exact effective bpw required for 10×/20×/30× versus Q4 and the weight-vs-fixed-memory limits.
+3. **Finish Run 10**: maintained optimized AutoRound W2A16G64. If promising, escalate to AutoRoundBest; if poor, stop treating more PTQ rounding alone as the likely route to 10–30×.
+4. **Do not extend Run13 merely by increasing residual rank** unless byte economics are recalculated first. The least aggressive rank32 point is already only 3.39× projection reduction and median NMSE 0.34; substantially higher ranks rapidly surrender the structural gain.
+5. **Primary structural research candidate if W2 is insufficient: training/distillation for compressibility**, not post-hoc fusion. Candidate architecture should learn a small set of recurrent/shared full-rank blocks plus layer/depth conditioning or adapters from the beginning, so the shared manifold is part of optimization rather than imposed afterward.
+6. **Operator-adaptive low-bit work remains secondary:** Run11 supports aggressive Q/K W2 with structured rotation + second-order rounding, but V/O/up/down need materially more capacity.
+7. **Runtime integration only after real quality passes:** combine any surviving weight representation with the existing packed Q2/E4M3 KV primitive and measure real RSS/TTFT/tokens/s against Run9 Q4_K_M.
+8. **Standard L3/L4 evaluation:** WikiText-2, tasks/generation/rare tokens, then consumer CPU/Metal/CUDA memory and speed.
 
-The **20–30× objective remains open**. It must be rebuilt from real-model evidence rather than extrapolated from synthetic ratios.
+The **20–30× objective remains open**. Current evidence increasingly indicates that achieving it versus Q4 requires reducing the number of independently stored parameters—not merely quantizing the same parameter set harder—and that such reuse likely must be **learned during training/distillation rather than imposed post hoc**.
