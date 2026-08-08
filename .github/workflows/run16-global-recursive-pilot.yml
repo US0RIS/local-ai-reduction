@@ -1,5 +1,6 @@
 name: Run 16 global recursive distillation pilot
 
+# Execution-only trigger: protocol/gate landed on main at 55dc6656443769c6491b10370ed21e858a74ca53.
 on:
   workflow_dispatch:
   push:
