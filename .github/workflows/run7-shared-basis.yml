@@ -9,6 +9,13 @@ on:
       - 'tools/run7_shared_basis_real_model.py'
       - 'tools/run7_decision_gate.py'
       - '.github/workflows/run7-shared-basis.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/run7_shared_basis_real_model.py'
+      - 'tools/run7_decision_gate.py'
+      - '.github/workflows/run7-shared-basis.yml'
 
 permissions:
   contents: write
