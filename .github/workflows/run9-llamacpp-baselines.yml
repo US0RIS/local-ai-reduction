@@ -1,0 +1,113 @@
+name: Run 9 llama.cpp competitive baselines
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/run9_collect_llamacpp_baseline.py'
+      - '.github/workflows/run9-llamacpp-baselines.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smollm2-llamacpp-baselines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build current llama.cpp CPU tools
+        run: |
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp.git /tmp/llama.cpp
+          cmake -S /tmp/llama.cpp -B /tmp/llama.cpp/build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF
+          cmake --build /tmp/llama.cpp/build -j 2 --target llama-cli llama-perplexity llama-bench
+          /tmp/llama.cpp/build/bin/llama-cli --version | tee llama-version.txt
+      - name: Download exact GGUF baselines and WikiText-2 raw test
+        run: |
+          mkdir -p raw models
+          curl -L --fail --retry 4 -o models/SmolLM2-135M.Q4_K_M.gguf 'https://huggingface.co/QuantFactory/SmolLM2-135M-GGUF/resolve/main/SmolLM2-135M.Q4_K_M.gguf?download=true'
+          curl -L --fail --retry 4 -o models/SmolLM2-135M.Q2_K.gguf 'https://huggingface.co/QuantFactory/SmolLM2-135M-GGUF/resolve/main/SmolLM2-135M.Q2_K.gguf?download=true'
+          curl -L --fail --retry 4 -o raw/wikitext.json 'https://huggingface.co/datasets/data4elm/wikitext-2-raw-v1-test/raw/main/test/wikitext-2-raw-v1.json'
+          python - <<'PY'
+          import json
+          d=json.load(open('raw/wikitext.json'))
+          text=''.join(x.get('text','') for x in d['instances'])
+          open('raw/wikitext2-test.txt','w').write(text)
+          print('wikitext chars',len(text))
+          PY
+          python - <<'PY'
+          import hashlib,json,os,subprocess
+          def meta(path):
+              h=hashlib.sha256()
+              with open(path,'rb') as f:
+                  for b in iter(lambda:f.read(1<<20),b''): h.update(b)
+              return {'path':path,'bytes':os.path.getsize(path),'sha256':h.hexdigest()}
+          m={
+            'runner_os':'ubuntu-24.04 GitHub hosted',
+            'cpu_threads':4,
+            'llama_cpp_commit':subprocess.check_output(['git','-C','/tmp/llama.cpp','rev-parse','HEAD'],text=True).strip(),
+            'llama_cpp_version':open('llama-version.txt').read().strip(),
+            'dataset':meta('raw/wikitext.json'),
+            'dataset_text_chars':len(open('raw/wikitext2-test.txt').read()),
+            'models':{
+              'Q4_K_M':meta('models/SmolLM2-135M.Q4_K_M.gguf'),
+              'Q2_K':meta('models/SmolLM2-135M.Q2_K.gguf')
+            }
+          }
+          open('raw/meta.json','w').write(json.dumps(m,indent=2)+'\n')
+          print(json.dumps(m,indent=2))
+          PY
+      - name: Measure MaxRSS at 64, 2K, 8K contexts
+        run: |
+          set -euo pipefail
+          CLI=/tmp/llama.cpp/build/bin/llama-cli
+          for quant in Q4_K_M Q2_K; do
+            model="models/SmolLM2-135M.${quant}.gguf"
+            for mode in mmap none; do
+              for ctx in 64 2048 8192; do
+                echo "RSS $quant $mode ctx=$ctx"
+                /usr/bin/time -v -o "raw/time_${quant}_${ctx}_${mode}.txt" \
+                  "$CLI" -m "$model" -ngl 0 -t 4 -tb 4 -c "$ctx" \
+                  --load-mode "$mode" --seed 1 --temp 0 \
+                  -p 'The quick brown fox jumps over the lazy dog.' -n 1 \
+                  >"raw/cli_${quant}_${ctx}_${mode}.stdout" 2>"raw/cli_${quant}_${ctx}_${mode}.stderr"
+              done
+            done
+          done
+      - name: Measure WikiText-2 perplexity
+        run: |
+          set -euo pipefail
+          PPL=/tmp/llama.cpp/build/bin/llama-perplexity
+          for quant in Q4_K_M Q2_K; do
+            model="models/SmolLM2-135M.${quant}.gguf"
+            "$PPL" -m "$model" -ngl 0 -t 4 -c 512 -b 512 -ub 512 \
+              --load-mode mmap -f raw/wikitext2-test.txt \
+              >"raw/ppl_${quant}.txt" 2>&1
+            tail -n 5 "raw/ppl_${quant}.txt"
+          done
+      - name: Measure throughput
+        run: |
+          set -euo pipefail
+          BENCH=/tmp/llama.cpp/build/bin/llama-bench
+          for quant in Q4_K_M Q2_K; do
+            model="models/SmolLM2-135M.${quant}.gguf"
+            "$BENCH" -m "$model" -ngl 0 -t 4 -p 512 -n 128 -r 3 -o json >"raw/bench_${quant}.json"
+          done
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build baseline artifact
+        run: |
+          python tools/run9_collect_llamacpp_baseline.py --raw raw --out benchmarks/run9_llamacpp_baselines.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run9-llamacpp-baselines
+          path: |
+            benchmarks/run9_llamacpp_baselines.json
+            raw/meta.json
+            raw/time_*.txt
+            raw/ppl_*.txt
+            raw/bench_*.json
+          if-no-files-found: error
