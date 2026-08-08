@@ -1,0 +1,103 @@
+name: Run 7 shared-basis real-model test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - larc-run7-shared-basis
+    paths:
+      - 'tools/run7_shared_basis_real_model.py'
+      - 'tools/run7_decision_gate.py'
+      - '.github/workflows/run7-shared-basis.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  smollm2-shared-basis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: larc-run7-shared-basis
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install CPU inference dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers safetensors huggingface_hub
+
+      - name: Materialize successful Run 6 evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/${GITHUB_REPOSITORY}/actions/artifacts/9026837256/zip > /tmp/run6-results.zip
+          unzip -o -j /tmp/run6-results.zip -d benchmarks
+
+      - name: Run representation-matched shared-basis experiment
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          python tools/run7_shared_basis_real_model.py \
+            --model HuggingFaceTB/SmolLM2-135M \
+            --cal-tokens 128 \
+            --eval-tokens 256 \
+            --group-size 10 \
+            --ranks 16,32,64,96,128,192,256,384,512 \
+            --out benchmarks/run7_shared_basis_real_model.json
+
+      - name: Apply precommitted Run 7 decision gate
+        run: |
+          python tools/run7_decision_gate.py \
+            --result benchmarks/run7_shared_basis_real_model.json \
+            --out benchmarks/RUN7_GATE.json
+
+      - name: Show compact result
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('benchmarks/run7_shared_basis_real_model.json'))
+          g=json.load(open('benchmarks/RUN7_GATE.json'))
+          print(json.dumps({'baselines':r['quality_baselines'],'end_to_end':r['end_to_end'],'gate':g},indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run7-shared-basis-results
+          path: |
+            benchmarks/run6_real_model_falsification.json
+            benchmarks/run6_activation_aware_projection.json
+            benchmarks/run6_partial_real_conversion.json
+            benchmarks/RUN6_GATE.json
+            benchmarks/RUN6_FINAL_STATUS.json
+            benchmarks/run7_shared_basis_real_model.json
+            benchmarks/RUN7_GATE.json
+          if-no-files-found: error
+
+      - name: Commit real-model evidence to branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            benchmarks/run6_real_model_falsification.json \
+            benchmarks/run6_activation_aware_projection.json \
+            benchmarks/run6_partial_real_conversion.json \
+            benchmarks/RUN6_GATE.json \
+            benchmarks/RUN6_FINAL_STATUS.json \
+            benchmarks/run7_shared_basis_real_model.json \
+            benchmarks/RUN7_GATE.json
+          if git diff --cached --quiet; then
+            echo 'No benchmark changes to commit.'
+          else
+            git commit -m 'Record Run 6 and Run 7 real-model evidence'
+            git push origin HEAD:larc-run7-shared-basis
+          fi
