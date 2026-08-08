@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse,gc,json,math,re,struct
+import argparse,gc,json,re,struct
 from pathlib import Path
 import torch
 from larc.paged_container import LARCv2StreamWriter,CODEC_RAW,CODEC_Q4_ROW,FLAG_REQUIRED,FLAG_SHARED,FLAG_STREAMABLE
@@ -15,8 +15,8 @@ def q4_parts(x:torch.Tensor):
  p,s,c=q4_rows(x.detach().float().contiguous());return p.contiguous(),s.contiguous(),c
 def q4_blob_from_parts(p:torch.Tensor,s:torch.Tensor,cols:int)->bytes:
  rows=p.shape[0];pb=p.cpu().numpy().tobytes();sb=s.cpu().numpy().tobytes();return Q4_HEAD.pack(rows,cols,len(pb))+pb+sb
-def q4_blob(x:torch.Tensor):
- p,s,c=q4_parts(x);return q4_blob_from_parts(p,s,c),dequantize_q4_rows(p,s,c)
+def q4_blob(x:torch.Tensor)->bytes:
+ p,s,c=q4_parts(x);return q4_blob_from_parts(p,s,c)
 def fp16_blob(x:torch.Tensor)->bytes:return x.detach().to(torch.float16).contiguous().cpu().numpy().tobytes()
 def discover(src:ShardedSafeTensorSource):
  names=set(src.names());layers=sorted({int(m.group(1)) for n in names if (m:=LAYER_RE.match(n))})
@@ -64,7 +64,7 @@ def convert(index,out_path,ranks,oversample=8,niter=2,seed=1234):
  src=ShardedSafeTensorSource(index);L=discover(src);plan=make_page_plan(src,L,ranks);manifest={'architecture':'mistral','conversion':'SoftShare-10X two-pass initialization','source':{'safetensors_index':str(index),'full_source_file_required_locally':False},'softshare':{'layers':L,'ranks':ranks,'equation':'W_layer = shared_Q4 + A_Q4 @ B_Q4','residual_fit_reference':'dequantized stored shared_Q4','recovery_applied':False},'pages':plan};peak_source=peak_shared=0;page_lookup={(p['role'],p.get('matrix_type'),p.get('layer')):p for p in plan}
  with LARCv2StreamWriter(out_path,len(plan),manifest) as wr:
   for n,role in [('model.embed_tokens.weight','embedding'),('lm_head.weight','lm_head')]:
-   x=src.read_tensor(n);peak_source=max(peak_source,x.numel()*x.element_size());blob,_=q4_blob(x);p=page_lookup[(role,None,None)];wr.add_page(p['page_id'],p['codec_id'],p['flags'],blob,logical_length=x.numel()*2);del x,blob
+   x=src.read_tensor(n);peak_source=max(peak_source,x.numel()*x.element_size());blob=q4_blob(x);p=page_lookup[(role,None,None)];wr.add_page(p['page_id'],p['codec_id'],p['flags'],blob,logical_length=x.numel()*2);del x,blob
   x=src.read_tensor('model.norm.weight');peak_source=max(peak_source,x.numel()*x.element_size());p=page_lookup[('final_norm',None,None)];wr.add_page(p['page_id'],p['codec_id'],p['flags'],fp16_blob(x),logical_length=x.numel()*2);del x
   for l in range(L):
    for suf,role in [('input_layernorm.weight','input_norm'),('post_attention_layernorm.weight','post_attention_norm')]:
@@ -79,11 +79,11 @@ def convert(index,out_path,ranks,oversample=8,niter=2,seed=1234):
    for l in range(L):
     x=src.read_tensor(layer_name(l,suf));peak_source=max(peak_source,x.numel()*x.element_size());res=x.float().sub_(shared_hat);del x;A,B=fit_residual(res,ranks[typ],oversample,niter,seed+ti*1000+l);del res
     for role,t in [('residual_A',A),('residual_B',B)]:
-     blob,_=q4_blob(t);p=page_lookup[(role,typ,l)];wr.add_page(p['page_id'],p['codec_id'],p['flags'],blob,logical_length=t.numel()*2);del blob
+     blob=q4_blob(t);p=page_lookup[(role,typ,l)];wr.add_page(p['page_id'],p['codec_id'],p['flags'],blob,logical_length=t.numel()*2);del blob
     del A,B;gc.collect()
    del shared_hat;gc.collect()
  return {'output':str(out_path),'page_count':len(plan),'layers':L,'ranks':ranks,'source_bytes_fetched_or_read':src.bytes_fetched,'largest_single_source_tensor_bytes':peak_source,'largest_shared_fp32_base_bytes':peak_shared,'bounded_local_source_file_required':False}
 def main():
- ap=argparse.ArgumentParser(description='Two-pass tensor-range SoftShare converter; never requires a complete source checkpoint file locally.');ap.add_argument('--index',required=True);ap.add_argument('--output',required=True);ap.add_argument('--ranks',default='96');ap.add_argument('--oversample',type=int,default=8);ap.add_argument('--niter',type=int,default=2);ap.add_argument('--seed',type=int,default=1234);ap.add_argument('--report');a=ap.parse_args();report=convert(a.index,a.output,parse_ranks(a.ranks),a.oversample,a.niter,a.seed);text=json.dumps(report,indent=2)+'\n';print(text,end='');
+ ap=argparse.ArgumentParser(description='Two-pass tensor-range SoftShare converter; never requires a complete source checkpoint file locally.');ap.add_argument('--index',required=True);ap.add_argument('--output',required=True);ap.add_argument('--ranks',default='96');ap.add_argument('--oversample',type=int,default=8);ap.add_argument('--niter',type=int,default=2);ap.add_argument('--seed',type=int,default=1234);ap.add_argument('--report');a=ap.parse_args();report=convert(a.index,a.output,parse_ranks(a.ranks),a.oversample,a.niter,a.seed);text=json.dumps(report,indent=2)+'\n';print(text,end='')
  if a.report:Path(a.report).write_text(text)
 if __name__=='__main__':main()
