@@ -1,0 +1,43 @@
+{
+  "run": 5,
+  "date": "2026-08-08",
+  "primary_strategy": "SoftShare-10X",
+  "target": "10x",
+  "strategy_decision": "Hard recursive sharing is no longer the primary architecture. Spend the full 10x budget on shared Q4 bases plus depth-specific low-rank residuals and a higher-rank latent KV cache.",
+  "controlled_evidence": {
+    "scale_normalized_rank3_over_128": {
+      "whole_model_reduction_x": 9.105641637509876,
+      "perplexity_ratio_vs_q4_teacher": 1.0776027010785967,
+      "note": "quality-favorable mechanism point; not whole-model 10x on tiny geometry"
+    },
+    "adaptive_exact_toy_10x": {
+      "whole_model_reduction_x": 10.046448330457368,
+      "perplexity_ratio_vs_q4_teacher": 1.4005905384106918,
+      "note": "exact 10x tiny-model stress point; quality not acceptable as target success"
+    }
+  },
+  "mistral7b_planning": {
+    "baseline": "TheBloke Mistral-7B-v0.1 Q4_K_M, public rounded size 4.37 GB",
+    "baseline_is_exact_bytes": false,
+    "recommended_weight_rank": 96,
+    "recommended_kv_rank": 64,
+    "estimated_weight_reduction_x": 11.82695172308673,
+    "estimated_weights_plus_4096_kv_reduction_x": 11.863785784846511,
+    "equal_common_scratch_headroom_bytes_before_10x": 85651470.22222222,
+    "quality_validated": false
+  },
+  "runtime": {
+    "native_softshare_operator_max_abs_error": 9.53674316e-07,
+    "native_softshare_operator_L1_pass": true,
+    "streaming_safetensors_converter_implemented": true,
+    "streaming_converter_ci_validation": "pending"
+  },
+  "open": [
+    "CI/synthetic end-to-end streaming converter validation",
+    "real Mistral tensor access and L3 conversion",
+    "real-model quality and adaptive rank allocation",
+    "exact Q4_K_M baseline byte count",
+    "measured integrated RSS/device memory L4"
+  ],
+  "claim_boundary": "Run 5 changes the preferred architecture and improves the controlled quality/capacity frontier. It does not yet prove 10x on a real pretrained model. Mistral ratios are structural planning estimates against a rounded 4.37 GB public baseline."
+}
