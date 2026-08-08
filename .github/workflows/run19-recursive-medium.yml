@@ -1,5 +1,6 @@
 name: Run 19 medium recursive recovery
 
+# Execution-only trigger: protocol/gate landed on main at 99ee6bec3b921401069a66581bde4fdddbe075a5.
 on:
   workflow_dispatch:
   push:
