@@ -1,0 +1,21 @@
+{
+  "run": 9,
+  "date": "2026-08-08",
+  "status": "implemented_pending_public_runner_execution",
+  "target_model": "HuggingFaceTB/SmolLM2-135M",
+  "baseline": "llama.cpp Q4_K_M",
+  "comparison": "llama.cpp Q2_K",
+  "measurements": {
+    "wikitext2_perplexity": true,
+    "exact_gguf_bytes_and_sha256": true,
+    "maxrss_context_64_2048_8192": true,
+    "mmap_and_no_mmap": true,
+    "prompt_processing_throughput": true,
+    "depth_conditioned_generation_throughput": true,
+    "exact_llama_cpp_commit_and_runner": true
+  },
+  "workflow": ".github/workflows/run9-competitive-baseline.yml",
+  "protocol_doc": "docs/RUN9_COMPETITIVE_BASELINE.md",
+  "pending_artifact": "run9_llamacpp_baseline.json",
+  "claim_boundary": "No Run-9 baseline numbers exist until the public GitHub workflow completes and the artifact is inspected. No LARC claim is made by this run."
+}
