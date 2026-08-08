@@ -1,0 +1,16 @@
+{
+  "status": "independent reconstruction of documented Run-3 protocol; not yet proven byte-for-byte identical to the missing Run-3 generator",
+  "training_seed": 3,
+  "evaluation_stream_seed": 999,
+  "evaluation_chars": 100032,
+  "training_corpus_fraction": 0.9,
+  "teacher_steps": 120,
+  "recovery_steps": 200,
+  "scratch_recurrent_steps": 320,
+  "teacher_fp32_nll": 1.812684931056437,
+  "converted_recovered_fp32_nll": 2.015383888190935,
+  "scratch_recurrent_320_fp32_nll": 2.922226943042289,
+  "converted_minus_teacher_nats_per_char": 0.20269895713449793,
+  "converted_vs_scratch": "conversion remains substantially better at the same optimizer-step count",
+  "provenance_warning": "These values do not reproduce the archived Run-3 1.77359/1.88556 values. The Run-3 100k artifact lacks a committed canonical generator, so its exact provenance must be reconstructed before promotion."
+}

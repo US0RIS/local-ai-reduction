@@ -1,0 +1,16 @@
+{
+  "status": "independent reconstruction of documented Run-3 training protocol",
+  "evaluation_stream_seed": 999,
+  "evaluation_chars": 100032,
+  "q4": {"range":"[-8,7]","scale":"max(max_positive/7,max_negative_magnitude/8)","scale_dtype":"binary16","one_scale_per_row":true},
+  "teacher_fp32_nll": 1.812684931056437,
+  "teacher_q4_dequant_nll": 2.04417792849257,
+  "teacher_q4_delta_nats_per_char": 0.23149299743613283,
+  "converted_fp32_nll": 2.015383888190935,
+  "converted_q4_dequant_nll": 2.4537086852910193,
+  "converted_q4_delta_nats_per_char": 0.4383247971000843,
+  "structural_delta_fp32_nats_per_char": 0.20269895713449793,
+  "structural_delta_with_q4_weights_nats_per_char": 0.4095307567984494,
+  "excess_q4_damage_in_reused_block_nats_per_char": 0.2068317996639515,
+  "interpretation": "Q4 error is materially larger for the single recurrent physical block reused 16 times than for 16 independently quantized teacher blocks. This validates the audit concern that correlated depth-wise quantization error is a first-order risk. These results are reproduction evidence until the exact Run-3 generator is recovered."
+}

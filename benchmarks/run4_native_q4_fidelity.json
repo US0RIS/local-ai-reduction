@@ -1,0 +1,9 @@
+{
+  "matrix": {"rows":1536,"cols":576,"rank":32,"noise_std":0.002,"seed":9},
+  "canonical_q4": {"range":"[-8,7]","scale":"max(max_positive/7,max_negative_magnitude/8)","scale_dtype":"binary16"},
+  "resident_payload_reduction_x": 12.062391681,
+  "output_nmse_vs_direct_q4": 0.056634346,
+  "output_nmse_vs_exact_fp32": 0.033298671,
+  "best_rank32_source_nmse_floor": 0.002298704,
+  "interpretation": "The low-noise source makes truncation nearly exact; most excess error above the 0.00230 floor is therefore due to factor quantization / compounded factor error. This supersedes use of the 0.02-noise benchmark as a fidelity demonstration."
+}
