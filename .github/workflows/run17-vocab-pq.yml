@@ -1,5 +1,6 @@
 name: Run 17 tied vocabulary product quantization
 
+# Execution-only trigger: representation and gate landed on main at 410a0bfc79b74f8c0555e32b63ab24146caca5d9.
 on:
   workflow_dispatch:
   push:
