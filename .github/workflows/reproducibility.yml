@@ -1,0 +1,46 @@
+name: reproducibility
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'larc/**'
+      - 'runtime/**'
+      - 'tests/**'
+      - 'tools/**'
+      - 'benchmarks/**'
+      - 'pyproject.toml'
+
+jobs:
+  quick-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest torch
+      - name: Python tests
+        run: pytest -q
+      - name: Verify deterministic benchmark artifacts
+        run: python tools/check_quick_benchmark_artifacts.py
+      - name: Native Q4 smoke
+        run: |
+          g++ -O3 -std=c++17 runtime/larc_q4.cpp tests/native_q4_smoke.cpp -o /tmp/larc-q4-smoke
+          /tmp/larc-q4-smoke
+      - name: Native Q4 fidelity
+        run: |
+          g++ -O3 -std=c++17 runtime/larc_q4.cpp tests/native_q4_fidelity.cpp -o /tmp/larc-q4-fidelity
+          /tmp/larc-q4-fidelity
+      - name: Native packed Q2 attention
+        run: |
+          g++ -O3 -std=c++17 runtime/larc_q4.cpp runtime/larc_q2_attention.cpp tests/native_q2_attention.cpp -o /tmp/larc-q2-attn
+          /tmp/larc-q2-attn
+
+# Heavy training artifacts are intentionally not regenerated here. Their exact
+# phase/seed/evaluation protocol is documented in docs/RUN4_REPRO.md; current
+# quick structural artifacts must regenerate exactly in every PR.
