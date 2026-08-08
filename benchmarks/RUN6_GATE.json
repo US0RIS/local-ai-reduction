@@ -1,0 +1,77 @@
+{
+  "run": 6,
+  "simple_input_pca_projection_gate": {
+    "status": "fail_low_rank_projection",
+    "rank32": {
+      "sites": 49,
+      "median_output_nmse": 0.3185926675796509,
+      "mean_output_nmse": 0.3340832711653594,
+      "fraction_below_0.01": 0.02040816326530612,
+      "fraction_below_0.03": 0.061224489795918366,
+      "fraction_below_0.05": 0.08163265306122448
+    },
+    "rank64": {
+      "sites": 49,
+      "median_output_nmse": 0.26309627294540405,
+      "mean_output_nmse": 0.2852032318027044,
+      "fraction_below_0.01": 0.02040816326530612,
+      "fraction_below_0.03": 0.061224489795918366,
+      "fraction_below_0.05": 0.12244897959183673
+    }
+  },
+  "activation_aware_projection_gate": {
+    "status": "fail_low_rank_projection",
+    "rank32": {
+      "sites": 49,
+      "median_output_nmse": 0.28661930561065674,
+      "mean_output_nmse": 0.2992380690969983,
+      "fraction_below_0.01": 0.061224489795918366,
+      "fraction_below_0.03": 0.061224489795918366,
+      "fraction_below_0.05": 0.08163265306122448
+    },
+    "rank64": {
+      "sites": 49,
+      "median_output_nmse": 0.24243009090423584,
+      "mean_output_nmse": 0.24475255967545495,
+      "fraction_below_0.01": 0.061224489795918366,
+      "fraction_below_0.03": 0.08163265306122448,
+      "fraction_below_0.05": 0.20408163265306123
+    }
+  },
+  "projection_gate_used_for_decision": {
+    "status": "fail_low_rank_projection",
+    "rank32": {
+      "sites": 49,
+      "median_output_nmse": 0.28661930561065674,
+      "mean_output_nmse": 0.2992380690969983,
+      "fraction_below_0.01": 0.061224489795918366,
+      "fraction_below_0.03": 0.061224489795918366,
+      "fraction_below_0.05": 0.08163265306122448
+    },
+    "rank64": {
+      "sites": 49,
+      "median_output_nmse": 0.24243009090423584,
+      "mean_output_nmse": 0.24475255967545495,
+      "fraction_below_0.01": 0.061224489795918366,
+      "fraction_below_0.03": 0.08163265306122448,
+      "fraction_below_0.05": 0.20408163265306123
+    }
+  },
+  "raw_sharing_gate": {
+    "status": "recoverable_candidate",
+    "single_layer_median_perplexity_ratio": 1.261169182313549,
+    "group_perplexity_ratios": [
+      29.5648580415041,
+      5.420048279001226,
+      5.821096674699285
+    ]
+  },
+  "partial_conversion_gate": {
+    "status": "fail_current_sharing_recipe",
+    "post_perplexity_ratio_vs_row_q4": 1.957775186588549,
+    "group_weight_reduction_x": 3.7870257037943698,
+    "whole_model_weight_reduction_x": 1.0839751430626157
+  },
+  "next_step": "stop treating low-rank activation projection as a universal core; segment by operator/layer and investigate structured/sparse alternatives before full conversion",
+  "gate_note": "Thresholds were committed before the real checkpoint result was observed. Activation-aware reduced-rank regression is the definitive projection gate when available; input-PCA remains a diagnostic."
+}

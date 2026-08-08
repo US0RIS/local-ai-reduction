@@ -1,0 +1,83 @@
+{
+  "run": 6,
+  "evidence_level": "L3-precheck partial real pretrained conversion",
+  "model": "HuggingFaceTB/SmolLM2-135M",
+  "model_commit": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "group": [
+    14,
+    15,
+    16,
+    17
+  ],
+  "donor": 15,
+  "logical_layers_in_group": 4,
+  "physical_blocks_for_group": 1,
+  "protocol": {
+    "baseline": "all matrices canonical row-Q4; 1-D FP16",
+    "student_outside_group": "same row-Q4 baseline",
+    "shared_initialization": "FP32 parameter mean of original pretrained group",
+    "shared_block": "Q4_GROUP64 hard-projected after every update",
+    "trainable_parameters": "shared donor block only",
+    "recovery": "teacher-logit KL distillation",
+    "steps": 24,
+    "lr": 0.0003,
+    "window": 64,
+    "train_windows": 8,
+    "calibration_and_eval_disjoint": true
+  },
+  "quality": {
+    "fp32_teacher_nll": 3.620823860168457,
+    "row_q4_teacher_nll": 4.96356201171875,
+    "shared_pre_recovery_nll": 5.659692764282227,
+    "shared_post_recovery_nll": 5.63537073135376,
+    "post_delta_nats_per_token_vs_row_q4": 0.6718087196350098,
+    "post_perplexity_ratio_vs_row_q4": 1.957775186588549,
+    "post_perplexity_ratio_vs_fp32": 7.497329355425188,
+    "curve": [
+      {
+        "step": 1,
+        "distill_loss": 0.5735544562339783,
+        "heldout_nll": 5.6588521003723145
+      },
+      {
+        "step": 4,
+        "distill_loss": 0.4983104467391968,
+        "heldout_nll": 5.656032085418701
+      },
+      {
+        "step": 8,
+        "distill_loss": 0.6291781663894653,
+        "heldout_nll": 5.65168571472168
+      },
+      {
+        "step": 12,
+        "distill_loss": 0.4825040102005005,
+        "heldout_nll": 5.647573947906494
+      },
+      {
+        "step": 16,
+        "distill_loss": 0.6161763668060303,
+        "heldout_nll": 5.643445014953613
+      },
+      {
+        "step": 20,
+        "distill_loss": 0.4682401716709137,
+        "heldout_nll": 5.639441967010498
+      },
+      {
+        "step": 24,
+        "distill_loss": 0.6034198999404907,
+        "heldout_nll": 5.63537073135376
+      }
+    ]
+  },
+  "weight_accounting": {
+    "row_q4_teacher_modeled_weight_bytes": 67719552,
+    "partial_shared_student_modeled_weight_bytes": 62473344,
+    "whole_model_weight_reduction_x": 1.0839751430626157,
+    "original_group_row_q4_bytes": 7128576,
+    "shared_group_group64_q4_bytes": 1882368,
+    "group_weight_reduction_x": 3.7870257037943698
+  },
+  "claim_boundary": "Partial real-model sharing/recovery experiment only; no complete LARC model, KV compression, measured RSS, or packed full-model runtime."
+}
