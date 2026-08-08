@@ -72,20 +72,17 @@ def recover(s,t,n=80):
 
 def row_q4dq(x):
  x=x.detach().float();sh=x.shape;y=x.reshape(-1,sh[-1]);pos=y.amax(1).clamp_min(0)/7.;neg=(-y.amin(1)).clamp_min(0)/8.;sc=torch.maximum(pos,neg).clamp_min(1e-8).half().float();return (torch.round(y/sc[:,None]).clamp(-8,7)*sc[:,None]).reshape(sh)
-def group_q4dq(x,g=128):
- y=x.detach().float().reshape(-1);out=torch.empty_like(y)
- for i in range(0,y.numel(),g):
-  z=y[i:i+g];pos=z.max().clamp_min(0)/7.;neg=(-z.min()).clamp_min(0)/8.;sc=torch.maximum(pos,neg).clamp_min(1e-8).half().float();out[i:i+g]=torch.round(z/sc).clamp(-8,7)*sc
- return out.reshape_as(x)
 def project_teacher_q4(m):
  with torch.no_grad():
   for p in m.parameters():p.copy_(row_q4dq(p) if p.ndim>=2 else p.half().float())
 def project_soft_q4(m):
+ # Exact execution/storage contract used by the Run-5 converter: every 2-D
+ # logical row (including each A/B residual-factor row) uses canonical Q4_ROW.
  with torch.no_grad():
   seen=set()
-  for name,p in m.named_parameters():
+  for _,p in m.named_parameters():
    if p.data_ptr() in seen:continue
-   seen.add(p.data_ptr());p.copy_(p.half().float() if p.ndim<2 else group_q4dq(p,128) if name.startswith(('A_','B_')) else row_q4dq(p))
+   seen.add(p.data_ptr());p.copy_(p.half().float() if p.ndim<2 else row_q4dq(p))
 def qrecover(s,t,n=50):
  opt=torch.optim.AdamW(s.parameters(),lr=2e-4);t.eval();s.train()
  for _ in range(n):
@@ -94,19 +91,18 @@ def qrecover(s,t,n=50):
   sl=s(x);ce=F.cross_entropy(sl.reshape(-1,len(CHARS)),y.reshape(-1));kl=F.kl_div(F.log_softmax(sl/1.5,-1),F.softmax(tl/1.5,-1),reduction='batchmean')*(1.5**2)/sl.shape[1];loss=.5*ce+.5*kl;opt.zero_grad();loss.backward();torch.nn.utils.clip_grad_norm_(s.parameters(),1);opt.step();project_soft_q4(s)
 
 def q4row_bytes(m,n):return m*((n+1)//2+2)
-def groupq4_bytes(n,g=128):return math.ceil(n/2)+math.ceil(n/g)*2
 def teacher_bytes():
  V=len(CHARS);total=q4row_bytes(V,D)+q4row_bytes(CTX,D)+2*D*2;per=q4row_bytes(3*D,D)+q4row_bytes(D,D)+q4row_bytes(FF,D)+q4row_bytes(D,FF)+(4*D+3*D+D+FF+D)*2;return total+L*per
 def soft_bytes(ranks):
  V=len(CHARS);mats={'qkv':(3*D,D),'o':(D,D),'fc1':(FF,D),'fc2':(D,FF)};total=q4row_bytes(V,D)+q4row_bytes(CTX,D)+2*D*2+sum(q4row_bytes(m,n) for m,n in mats.values())
- for name,(m,n) in mats.items():r=ranks[name];total+=groupq4_bytes(L*m*r)+groupq4_bytes(L*r*n)
+ for name,(m,n) in mats.items():r=ranks[name];total+=L*(q4row_bytes(m,r)+q4row_bytes(r,n))
  for width in (D,D,D,D,3*D,D,FF,D):total+=q4row_bytes(L,width)
  return total
 
 def main():
  torch.manual_seed(3);random.seed(3);t=Teacher();train_teacher(t);rng_t=torch.get_rng_state();rng_p=random.getstate();ev=toks(333);tf,N=evaluate(t,ev);tq=copy.deepcopy(t);project_teacher_q4(tq);tqn,_=evaluate(tq,ev);profiles=[]
- configs=[('scale_normalized_rank3',{'qkv':3,'o':3,'fc1':3,'fc2':3}),('uniform_rank2_exact_toy_10x',{'qkv':2,'o':2,'fc1':2,'fc2':2}),('adaptive_exact_toy_10x',{'qkv':2,'o':1,'fc1':3,'fc2':2})]
+ configs=[('row_q4_rank3',{'qkv':3,'o':3,'fc1':3,'fc2':3}),('row_q4_rank2',{'qkv':2,'o':2,'fc1':2,'fc2':2}),('row_q4_rank1',{'qkv':1,'o':1,'fc1':1,'fc2':1})]
  for name,ranks in configs:
-  torch.set_rng_state(rng_t);random.setstate(rng_p);s=SoftShare(t,ranks);raw,_=evaluate(s,ev);recover(s,t);rf,_=evaluate(s,ev);sq=copy.deepcopy(s);project_soft_q4(sq);pre,_=evaluate(sq,ev);qrecover(sq,tq);fin,_=evaluate(sq,ev);b=soft_bytes(ranks);profiles.append({'name':name,'ranks':ranks,'raw_svd_nll':raw,'recovered_fp_nll':rf,'q4_before_constrained_recovery_nll':pre,'q4_after_50_constrained_steps_nll':fin,'delta_vs_q4_teacher_nats_per_char':fin-tqn,'perplexity_ratio_vs_q4_teacher':math.exp(fin-tqn),'serialized_bytes':b,'whole_model_reduction_x':teacher_bytes()/b})
- out={'run':5,'evidence_level':'controlled L2C mechanism study','task':'synthetic character-level template LM','model':{'hidden':D,'heads':H,'ffn':FF,'layers':L,'context':CTX,'vocab':len(CHARS)},'training_seed':3,'evaluation_seed':333,'evaluation_chars':N,'teacher':{'fp32_nll':tf,'canonical_q4_nll':tqn,'canonical_q4_serialized_bytes':teacher_bytes()},'profiles':profiles,'claim_boundary':'Controlled mechanism evidence only; not a real-model 10x result.'};text=json.dumps(out,indent=2)+'\n';print(text,end='');Path('benchmarks/run5_softshare_control.json').write_text(text)
+  torch.set_rng_state(rng_t);random.setstate(rng_p);s=SoftShare(t,ranks);raw,_=evaluate(s,ev);recover(s,t);rf,_=evaluate(s,ev);sq=copy.deepcopy(s);project_soft_q4(sq);pre,_=evaluate(sq,ev);qrecover(sq,tq);fin,_=evaluate(sq,ev);b=soft_bytes(ranks);profiles.append({'name':name,'factor_codec':'canonical Q4_ROW, identical to converter/runtime','ranks':ranks,'raw_svd_nll':raw,'recovered_fp_nll':rf,'q4_before_constrained_recovery_nll':pre,'q4_after_50_constrained_steps_nll':fin,'delta_vs_q4_teacher_nats_per_char':fin-tqn,'perplexity_ratio_vs_q4_teacher':math.exp(fin-tqn),'serialized_tensor_bytes':b,'complete_toy_tensor_reduction_x':teacher_bytes()/b})
+ out={'run':5,'evidence_level':'controlled L2C mechanism study','task':'synthetic character-level template LM','model':{'hidden':D,'heads':H,'ffn':FF,'layers':L,'context':CTX,'vocab':len(CHARS)},'training_seed':3,'evaluation_seed':333,'evaluation_chars':N,'teacher':{'fp32_nll':tf,'canonical_q4_nll':tqn,'canonical_q4_serialized_bytes':teacher_bytes()},'profiles':profiles,'revoked_prior_run5_control':'Prior Run-5 A/B factors used 128-value grouped Q4 while converter/runtime used Q4_ROW; prior toy exact-10x ratios are revoked.','claim_boundary':'Controlled mechanism evidence only. Q4_ROW scale overhead makes this tiny d=128 geometry a poor complete-model 10x proxy; real Mistral rank96 quality remains unvalidated.'};text=json.dumps(out,indent=2)+'\n';print(text,end='');Path('benchmarks/run5_softshare_control.json').write_text(text)
 if __name__=='__main__':main()
