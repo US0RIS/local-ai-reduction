@@ -1,0 +1,23 @@
+{
+  "evidence_level": "L2 controlled recurrent model",
+  "config": {"d":128,"heads":4,"head_dim":32,"logical_depth":16,"physical_blocks":1,"context":64,"latent_rank":12},
+  "quality_eval_chars": 64,
+  "baseline_nll_same_shared_model_fp16_kv": 2.016622304916382,
+  "compressed_nll_same_shared_model_q2_latent_kv_q4_bases": 2.2265591621398926,
+  "delta_nats_per_char": 0.20993685722351074,
+  "perplexity_ratio": 1.2336001645580355,
+  "nll_increase_pct": 10.410321095412844,
+  "q4_basis_execution": true,
+  "key_metric_correction": "FP16 inverse Gram per head",
+  "q4_basis_plus_metric_bytes": 2880,
+  "actual_packed_latent_q2_cache_bytes": 57344,
+  "duplicated_identical_block_q4_style_weight_bytes": 1129482,
+  "shared_block_q4_style_weight_bytes": 77322,
+  "weight_reduction_if_physically_deduplicating_identical_blocks": 14.607511445642896,
+  "baseline_fp16_kv_bytes": 524288,
+  "scratch_bytes": 7680,
+  "baseline_modeled_inference_tensor_bytes": 1661450,
+  "larc_modeled_inference_tensor_bytes": 145226,
+  "modeled_total_reduction": 11.440444548496826,
+  "claim_boundary": "The 14.61x weight-side term is lossless physical deduplication for a model whose logical block is already recurrent/shared. The measured quality delta belongs to latent-KV compression only. This is not evidence that an independently trained 16-block model can lose 15 physical blocks at zero quality cost. The 64-character quality sample remains statistically underpowered and is a screening result only."
+}

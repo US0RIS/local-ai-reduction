@@ -1,0 +1,32 @@
+{
+  "shape": "1536x576",
+  "rank": 32,
+  "generator": "W = A B + 0.02 epsilon; A_ij~N(0,1/32), B_ij~N(0,1/576)",
+  "compiler": "g++ -O3 -march=native -std=c++17",
+  "canonical_q4": {
+    "integer_range": [-8,7],
+    "scale_dtype": "IEEE binary16 per row",
+    "dense_q4_bytes": 445440,
+    "larc_factor_bytes": 36928,
+    "resident_reduction": 12.062392,
+    "dense_us": 452.213280,
+    "larc_us": 34.431340,
+    "speedup_vs_scalar_reference": 13.133769,
+    "output_nmse_vs_dense_q4": 0.287793997,
+    "output_nmse_vs_fp32": 0.268433327,
+    "scratch_bytes": 128
+  },
+  "old_source_reproduction": {
+    "old_integer_range": [-7,7],
+    "old_scale_dtype": "FP32 per row in C++ benchmark",
+    "output_nmse_vs_dense_q4_recompiled_from_main_source": 0.284018241,
+    "output_nmse_vs_fp32_recompiled_from_main_source": 0.269100014,
+    "direct_q4_nmse_vs_fp32": 0.024947413
+  },
+  "revoked_run2_artifact_value": {
+    "artifact": "benchmarks/run2_native_q4_kernel.json",
+    "reported_output_nmse_vs_dense_q4": 0.046151,
+    "status": "REVOKED: does not reproduce from the checked-in Run 2 benchmark source"
+  },
+  "interpretation": "The storage and scalar-reference speed result remain structurally plausible, but operator quality for this synthetic W is much worse than the stale Run 2 artifact claimed. The added 0.02 Gaussian residual has ~23% of AB signal variance in expectation, so this test is not a nearly exact rank-32 operator."
+}
