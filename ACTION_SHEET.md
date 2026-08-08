@@ -1,194 +1,178 @@
 # LARC Action Sheet
 
-Canonical technical record for **LARC — Local Adaptive Representation & Compute**. Historical details are retained in prior audit documents and benchmark artifacts. Artifact authority is `benchmarks/INDEX.json`; machine-readable reconciled status is `benchmarks/RUN5_FINAL_STATUS.json`.
+Canonical technical record for **LARC — Local Adaptive Representation & Compute**. Historical details remain in prior audit documents and benchmark artifacts. Artifact authority is `benchmarks/INDEX.json`; machine-readable status is `benchmarks/RUN5_FINAL_STATUS.json`.
 
 ## Objective
 
-Reduce local-LLM **peak resident inference memory by roughly 10–30× versus a named competitive Q4-class baseline at the same context length**, while retaining useful capability. Every claim must name baseline, context, byte pools, quality delta, representation, seed coverage, and whether execution/memory is measured or modeled.
+Reduce local-LLM **peak resident inference memory by roughly 10–30× versus a named competitive Q4-class baseline at the same context length**, while retaining useful capability. Every promoted claim must name baseline, context, byte pools, quality representation, seed coverage, and whether execution/memory is measured or modeled.
 
-Evidence levels: **L0** format, **L1** operator/runtime, **L2** controlled trained model, **L2C** controlled post-training conversion, **L3** independent pretrained LLM, **L4** measured target hardware.
-
----
-
-# Upstream Run 4 packed-runtime track — retained
-
-## Representation-consistent single-seed L2C quality
-
-Synthetic character LM, context 64, 100,032 final-evaluation characters; training/selection/basis-calibration/final-evaluation streams are disjoint.
-
-| path | NLL |
-|---|---:|
-| independent canonical-Q4 teacher | **1.88548** |
-| Q4-recovered shared model, normal KV | **1.94078** |
-| shared + rank16 latent Q2 + E4M3-FN metadata + Q4 bases + K/V metrics | **1.97525** |
-
-Total delta: **+0.08977 nats/char**, perplexity ×**1.09392**.
-
-Artifact: `benchmarks/run4_fp8meta_l2c.json`; generator: `tools/run4_l2c_repro.py`.
-
-## Native direct-packed latent attention — L1
-
-`runtime/larc_q2_attention.{h,cpp}` consumes packed Q2 historical K/V, E4M3 metadata, Q4 bases and both FP16 inverse-Gram metrics without constructing FP32 historical `T×rank` arrays.
-
-At T=2048/rank16/head-dim32:
-
-- max abs error vs decoded reference: **2.50e-9**;
-- packed cache/head: **24,576 B**;
-- direct scratch/head: **8,448 B**;
-- FP32 decoded latent K+V history/head: **262,144 B**.
-
-Artifact: `benchmarks/run4_native_q2_attention.json`.
-
-## Packed context byte model
-
-| context | modeled reduction |
-|---:|---:|
-| 64 | **12.04×** |
-| 256 | **11.22×** |
-| 512 | **10.91×** |
-| 1K | **10.71×** |
-| 2K | **10.60×** |
-| 4K | **10.53×** |
-| 8K | **10.50×** |
-
-Artifact: `benchmarks/run4_packed_attention_context_sweep.json`.
-
-Quality is validated only at context 64. These are modeled tensor bytes, not measured RSS/VRAM.
+Evidence levels: **L0** format, **L1** operator/runtime, **L2** controlled model, **L2C** controlled post-training conversion, **L3** independent pretrained LLM, **L4** measured target hardware.
 
 ---
 
-# Run 5 — third external audit and multi-seed conversion work
+# Run 4 packed-runtime evidence retained
 
-Detailed audit response: `docs/RUN5_AUDIT_RESPONSE.md`.
+The upstream mainline established:
 
-## 1. Full-stack pairing corrected
+- representation-consistent single-seed L2C quality at context 64: row-Q4 teacher NLL **1.88548** vs latent-Q2/E4M3 shared NLL **1.97525**, delta **+0.08977 nats/char**, perplexity ×**1.09392**;
+- native direct-packed Q2/E4M3 latent attention (`runtime/larc_q2_attention.{h,cpp}`), max abs error **2.50e-9** vs decoded reference at T=2048/rank16/head-dim32;
+- packed-context structural model: **12.04×** at context64, **10.60×** at 2K, **10.50×** at 8K;
+- disjoint training/selection/calibration/evaluation streams;
+- deterministic basis fitting and provenance-backed generators.
 
-Run-4's older `2.45371` diagnostic used Q4 weights with ordinary/full KV; it did not contain latent-Q2 KV. Run 5 therefore evaluates its grouped weight+KV stack directly rather than arithmetically adding a historical KV delta.
+Artifacts: `run4_fp8meta_l2c.json`, `run4_native_q2_attention.json`, `run4_packed_attention_context_sweep.json`.
 
-## 2. Depth-correlation hypothesis weakened
+---
 
-A six-realization stochastic-Q4 counterfactual gave mean decorrelation benefit **+0.0343 ± 0.0482 nats/char**, with two realizations worsening. This does not establish repeated-depth correlation as the main Q4 failure mechanism.
+# Run 5 — third external audit
 
-The stronger weight diagnostic is distributional:
+Detailed response: `docs/RUN5_AUDIT_RESPONSE.md`.
 
-- independent teacher rows: mean absmax/RMS ~**2.13**, raw row-Q4 NMSE ~**0.73%**;
-- recovered shared rows: absmax/RMS **3.10–3.24**, raw row-Q4 NMSE **1.56–1.73%**.
+## Audit finding: Run-4 full-stack ambiguity
 
-Decision: use finer scale locality before depth-wise dither.
+The older `2.45371` diagnostic used Q4 weights with ordinary/full KV; it did **not** include latent-Q2 KV. No historical KV delta is added to it. Run 5 evaluates complete candidate stacks directly.
+
+## Audit finding: correlated Q4 error was over-attributed
+
+Six stochastic-Q4 counterfactuals gave mean depth-decorrelation benefit **+0.0343 ± 0.0482 nats/char**, with two realizations worsening. This does not establish repeated error correlation as the main mechanism.
+
+The stronger diagnostic is weight distribution:
+
+- independent teacher rows: absmax/RMS ~**2.13**, raw row-Q4 NMSE ~**0.73%**;
+- recovered shared rows: absmax/RMS **3.10–3.24**, row-Q4 NMSE **1.56–1.73%**.
+
+Decision: finer scale locality before dither.
 
 Artifact: `benchmarks/run5_weight_diagnostics.json`.
 
-## 3. Run-5 reference weight codec
+## Run-5 weight representation
 
-`Q4_GROUP64`: same signed `[-8,7]` code semantics as canonical Q4, but one FP16 scale per contiguous <=64 weights rather than one per whole row.
+`Q4_GROUP64` retains the signed `[-8,7]` nibble semantics but stores one FP16 scale per contiguous <=64 weights rather than one per whole row.
 
-Shared-model modeled weight payload: **79,828 B** versus ~77.3 KB for full-row Q4. The small metadata increase materially reduces error on difficult shared rows.
+Shared-model modeled payload: **79,828 B**.
 
-## 4. Structural conversion fix
+### Native group64 Q4 primitive — L1
 
-Current Run-5 reference conversion:
+Added `Q4GroupRows` and `q4_grouped_gemv` to `runtime/larc_q4.{h,cpp}`.
+
+Conformance test at 7×130, group size64:
+
+- max abs error vs separately decoded arithmetic: **3.34e-6**;
+- packed storage: **497 B**, exactly equal to formula;
+- partial final group exercised.
+
+Artifact: `benchmarks/run5_native_q4_group64.json`; generator/test: `tests/native_q4_group64.cpp`.
+
+## Run-5 conversion method
+
+Current best controlled conversion:
 
 1. train conventional 16-independent-block teacher;
 2. initialize one shared block from parameter mean;
-3. **80-step teacher-layer function prefit** across every teacher layer's input/output transformation;
-4. project matrices to group-64 Q4;
-5. **200-step LM recovery at LR 1.5e-3**, hard-projecting matrices back to group-64 Q4 after every optimizer step.
+3. **80-step teacher-layer function prefit** across all 16 teacher layer input/output transformations;
+4. project matrices to group64 Q4;
+5. **200-step hard-projected QAT LM recovery** at LR 1.5e-3.
 
-Small depth adapters and teacher-logit distillation were tested but not promoted; hard-projected QAT plus function-space prefit was the most stable five-seed path.
+Depth adapters, simple dither, and teacher-logit distillation were tested but not promoted. Function-space prefit + hard QAT was the most stable five-seed method.
 
-## 5. Run-5 grouped KV reference codec
+## Alternate grouped-metadata KV experiment
 
-- rank16/head-dim32 latent representation;
-- Q2 coefficients;
-- one FP16 min+scale pair across each **3-token K group** and **3-token V group**;
-- one physically shared Q4 K/V basis set for the one physical recurrent block;
-- FP16 ridge-stabilized inverse-Gram for both K and V;
-- incomplete current group retained as FP16 and charged as worst-case tail.
+Run 5 also tested rank16 Q2 with one FP16 scalar min/scale pair per 3-token K group and V group. It models **11.30× at context64 and 10.86× at 8K**, with five-seed mean PPL **1.047×** the project row-Q4 reference. This remains an alternate reference-only codec because no native grouped-metadata attention kernel exists.
 
-Logical KV histories and physical basis sets are counted separately: 16 logical histories, one physical basis set.
+Artifacts: `run5_memory_context.json`, `run5_fullstack_multiseed.json`.
 
-Reference workspace scales with context:
+## Preferred bridge: Run-5 weights + upstream E4M3 packed-attention codec
 
-`workspace(T) = 3584 + 80T bytes`.
+The five trained function-prefit/group64-QAT models were reevaluated using:
 
-This is reference accounting, not a native packed scratch contract.
+- deterministic rank16 K/V bases;
+- Q4 basis storage;
+- both FP16 inverse-Gram metrics;
+- per-vector Q2 coefficients;
+- E4M3-FN min/scale metadata;
+- the same latent mathematics already validated by the native direct-packed Run-4 attention primitive.
 
-## 6. Grouped reference memory sweep
+Training seeds: `3,7,11,19,23`. Evaluation: **100,032 characters/seed**, seed999; calibration uses disjoint seed555 stream.
 
-Baseline: **project row-Q4 teacher weights + FP16 KV + same reference workspace**; this is not llama.cpp Q4_K_M.
+Against the project canonical **row-Q4 teacher** baseline:
 
-| context | modeled reduction |
+| seed | row-Q4 teacher NLL | LARC NLL | delta nats/char | PPL ratio |
+|---:|---:|---:|---:|---:|
+| 3 | 1.91050 | 2.08693 | +0.17643 | 1.1930× |
+| 7 | 2.27746 | 2.13375 | -0.14371 | 0.8661× |
+| 11 | 2.14200 | 2.08938 | -0.05262 | 0.9487× |
+| 19 | 2.15784 | 2.03713 | -0.12071 | 0.8863× |
+| 23 | 2.02544 | 2.17927 | +0.15383 | 1.1663× |
+
+Five-seed statistics:
+
+- mean delta: **+0.00264 nats/char**;
+- sample std: **0.15228**;
+- mean PPL ratio: **1.01208×**;
+- PPL-ratio sample std: **0.15623**;
+- mean PPL ratio vs FP32 teacher: **1.33287×**.
+
+Artifact: `benchmarks/run5_e4m3_multiseed.json`; generator: `tools/run5_e4m3_multiseed.py`.
+
+### Combined modeled memory contract
+
+Using group64 shared-weight bytes plus the upstream direct-packed E4M3 Q2 cache/scratch contract:
+
+| context | modeled total reduction |
 |---:|---:|
-| 64 | **11.297×** |
-| 128 | **11.195×** |
-| 512 | **10.986×** |
-| 2K | **10.887×** |
-| 8K | **10.857×** |
+| 64 | **11.825×** |
+| 256 | **11.123×** |
+| 512 | **10.856×** |
+| 1K | **10.682×** |
+| 2K | **10.582×** |
+| 4K | **10.527×** |
+| 8K | **10.499×** |
 
-Artifact: `benchmarks/run5_memory_context.json`; generator: `tools/run5_memory_sweep.py`.
+Artifact: `benchmarks/run5_packed_context_sweep.json`; generator: `tools/run5_packed_context_sweep.py`.
 
-## 7. Five-seed representation-matched quality
+**Quality is validated at context64 only.** Long-context rows remain structural/runtime models.
 
-Training seeds: `3,7,11,19,23`. Same seed-999 evaluation stream, **100,032 characters per seed**. The LARC path executes dequantized group-64-Q4 weights plus grouped latent-Q2 semantics, Q4 bases, both metrics and FP16 tail semantics.
+## What is and is not native now
 
-Against the same project row-Q4 teacher reference used in this memory model:
+Native L1 primitives exist separately for:
 
-- mean delta: **+0.03551 nats/char**;
-- sample std: **0.16078**;
-- mean perplexity ratio: **1.04705×**;
-- ratio sample std: **0.17120**;
-- range: **0.8969×–1.2363×**.
+- **group64 Q4 GEMV**;
+- **Q2/E4M3 latent attention**.
 
-Against FP32 teacher, mean perplexity ratio is **1.37724×**.
+Run-5 quality uses mathematical/dequantized reference execution matching those storage semantics. The primitives are **not yet wired into one native full-model inference loop**, so there is no measured process-memory or full-runtime throughput result.
 
-Artifact: `benchmarks/run5_fullstack_multiseed.json`; protocol: `tools/run5_fullstack_protocol.py` + `tools/run5_fullstack_protocol_fp16tail.py`.
+## Convergence status
 
-A complete post-commit five-seed one-process replay remains pending because the available execution ceiling terminates the long job; the final FP16-tail quality phase was rerun over all five retained trained models. `benchmarks/INDEX.json` records that limitation.
+A naive teacher continuation to 320 steps at the original constant LR degraded; this is not a convergence ceiling. Tuned/decayed multi-seed teacher/shared/smaller-model learning curves remain required.
 
-## 8. Evidence-track reconciliation
+## Transfer status
 
-Run 5 does **not** supersede the packed E4M3 path.
-
-| axis | upstream packed Run 4 | grouped Run 5 |
-|---|---|---|
-| controlled quality seeds | 1 | **5** |
-| disjoint calibration/eval | **yes** | separate calibration/eval streams, but original training corpus differs from upstream protocol |
-| weight recovery | projected row-Q4 recovery | **function prefit + group64 QAT** |
-| KV metadata | E4M3 per vector | FP16 scalar per 3-token group |
-| native direct-packed attention | **yes, L1** | **no** |
-| context64 modeled reduction | **12.04×** | 11.30× |
-| context8K modeled reduction | 10.50× | **10.86×** |
-| mean multi-seed quality | not measured | **PPL ×1.047 vs project row-Q4** |
-
-The next controlled milestone is to combine **function-prefit/group64-QAT conversion** with a **native direct-packed KV path** (E4M3 or grouped metadata) and run it across multiple seeds with disjoint calibration/evaluation.
-
-## 9. Teacher-320 / convergence
-
-A naive constant-LR teacher continuation degraded rather than defining a better ceiling. It is not convergence evidence. Tuned/decayed multi-seed teacher/shared/smaller-model learning curves remain open.
-
-## 10. Tiny geometry vs SmolLM2
-
-The tiny controlled model uses rank16/head-dim32 = 50%; SmolLM2 structural work uses rank16/head-dim64 = 25% with GQA. Therefore the tiny controlled KV ratio is not an upper bound on SmolLM2 structural arithmetic. SmolLM2 quality remains unmeasured.
+The tiny controlled model uses rank16/head-dim32 = 50%. SmolLM2 structural work uses rank16/head-dim64 = 25% and GQA; therefore the tiny-model ratio is not an upper bound on SmolLM2 arithmetic. No external-model quality exists yet.
 
 ---
 
-# Current claim boundary after reconciliation
+# Current claim boundary after Run 5
 
-Two statements are defensible simultaneously:
+> **Preferred controlled candidate:** teacher-layer function prefit + group64-Q4 QAT weights + rank16 Q2/E4M3 latent KV. Against the project's simple row-Q4 reference, modeled tensor residency is **11.825× lower at context64 and 10.499× lower at 8K**. Across five training seeds at context64, mean perplexity ratio is **1.012×** that same reference. Separate native L1 primitives validate the group64-Q4 GEMV and Q2/E4M3 attention arithmetic.
 
-1. **Native packed execution axis:** upstream Run 4 has L1 direct-packed latent-Q2 attention evidence and a single-seed L2C context-64 quality result (PPL ×1.0939) supporting a modeled **12.04×** same-context tensor contract; structural packed arithmetic stays **10.50×** at 8K without long-context quality validation.
-2. **Multi-seed conversion axis:** Run 5 has five-seed representation-matched reference evidence for **11.30×→10.86× modeled tensor reduction** over context64→8K against the project's simple row-Q4 reference, with mean PPL **1.047×** that reference; this path is not yet native-packed.
+This is still **not** the requested final proof because:
 
-Neither is the final requested proof. Do **not** claim 10–30× lower measured RAM/VRAM for real pretrained GGUF models.
+- baseline is the project's simple row-Q4, not optimized llama.cpp Q4_K_M/IQ;
+- the two native primitives are not integrated into one full-model runtime;
+- memory is modeled, not measured RSS/VRAM;
+- quality is synthetic character-LM, context64;
+- no independent pretrained LLM has been converted;
+- mean PPL remains **1.333× FP32 teacher**.
+
+Do **not** claim 10–30× lower measured RAM/VRAM for real pretrained GGUF models.
 
 # Highest-priority next work
 
-1. **Unify the tracks:** function-prefit + group64-QAT weights with native direct-packed latent attention; test E4M3 vs grouped metadata under the same five-seed protocol.
-2. **Real activation spectra:** first accessible pretrained Transformer, rank-energy/output curves at 8/16/32/64/128.
-3. **Competitive Q4 baseline:** actual Q4_K_M/IQ or equivalent optimized deployment, same context and quality suite.
-4. **Long-context quality:** validate 256→8K, not only byte models.
-5. **Convergence:** tuned multi-seed teacher/shared/smaller-model curves.
-6. **Integrated packed full-model runtime + measured RSS.**
-7. **L3:** independent pretrained 135M+ conversion, standard perplexity/tasks/rare-token evaluation.
-8. **L4:** measured CUDA/Metal/CPU peak memory, TTFT, tokens/s.
-9. **20–30× real-model quality:** open after 10× passes L3/L4.
+1. **Integrate native primitives:** group64 packed weights + packed Q2/E4M3 attention in one inference loop; measure RSS and throughput.
+2. **Real activation spectra:** first accessible pretrained Transformer, ranks 8/16/32/64/128 by projection site.
+3. **Competitive baseline:** actual Q4_K_M/IQ or equivalent optimized runtime at same context/quality.
+4. **Long-context quality:** validate 256→8K, not only byte accounting.
+5. **Convergence study:** tuned multi-seed teacher/shared/smaller-model curves.
+6. **L3:** independent pretrained 135M+ conversion, standard perplexity/tasks/rare-token evaluation.
+7. **L4:** measured CUDA/Metal/CPU memory, TTFT, tokens/s.
+8. **20–30×:** pursue only after 10× passes L3/L4.
