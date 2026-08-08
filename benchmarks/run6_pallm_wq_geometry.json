@@ -1,0 +1,42 @@
+{
+  "run": 6,
+  "evidence_level": "external_pretrained_quantized_weight_geometry_partial",
+  "model": "TinyStories-260K (llama2.c family), paLLM row-Q8 payload",
+  "source_repository": "maddiedreese/paLLM",
+  "source_commit": "ce6b82233bbff55a7876f09dcee35f5fa1f69535",
+  "checkpoint_format": "TS260Q8",
+  "checkpoint_config": {"dim":64,"hidden_dim":172,"n_layers":5,"n_heads":8,"n_kv_heads":4,"vocab_size":512,"max_seq_len":512},
+  "verified_source_prefix": {
+    "bytes": 65536,
+    "chunks": [
+      {"index":0,"bytes":16384,"sha256":"4a7d25f7fe7d918d28894c9995229c5013f3f5b12cce0184692e1e51b4bdde96"},
+      {"index":1,"bytes":16384,"sha256":"f85edac2dd0179e4fd99c1cd79170ae4e37ca45ad4cdf6225f5d3e2c538a529e"},
+      {"index":2,"bytes":16384,"sha256":"823521ff257c14e41ee03f03d07bf86e3a5cbf4f107023270d5c8a481b1ea7a1"},
+      {"index":3,"bytes":16384,"sha256":"d81a42f61d76769493b692980f38378a14e9462f42db63564b0a037345ef7d18"}
+    ],
+    "complete_tensors_in_prefix": ["tok_embeddings","rms_att_weight","wq"]
+  },
+  "wq_weight_spectral_energy": [
+    {"layer":0,"energy_r4":0.7138885631622356,"energy_r8":0.8286147107572088,"energy_r16":0.9233004511091877,"energy_r24":0.9651754793057863,"energy_r32":0.9860918530221039,"energy_r48":0.9989930020895034,"energy_r64":0.9999999999999991},
+    {"layer":1,"energy_r4":0.7047373818987909,"energy_r8":0.8030897259761312,"energy_r16":0.9067520045176749,"energy_r24":0.9569750441888495,"energy_r32":0.9819420993420214,"energy_r48":0.9983251522876374,"energy_r64":0.9999999999999998},
+    {"layer":2,"energy_r4":0.5996275916872998,"energy_r8":0.7561029610326626,"energy_r16":0.8861937949133949,"energy_r24":0.9462944000888686,"energy_r32":0.9768430906530731,"energy_r48":0.9983324870789924,"energy_r64":0.9999999999999992},
+    {"layer":3,"energy_r4":0.6897715991949999,"energy_r8":0.8019409557380456,"energy_r16":0.9128926385961296,"energy_r24":0.9624278685696934,"energy_r32":0.9850003798522833,"energy_r48":0.9988172713926493,"energy_r64":0.9999999999999993},
+    {"layer":4,"energy_r4":0.5889580262551903,"energy_r8":0.7539801338322278,"energy_r16":0.8998437559547202,"energy_r24":0.9562949814802507,"energy_r32":0.9816686318410721,"energy_r48":0.9983396985818092,"energy_r64":0.9999999999999997}
+  ],
+  "wq_energy_threshold_ranks": [
+    {"layer":0,"rank_95":21,"rank_98":29,"rank_99":35},
+    {"layer":1,"rank_95":23,"rank_98":32,"rank_99":38},
+    {"layer":2,"rank_95":25,"rank_98":34,"rank_99":39},
+    {"layer":3,"rank_95":22,"rank_98":30,"rank_99":36},
+    {"layer":4,"rank_95":23,"rank_98":32,"rank_99":37}
+  ],
+  "adjacent_wq_diagnostics": [
+    {"layers":[0,1],"weight_cosine":0.15416717529296875,"normalized_frob_distance":1.3022493124008179,"mean_isotropic_nmse_if_average_shared":0.4357187896966934,"top16_input_subspace_overlap":0.3491554260253906},
+    {"layers":[1,2],"weight_cosine":0.06289726495742798,"normalized_frob_distance":1.3707244396209717,"mean_isotropic_nmse_if_average_shared":0.5067242383956909,"top16_input_subspace_overlap":0.33599212765693665},
+    {"layers":[2,3],"weight_cosine":0.014279227703809738,"normalized_frob_distance":1.4041088819503784,"mean_isotropic_nmse_if_average_shared":0.49566854536533356,"top16_input_subspace_overlap":0.3925202190876007},
+    {"layers":[3,4],"weight_cosine":-0.15820693969726562,"normalized_frob_distance":1.5177139043807983,"mean_isotropic_nmse_if_average_shared":0.6260992288589478,"top16_input_subspace_overlap":0.37712350487709045}
+  ],
+  "interpretation": {"rank16_fraction_of_width":0.25,"rank16_weight_energy_range":[0.8861937949133949,0.9233004511091877],"rank32_weight_energy_range":[0.9768430906530731,0.9860918530221039],"rank98_required_range":[29,34],"naive_parameter_sharing_supported":false,"activation_low_rank_thesis_decided":false},
+  "limitations": ["Weight-space geometry, not activation-space geometry.","Checkpoint is row-Q8 rather than original FP32.","Only the first 65,536 verified source bytes are analyzed; Wq is complete for all five layers.","No LARC conversion, recovery, quality evaluation, or memory measurement."],
+  "claim_boundary": "First genuine external-pretrained parameter-geometry evidence for Run 6. It disfavors naive parameter averaging/sharing for Wq, but does not determine whether real activation distributions admit low-rank projection."
+}
