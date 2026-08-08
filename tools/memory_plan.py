@@ -2,7 +2,7 @@
 from __future__ import annotations
 import argparse,json
 from pathlib import Path
-from larc.latent_kv import cache_bytes,fp16_cache_bytes
+from larc.latent_kv import cache_bytes,kivi_latent_cache_bytes,fp16_cache_bytes
 
 CONFIG=dict(layers=30,hidden=576,intermediate=1536,qout=576,kvout=192,kv_heads=3,heads=9,head_dim=64,vocab=49152)
 PROFILES={
@@ -27,17 +27,20 @@ def weight_bytes(p):
 
 def workspace_bound(p,batch_tokens=1,tile_rows=256):
  c=CONFIG; max_in=max(c['hidden'],c['intermediate'],p['vocab']); max_rank=max(p['hidden'],p['o'],p['down'],p['vocab'])
+ # Input row, bounded packed-Q4 decode/compute tile, output/logit staging and rank scratch.
  return batch_tokens*max_in + tile_rows*max(max_rank,c['hidden']) + 4*max(c['intermediate'],c['vocab']) + 4*max_rank
 
 def main():
- ap=argparse.ArgumentParser(); ap.add_argument('--out',type=Path); args=ap.parse_args(); rows=[]
+ ap=argparse.ArgumentParser(); ap.add_argument('--out',type=Path); ap.add_argument('--kv-codec',choices=['row','kivi'],default='kivi'); args=ap.parse_args(); rows=[]
  for name,p in PROFILES.items():
   wb=weight_bytes(p)
   for kr in [12,16,24,32]:
    for seq in [2048,8192]:
-    basekv=fp16_cache_bytes(layers=30,seq=seq,kv_heads=3,head_dim=64); kv=cache_bytes(layers=30,seq=seq,kv_heads=3,head_dim=64,rank=kr); ws=workspace_bound(p)
-    base=GGUF_Q4+basekv+ws; larc=wb+kv+ws
-    rows.append({'profile':name,'kv_rank':kr,'context':seq,'larc_weight_bytes':wb,'weight_reduction_vs_q4':GGUF_Q4/wb,'baseline_fp16_kv_bytes':basekv,'larc_latent_q2_kv_bytes':kv,'kv_reduction':basekv/kv,'workspace_bound_bytes':ws,'baseline_modeled_peak_bytes':base,'larc_modeled_peak_bytes':larc,'modeled_total_memory_reduction':base/larc})
+    kw=dict(layers=30,seq=seq,kv_heads=3,head_dim=64,rank=kr)
+    basekv=fp16_cache_bytes(layers=30,seq=seq,kv_heads=3,head_dim=64)
+    kv=kivi_latent_cache_bytes(**kw) if args.kv_codec=='kivi' else cache_bytes(**kw)
+    ws=workspace_bound(p); base=GGUF_Q4+basekv+ws; larc=wb+kv+ws
+    rows.append({'profile':name,'kv_codec':args.kv_codec,'kv_rank':kr,'context':seq,'larc_weight_bytes':wb,'weight_reduction_vs_q4':GGUF_Q4/wb,'baseline_fp16_kv_bytes':basekv,'larc_latent_q2_kv_bytes':kv,'kv_reduction':basekv/kv,'workspace_bound_bytes':ws,'baseline_modeled_peak_bytes':base,'larc_modeled_peak_bytes':larc,'modeled_total_memory_reduction':base/larc})
  text=json.dumps(rows,indent=2); print(text)
  if args.out:
   args.out.parent.mkdir(parents=True,exist_ok=True); args.out.write_text(text+'\n')
