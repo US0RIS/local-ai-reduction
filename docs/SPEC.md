@@ -1,92 +1,198 @@
-# LARC v0.1 — Local Adaptive Representation & Compute
+# LARC v0.2 — Local Adaptive Representation & Compute
 
-**Status:** experimental research specification  
+**Status:** experimental implementable specification  
 **Extension:** `.larc`  
-**Primary objective:** maximize retained model capability per resident byte on resource-constrained local hardware.
+**Primary objective:** maximize retained model capability per **peak resident inference byte**, not merely per file byte.
 
-LARC is not intended to be a smaller wrapper around dense tensors. It is a runtime-oriented model representation in which a logical linear operator can be represented by a shared activation subspace, compressed projected operators, and independently loadable residual refinements.
+LARC is a runtime-oriented representation for local neural language models. It deliberately permits a logical Transformer graph to differ from a list of independently stored dense tensors. Logical operators may reference shared physical parameter bundles, activation-subspace factors, depth adapters, progressive residual pages, and compressed KV-cache bases. A conforming runtime is expected to execute these representations without reconstructing the complete dense model.
 
-## Design goals
+## 1. Success metrics
 
-1. Runtime-native compression: execute from compressed structures rather than reconstructing dense weights.
-2. Bounded-memory inference: choose quality tiers under an explicit memory budget.
-3. Progressive fidelity: refinements are independently addressable.
-4. Shared structure: tensors with common activation spaces may share bases/codebooks/transforms.
-5. Streaming conversion from sharded sources.
-6. Architecture-neutral container graph.
-7. Measurable degradation with calibration provenance.
+Every compression claim MUST identify a baseline and report, separately:
 
-## Core representation: projection bundles
+1. complete file bytes,
+2. unique resident weight bytes,
+3. KV-cache bytes at a stated context length,
+4. peak scratch/workspace bytes,
+5. peak total resident inference bytes,
+6. quality delta (NLL/perplexity plus task or generation metrics),
+7. throughput/latency,
+8. whether numbers are **measured**, **modeled from allocated structures**, or **synthetic**.
 
-For linear operators `W_i` consuming common activation `x`, store shared basis `U_k` and projected operators `A_i = W_i U_k`. Runtime computes `z = U_k^T x` once and `y_i_core = A_i z` for each operator.
+The initial research target is 10–30× lower peak resident inference memory than a Q4-class GGUF baseline at the same context length, while retaining useful model capability.
 
-The basis is learned from calibration activations rather than weight SVD alone. Candidate bundles include attention Q/K/V and MLP gate/up projections.
+## 2. Logical graph and physical storage
 
-## Progressive residual representation
+The manifest separates `logical_nodes` from `physical_bundles`.
 
-The core projection omits behavior outside the retained subspace. LARC therefore stores ordered residual refinement chunks. Prototype `HRVQ64` uses 64-weight vectors, one FP16 RMS scale per 256 weights, uint8 indexes into shared 256-entry additive codebooks, and progressive residual stages.
+A logical linear node may be one of:
 
-Nominal payload bitrates: HRVQ64-1 `0.1875 bpw`, HRVQ64-2 `0.3125 bpw`, HRVQ64-3 `0.4375 bpw`. These are storage targets, not quality claims.
+- `DENSE_REF`: ordinary quantized tensor page,
+- `PROJECTION`: `A(Bx)` or `A(U^T x)` using shared basis pages,
+- `RECURSIVE_REF`: repeated reference to one physical Transformer/block bundle,
+- `RELAXED_RECURSIVE_REF`: shared block plus depth/recursion-specific adapter pages,
+- `PROJECTION_RESIDUAL`: projection core plus ordered residual pages.
 
-## Quality tiers
+Multiple logical layers MAY reference one physical bundle. This is normative aliasing, not duplicated payload. A runtime MUST count a shared physical page once for residency.
 
-- Tier 0 / CORE: projection bundle only.
-- Tier 1 / RESIDUAL-A: highest-value residual pages.
-- Tier 2 / RESIDUAL-B: additional residual stages/sparse corrections.
-- Tier 3 / FULL-LOCAL: all stored refinements.
+### 2.1 Recursive/shared models
 
-A runtime may choose tiers globally or per layer.
+LARC-native models may reuse one physical block for multiple logical depths. Optional depth-specific low-rank adapters, norms, scalars, or routing metadata provide specialization while keeping the base bundle shared. This directly supports recursive/Universal-Transformer-like models and converted relaxed-recursive models.
 
-## Sensitive tensor fallback
+## 3. Projection bundles
 
-The format permits ordinary quantized chunks for embeddings, normalization parameters, small tensors, highly sensitive layers, and output heads where structural compression is harmful.
+For operators `W_i` consuming a common input space, LARC may store a basis `B` and projected operators `A_i` such that:
 
-## Prototype container
+`y_i ≈ A_i (B x)`.
 
-```text
-8-byte magic/version  LARC\0\1\0\0
-uint64 manifest length
-UTF-8 JSON manifest
-binary chunk 0
-binary chunk 1
-...
-```
+The basis SHOULD be fit with calibration activations or another documented task-weighted objective rather than raw weight SVD alone. Attention Q/K/V and MLP gate/up are natural bundle candidates when their input domains are compatible.
 
-A production binary manifest/page table is deferred until codec requirements stabilize.
+A projection runtime MUST NOT allocate the reconstructed dense matrix `A_i B` merely to execute the operator.
 
-## Codec registry v0.1
+## 4. Progressive residual pages
 
-| Codec | Purpose | Status |
+Approximate cores can be refined by ordered pages whose priority is defined by marginal validation gain per byte. Candidate residual codecs include:
+
+- sparse high-impact corrections,
+- low-rank error corrections,
+- HRVQ64 additive vector pages,
+- rotated/incoherent low-bit residuals.
+
+Quality tiers:
+
+- `CORE`: minimum executable representation,
+- `R1`, `R2`, ...: progressively better residual sets,
+- `FULL_STORED`: every refinement present in the file.
+
+A memory-budgeted runtime MAY select different tiers per logical layer.
+
+## 5. KV-cache representation
+
+LARC v0.2 defines a **latent KV** execution class.
+
+For each attention head or compatible head group, historical K/V vectors can be projected to learned rank-r bases:
+
+`k_lat = B_k k`, `v_lat = B_v v`.
+
+The cache stores the latent coefficients, not full historical K/V. Attention projects the current query into key-latent space, computes scores against latent keys, combines latent values, and reconstructs only the current weighted value aggregate.
+
+### 5.1 `LATENT_Q2_ROW`
+
+Reference codec: both latent K and V are asymmetric 2-bit per-token vectors with FP16 min/scale metadata.
+
+### 5.2 `LATENT_Q2_KIVI`
+
+Preferred research codec:
+
+- latent keys: asymmetric 2-bit, per latent channel over token groups,
+- latent values: asymmetric 2-bit, per token,
+- K/V bases: normally Q4 or Q8,
+- partial current key group MAY remain higher precision or be incrementally repacked.
+
+The manifest MUST record rank, head grouping, token group size, coefficient bit width, basis codec, and residual-tail policy.
+
+## 6. Native compressed execution
+
+The canonical linear primitive is packed low-bit GEMV/GEMM. A conforming packed-Q4 projected kernel computes:
+
+1. `z = Bx` directly from packed `B`,
+2. `y = Az` directly from packed `A`,
+
+with scratch proportional to projection rank, not `rows × columns`.
+
+The reference CPU implementation is `runtime/larc_q4.cpp`; the CUDA/Triton reference contract is `runtime/triton_q4.py`.
+
+Dense FP16/FP32 reconstruction of an entire stored weight matrix is non-conforming for the `DIRECT_PACKED` execution profile.
+
+## 7. v0.2 paged file layout
+
+The implemented research container uses fixed records and mmap-compatible page offsets.
+
+### 7.1 Header
+
+64 bytes, little-endian (`<8sHHIQQQQQ8x`):
+
+| Field | Type | Meaning |
 |---|---|---|
-| RAW | metadata/small payloads | implemented |
-| Q4_ROW | row-wise signed 4-bit factors | implemented |
-| Q8_ROW | row-wise signed 8-bit factors | implemented |
-| PROJECTION_BUNDLE | shared activation basis + projected operators | implemented research object |
-| HRVQ64 | progressive additive residual vector coding | implemented |
-| SPARSE_RESCUE | high-impact residual entries/directions | planned |
-| HADAMARD_ROTATED_* | incoherence preprocessing | planned |
+| magic | 8 bytes | `LARCv2\0\0` |
+| major/minor | u16/u16 | format version |
+| flags | u32 | file-level flags |
+| manifest_length | u64 | UTF-8 JSON manifest bytes after header |
+| page_count | u64 | fixed page-record count |
+| page_table_offset | u64 | offset of page table |
+| data_offset | u64 | first payload region |
+| file_length | u64 | exact file length |
 
-## Runtime execution contract
+### 7.2 Page record
 
-1. Load/decode selected shared basis.
-2. Compute `z = U^T x` once.
-3. Compute projected outputs `A_i z`.
-4. Add resident residual contributions without constructing dense `W_i`.
-5. Evict pages according to memory budget.
+Each page record is 64 bytes (`<IHHQQQII24x`):
 
-Production kernels should fuse low-bit decode and GEMV/GEMM where practical.
+- `page_id: u32`
+- `codec_id: u16`
+- `flags: u16`
+- `offset: u64`
+- `stored_length: u64`
+- `logical_length: u64`
+- `crc32: u32`
+- `dependency_group: u32`
 
-## Compression accounting
+Payload pages are aligned to the manifest's power-of-two alignment (reference default 4096 bytes). CRC32 covers stored payload bytes.
 
-LARC reports stored bytes, minimum resident bytes, selected-tier resident bytes, and peak scratch bytes. Compression claims must name their baseline, e.g. Q4_K_M GGUF.
+### 7.3 Page flags
 
-## Validation
+- `REQUIRED`
+- `SHARED`
+- `REFINEMENT`
+- `STREAMABLE`
+- `KV_BASIS`
 
-Track file size/bpw, peak RAM/VRAM, tokens/s, perplexity/KL, task benchmarks, held-out output error, and energy/token where possible. Primary derived metric: retained capability per resident GB.
+A runtime MAY mmap the file and expose page views without copying. The same `SHARED` page referenced by multiple logical nodes counts once in resident-payload accounting.
 
-## Non-goals v0.1
+## 8. Codec registry v0.2
 
-- bit-exact reconstruction of arbitrary dense source weights,
-- claiming 10–30× quality-preserving compression before real-model evaluation,
-- freezing a production ABI before codec validation,
-- immediately replacing GGUF as interchange; initial tooling should import GGUF/SafeTensors and use LARC as an execution format.
+| ID | Codec | Purpose | Status |
+|---:|---|---|---|
+| 0 | RAW | metadata/small tensors | implemented |
+| 1 | Q4_ROW | signed packed row-Q4 | implemented |
+| 2 | Q8_ROW | signed row-Q8 | implemented |
+| 3 | PROJECTION_Q4 | Q4 basis/projected factors | implemented |
+| 4 | HRVQ64 | progressive vector residual | implemented, residual-only recommendation |
+| 5 | LATENT_KV_BASIS_Q4 | latent-KV basis payload | implemented reference |
+| 6 | SPARSE_RESCUE | sparse residual correction | reserved/planned |
+
+Codec IDs are stable only within v0.2 research files; a future standards-track release will define registry governance.
+
+## 9. Memory-budget execution
+
+A runtime accepts a resident-memory budget and SHOULD:
+
+1. pin required/shared core pages,
+2. allocate KV cache according to requested context and KV tier,
+3. reserve bounded kernel scratch,
+4. admit residual pages in priority order while under budget,
+5. prefetch streamable pages before their logical node executes,
+6. evict refinements before required core pages.
+
+The runtime MUST be able to report the selected physical pages and their unique stored/resident byte total.
+
+## 10. Sensitive fallbacks
+
+Embeddings, output heads, normalization tensors, very small operators, or empirically sensitive layers may use ordinary quantized pages. LARC does not require structural compression where it worsens quality-per-byte.
+
+## 11. Conversion
+
+Preferred source formats are SafeTensors and GGUF. Converters SHOULD operate shard-by-shard or tensor-by-tensor so a user does not need two full dense model copies locally. Calibration data and converter settings MUST be recorded in provenance metadata when a representation depends on activations.
+
+## 12. Validation levels
+
+- **L0 Structural:** container/codec round trips and byte accounting.
+- **L1 Operator:** held-out operator error plus compressed-domain kernel correctness.
+- **L2 Conformance model:** trained autoregressive model; file/weight/KV/total-memory and NLL gates measured from executable representations.
+- **L3 External pretrained model:** independent pretrained LLM converted after training; same-context quality and total-memory comparison against named GGUF baseline.
+- **L4 Hardware:** measured CPU/GPU/accelerator peak memory and throughput on target hardware.
+
+A project MUST NOT promote L0/L1 modeled results as L3/L4 evidence.
+
+## 13. Current implementation boundary
+
+v0.2 has implemented L0, L1, and an L2 recurrent conformance path. The repository contains an L3 SmolLM2-135M harness, but external checkpoint retrieval / hosted runner availability has prevented completion of that benchmark in the current execution environment. CPU packed-domain kernels are measured locally; the Triton GPU kernel is source-complete but not hardware-validated here.
