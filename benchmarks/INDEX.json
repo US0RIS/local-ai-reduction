@@ -1,0 +1,30 @@
+{
+  "policy_version": 1,
+  "rules": {
+    "promoted_requires_committed_generator": true,
+    "superseded_artifacts_may_remain_for_history": true,
+    "long_training_artifacts_require_seed_and_evaluation_provenance": true,
+    "current_claims_must_name_context_and_baseline": true
+  },
+  "artifacts": [
+    {"path":"benchmark_hrvq_run1.json","status":"historical","generator":"tools/benchmark_synthetic.py"},
+    {"path":"benchmark_projection_run1.json","status":"historical","generator":"tools/benchmark_projection.py"},
+    {"path":"run1_model_scale_estimate.json","status":"historical_arithmetic","generator":null},
+    {"path":"run2_recurrent_conformance.json","status":"historical_valid_representation_test","generator":"tools/recurrent_conformance.py"},
+    {"path":"run2_native_q4_kernel.json","status":"superseded_unreproducible","generator":"tests/native_q4_bench.cpp"},
+    {"path":"run2_posttrain_conversion.json","status":"superseded","generator":"tools/posttrain_recursive_conversion.py"},
+    {"path":"run2_recurrent_kv_endtoend.json","status":"superseded","generator":"tools/recurrent_kv_endtoend.py"},
+    {"path":"run2_kivi_latent_kv_synthetic.json","status":"historical_synthetic","generator":"tools/benchmark_kivi_latent_kv.py"},
+    {"path":"run2_kivi_memory_plan_rank16.json","status":"superseded","generator":"tools/memory_plan.py"},
+    {"path":"run3_native_q4_kernel.json","status":"historical_measured","generator":"tests/native_q4_bench.cpp"},
+    {"path":"run3_projection_quantized_lstsq.json","status":"historical_synthetic","generator":"tools/benchmark_projection.py"},
+    {"path":"run3_equal_compute_control.json","status":"historical_control_small_eval","generator":"tools/equal_compute_control.py"},
+    {"path":"run3_recurrent_kv_corrected.json","status":"historical_missing_canonical_generator","generator":null},
+    {"path":"run3_posttrain_corrected_100k.json","status":"historical_missing_canonical_generator","generator":null},
+    {"path":"run3_kivi_memory_plan_rank16.json","status":"superseded_by_run4_metric_accounting","generator":"tools/memory_plan.py"},
+    {"path":"run4_native_q4_fidelity.json","status":"current","generator":"tests/native_q4_fidelity.cpp"},
+    {"path":"run4_context_sweep.json","status":"current_arithmetic","generator":"tools/run4_context_sweep.py"},
+    {"path":"run4_control_reproduction.json","status":"current_reproduction","generator":"tools/run4_control_reproduction.py"},
+    {"path":"run4_q4_weight_quality.json","status":"current_reproduction","generator":"tools/run4_control_reproduction.py"}
+  ]
+}
