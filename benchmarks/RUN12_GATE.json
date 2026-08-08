@@ -1,0 +1,22 @@
+{
+  "run": 12,
+  "status": "fail_posthoc_embedding_factorization",
+  "best_under_gate": {
+    "rank": 64,
+    "embedding_residual_energy_fraction": 0.3689117729663849,
+    "nll": 9.454854965209961,
+    "delta_nats_vs_fp32": 5.856609106063843,
+    "ppl_ratio_vs_fp32": 349.53688971101406,
+    "original_embedding_elements": 28311552,
+    "factor_elements": 3182592,
+    "embedding_element_reduction_x": 8.895752895752896,
+    "whole_parameter_reduction_x": 1.2297272866097146
+  },
+  "precommitted_thresholds": {
+    "strong": "embedding >=5.5x and PPL <=1.10x FP32",
+    "useful": "embedding >=4x and PPL <=1.25x",
+    "borderline": "embedding >=2.8x and PPL <=1.50x"
+  },
+  "note": "Thresholds committed before first result. Structural FP32 factors only, not packed bytes.",
+  "next_step": "treat the vocabulary/head floor as an architecture/tokenizer-training problem rather than post-hoc SVD"
+}
