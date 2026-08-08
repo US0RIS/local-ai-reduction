@@ -1,0 +1,50 @@
+name: Run 10 AutoRound W2 reference
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/run10_autoround_w2_real_model.py'
+      - '.github/workflows/run10-autoround-w2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  autoround-w2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install CPU AutoRound stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install auto-round
+      - name: Quantize SmolLM2-135M with tuned W2A16G64
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          /usr/bin/time -v -o autoround-time.txt \
+            python tools/run10_autoround_w2_real_model.py \
+              --model HuggingFaceTB/SmolLM2-135M \
+              --iters 100 \
+              --nsamples 64 \
+              --seqlen 512 \
+              --eval-tokens 512 \
+              --out-dir /tmp/smollm2-w2g64-autoround \
+              --out benchmarks/run10_autoround_w2.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run10-autoround-w2
+          path: |
+            benchmarks/run10_autoround_w2.json
+            autoround-time.txt
+          if-no-files-found: error
