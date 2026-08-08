@@ -1,0 +1,64 @@
+{
+  "run": 4,
+  "date": "2026-08-08",
+  "evidence_status": "audit closure; complete >=10x memory+quality gate reopened",
+  "implemented_corrections": {
+    "value_basis_pseudoinverse": true,
+    "value_inverse_gram_counted": true,
+    "q4_basis_row_scales_counted": true,
+    "context_sweep_restored": true,
+    "benchmark_provenance_registry": true,
+    "benchmark_provenance_ci_source": true,
+    "low_noise_native_fidelity_benchmark": true
+  },
+  "controlled_context_sweep": {
+    "64": 10.52451855509553,
+    "128": 9.784257577249013,
+    "2048": 8.182125505462697,
+    "8192": 8.047019974215408,
+    "memory_metric": "modeled inference tensor bytes, not RSS/VRAM"
+  },
+  "q4_weight_quality_reproduction": {
+    "evaluation_chars": 100032,
+    "teacher_fp32_nll": 1.812684931056437,
+    "teacher_q4_nll": 2.04417792849257,
+    "teacher_q4_delta_nats_per_char": 0.23149299743613283,
+    "converted_fp32_nll": 2.015383888190935,
+    "converted_q4_nll": 2.4537086852910193,
+    "converted_q4_delta_nats_per_char": 0.4383247971000843,
+    "excess_correlated_reuse_q4_damage_nats_per_char": 0.2068317996639515,
+    "provenance": "Run-4 canonical reconstruction of documented Run-3 protocol; Run-3 original 100k generator is missing"
+  },
+  "equal_compute_reproduction": {
+    "evaluation_stream_seed": 999,
+    "evaluation_chars": 100032,
+    "converted_recovered_nll": 2.015383888190935,
+    "scratch_recurrent_320_nll": 2.922226943042289,
+    "interpretation": "finite-step warm-start conversion remains better than scratch recurrent training; convergence claim remains open"
+  },
+  "native_fidelity": {
+    "resident_reduction_x": 12.062391681,
+    "source_rank32_floor_nmse": 0.002298704,
+    "output_nmse_vs_fp32": 0.033298671,
+    "output_nmse_vs_direct_q4": 0.056634346
+  },
+  "smollm2_structural_only": {
+    "rank16_kv_reduction_2k_x": 18.244988864142538,
+    "rank16_kv_reduction_8k_x": 19.30936947554508,
+    "10x_profile_total_2k_x": 13.872521114545316,
+    "10x_profile_total_8k_x": 16.173225491955893,
+    "quality_validated": false
+  },
+  "reopened_or_open": [
+    "complete >=10x memory+quality with actual compressed weights at practical context",
+    "converged equal-compute control with multiple seeds",
+    "full artifact regeneration from committed generators",
+    "real-model activation spectra",
+    "measured RSS",
+    "L3 external pretrained conversion",
+    "L4 CUDA/Metal VRAM",
+    "20-30x retained real-model quality",
+    "competitive iso-byte baselines"
+  ],
+  "claim_boundary": "LARC no longer claims the complete 10x memory+quality goal is achieved. Run 4 demonstrates context-specific >10x modeled tensor reduction at context 64, but <10x at context >=128 for the controlled row/row KV codec, and canonical Q4 weights materially worsen the recurrent converted model."
+}
