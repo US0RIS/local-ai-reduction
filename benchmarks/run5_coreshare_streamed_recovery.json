@@ -1,0 +1,23 @@
+{
+  "run": 5,
+  "strategy": "CoreShare-10X streamed-teacher recovery",
+  "evidence_level": "controlled L2C recovery-feasibility study",
+  "source_teacher_representation": "canonical Q4_ROW",
+  "representation": "W_l = S + U C_l V^T, canonical Q4_ROW throughout recovery",
+  "model": {"hidden":128,"layers":16,"context":64,"rank":16},
+  "training_seed": 3,
+  "evaluation_seed": 333,
+  "evaluation_chars": 32768,
+  "calibration": {"sequences":48,"tokens_per_sequence":32,"source":"training corpus","teacher_hidden_pairs_cached":true},
+  "teacher_q4_nll": 1.9054734408855438,
+  "raw_q4_source_coreshare_nll": 4.014229848980904,
+  "after_400_layerwise_q4_teacher_mse_steps_nll": 1.920997902750969,
+  "after_layerwise_perplexity_ratio": 1.015645533304201,
+  "teacher_free_q4_ce_steps": 150,
+  "final_nll": 1.883773386478424,
+  "final_delta_nats_per_char": -0.02170005440711975,
+  "final_perplexity_ratio": 0.9785337252838641,
+  "complete_toy_tensor_reduction_x": 10.223962199250503,
+  "teacher_required_during_final_ce_recovery": false,
+  "claim_boundary": "This demonstrates a controlled recovery workflow compatible with streaming the source teacher to build layerwise calibration targets, then discarding teacher weights. It is not evidence that compression improves real-model intelligence and is not L3/L4."
+}
