@@ -38,11 +38,13 @@ def test_sharded_softshare_conversion_is_streamed_self_contained_and_valid(tmp_p
     out=tmp_path/'tiny.larc';synthetic_baseline=10_000_000
     report=convert(index,out,{k:2 for k in MATRIX_TYPES},oversample=2,niter=1,seed=7,aux=[('config.json',str(config)),('tokenizer.json',str(tokenizer))],baseline_bytes=synthetic_baseline)
     expected_pages=3+2*2+len(MATRIX_TYPES)*(1+2*2)+2
+    assert report['source_format']=='safetensors'
     assert report['page_count']==expected_pages==44
     assert report['bounded_local_source_file_required'] is False
     assert report['largest_single_source_tensor_bytes']==max(t.numel()*2 for t in src_tensors.values())
-    assert report['conversion_peak_explicit_tensor_lower_bound_excluding_internal_svd_workspace_bytes']>=report['largest_single_source_tensor_bytes']
+    assert report['conversion_peak_explicit_tensor_lower_bound_excluding_internal_svd_and_q4_temporaries_bytes']>=report['largest_single_source_tensor_bytes']
     assert report['internal_svd_workspace_peak_measured'] is False
+    assert report['internal_q4_temporary_peak_measured'] is False
     assert report['aux_resource_count']==2
     assert report['aux_resource_bytes']==config.stat().st_size+tokenizer.stat().st_size
     assert report['final_larc_bytes']==out.stat().st_size
