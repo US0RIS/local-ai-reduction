@@ -1,0 +1,14 @@
+{
+  "shape": "1536x576",
+  "rank": 32,
+  "dense_q4_bytes": 448512,
+  "larc_factor_bytes": 40064,
+  "resident_reduction": 11.1949,
+  "dense_us": 438.882,
+  "larc_us": 33.0652,
+  "speedup": 13.2732,
+  "output_nmse_vs_dense_q4": 0.046151,
+  "scratch_bytes": 128,
+  "compiler": "g++ -O3 -march=native -std=c++17",
+  "note": "Synthetic low-rank operator microbenchmark. Validates packed-domain kernel correctness/performance and resident storage, not language-model quality."
+}
