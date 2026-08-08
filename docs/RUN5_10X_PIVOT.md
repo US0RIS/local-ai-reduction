@@ -2,149 +2,140 @@
 
 ## Decision
 
-The Run-4 architecture is no longer the primary path to the project goal.
+The Run-4 hard-recursive architecture is no longer the primary path.
 
-The goal for this project is **10×, not 50×**. Hard recursive sharing—one physical block repeatedly applied at every depth—spends too little representation capacity on layer specialization. Run 4 showed that this creates strongly correlated quantization error and forces recovery training to repair an unnecessarily severe bottleneck.
+The goal is **10×, not 50×**. Exact recursive sharing spends too little representation capacity on layer specialization and creates correlated depth-wise quantization error. For a 10× target, that is an avoidable quality sacrifice.
 
-Run 5 therefore pivots to **SoftShare-10X**:
+Run 5 uses **SoftShare-10X**:
 
 `W_(layer,type) = S_type + A_(layer,type) B_(layer,type)`
 
-where:
+- `S_type`: one shared full-rank canonical-Q4 matrix per projection type;
+- `A B`: depth-specific low-rank canonical-Q4 residual;
+- small layer-specific state retained;
+- direct packed inference computes `Sx + A(Bx)` without a dense per-layer reconstruction;
+- residual/KV rank and rescue pages are increased until the complete deployment approaches the 10× boundary.
 
-- `S_type` is one shared full-rank Q4 matrix for a projection type;
-- `A B` is a depth-specific low-rank Q4 residual;
-- small norms/scalars remain depth-specific;
-- inference evaluates `Sx + A(Bx)` directly from packed weights and never reconstructs the full per-layer matrix;
-- ranks are allocated under a hard 10× byte budget rather than minimized for their own sake.
+The latent-KV work remains useful, but its rank is chosen for the best quality that still fits 10× rather than maximum cache compression.
 
-The latent-KV work remains useful, but its rank is now chosen to satisfy 10× while preserving quality rather than to maximize cache compression.
+## Why this is the higher-probability 10× path
 
-## Why this is now the highest-probability path
+### The 10× budget can afford layer specialization
 
-### 1. The 10× budget can afford substantial layer specialization
+At Mistral/Llama scale, residual ranks around 96–128 are structurally compatible with the target. There is no reason to force 32 logical layers through one almost-identical physical block when tens of megabytes remain available for depth-specific information.
 
-For a 32-layer, 4096-hidden Mistral/Llama-class model, depth-specific residual ranks around 96–128 remain structurally compatible with the 10× target. This is qualitatively different from the controlled d=128 model, where a 2.34% relative rank is only rank 3.
+### Controlled evidence: actual storage codec
 
-### 2. Controlled evidence favors soft sharing over hard recursion
+A first Run-5 control mistakenly used 128-value grouped Q4 for residual factors while the implemented converter/runtime used canonical `Q4_ROW`. Its paired toy byte/quality figures—including the earlier ~10.14× and ~10.05× toy results—are **revoked**.
 
-A Run-5 probe trained the same 16-independent-block character-LM teacher used for the controlled research program, then replaced its large matrices with one shared mean plus depth-specific low-rank residuals.
+The authoritative rerun uses exactly the converter/runtime codec for every A/B factor row. Canonical-Q4 teacher NLL: **1.90547**.
 
-At uniform rank 3/128 = **2.34375% relative rank**:
+| residual rank | complete tiny-model tensor reduction | final Q4 NLL | ppl ratio vs Q4 teacher |
+|---:|---:|---:|---:|
+| 3 | **7.099×** | **1.85275** | **0.94864×** |
+| 2 | **8.095×** | **1.98593** | **1.08378×** |
+| 1 | **8.411×** | **1.91066** | **1.00520×** |
 
-- teacher FP32 NLL: 1.63122
-- raw SVD SoftShare NLL: 3.01887
-- after compressed-parameter recovery: 1.77953
-- canonical-Q4 teacher NLL: 1.90547
-- quantized SoftShare before Q4 recovery: 2.16378
-- after 50 Q4-constrained recovery steps: 1.98021
-- final delta vs Q4 teacher: +0.07474 nats/char
-- perplexity ratio: **1.07760×**
+This is not complete-10× evidence. At d=128, `Q4_ROW` scale bytes dominate factors only 1–3 values wide, so this toy geometry is a poor file-size proxy.
 
-This point is **9.106× for the complete tiny model**, not 10×, because embeddings/position weights/small state and low-rank metadata are disproportionately large at d=128. It is therefore mechanism evidence, not a 10× success claim.
+It is useful strategy evidence: explicit low-rank layer residuals preserve the controlled teacher's behavior well under the actual codec. Rank3 slightly beats the finite-step teacher after extra recovery/distillation; that must not be interpreted as compression increasing general intelligence.
 
-The exact complete-model tiny 10× stress test is materially worse:
+The scale hypothesis to test is `3/128 = 2.34375%` relative rank → approximately rank96 at hidden4096, where factor scale overhead is much smaller relative to payload.
 
-- uniform rank 2: **10.142×**, perplexity ratio **1.484×**;
-- validation-allocated `qkv=2, o=1, fc1=3, fc2=2`: **10.046×**, perplexity ratio **1.401×**.
+### Literature direction
 
-These exact-toy-10× points are not acceptable target quality. Their purpose is to prevent the project from conflating dominant-matrix compression with complete-model compression.
-
-Hard sharing of the same large matrices, even while retaining layer-specific small state, produced roughly 50.8 NLL before recovery. Soft residuals therefore preserve far more pretrained depth-specific information.
-
-### 3. The literature independently supports the direction
-
-Relevant prior work includes Relaxed Recursive Transformers with layer-wise LoRA, Basis Sharing across layers, and matrix-dictionary sharing across Transformer depth. SoftShare-10X is not a claim that cross-layer low-rank sharing itself is novel. LARC's research contribution is the explicit deployment byte budget plus packed execution, progressive rescue pages, latent-KV compression, and bounded-source-residency conversion in one runtime/file system.
+Layer-wise LoRA/relaxed recursion, cross-layer basis sharing, and matrix-dictionary sharing independently support retaining layer-specific low-dimensional information. SoftShare itself is not claimed as wholly novel; the project contribution is the 10× budget policy plus packed execution, latent-KV, progressive rescue, and bounded-source-residency conversion in one format/runtime.
 
 ## Why not pure extreme quantization?
 
-A 1.58-bit representation is only roughly 2.8× smaller than a ~4.5-bit Q4-class representation at equal parameter count. It cannot by itself reach 10×. Extremely low-bit post-training conversion also introduces a much harder quality problem than necessary for a 10× target.
+Moving from a ~4.5-bit Q4-class baseline to ~1.58-bit weights is only about a 2.8× same-parameter reduction. It cannot independently deliver 10×, and post-training extreme quantization creates more quality risk than this goal requires.
 
 ## Why not simply distill to a 10× smaller dense model?
 
-That is a valid deployment strategy but changes the problem from representation compression into model replacement and discards much of the source model's depth-specific state. Distillation remains useful as a recovery objective rather than the primary storage representation.
+That is a legitimate deployment baseline and must be compared. It is not the same representation problem, however: it discards the source model's layer-specific state. Distillation is retained as a recovery objective and as an iso-byte control.
 
-## Reference target for Run 5
+## Real target: Mistral-7B-v0.1
 
-Initial real-model target: **Mistral-7B-v0.1**.
-
-Architecture used by the planner:
+Planner architecture:
 
 - 32 layers
-- hidden size 4096
-- intermediate size 14336
+- hidden 4096
+- intermediate 14336
 - 32 attention heads
 - 8 KV heads
 - head dimension 128
 - vocabulary 32000
 - sliding window 4096
 
-Named deployment baseline:
+Named baseline:
 
 - `mistral-7b-v0.1.Q4_K_M.gguf`
-- exact file size: **4,368,438,912 bytes**
-- SHA-256: `ce6253d2e91adea0c35924b38411b0434fa18fcb90c52980ce68187dbcbbe40c`
-- exact size obtained from the Hugging Face raw LFS pointer.
+- exact size **4,368,438,912 B**
+- SHA-256 `ce6253d2e91adea0c35924b38411b0434fa18fcb90c52980ce68187dbcbbe40c`
+- exact integer 10× file ceiling **436,843,891 B**
 
-### Structural 10× budget
+## Starting budget: rank96 weights / rank64 KV
 
-Recommended starting core:
+Resident tensor model:
 
-- weight residual rank: **96**;
-- latent-KV rank: **64**;
-- modeled weight bytes: **369,495,040** = **11.8227×** smaller than the exact Q4_K_M file;
-- modeled compressed KV at context/sliding-window 4096: **44,105,728 B** vs **536,870,912 B** FP16 = **12.1724×**;
-- weights + 4096-token KV: **11.8600×**;
-- if baseline and LARC incur the same extra common scratch, approximately **85,478,016 B** may be added to each before this structural ratio reaches exactly 10×.
+- weights **369,495,040 B** = **11.8227×** vs exact Q4_K_M;
+- 4K latent KV **44,105,728 B** vs **536,870,912 B** FP16 = **12.1724×**;
+- weights + 4K KV **11.8600×**;
+- equal-common-scratch headroom before that tensor ratio reaches 10×: **85,478,016 B**.
 
-A higher-capacity candidate uses weight rank 128 and KV rank 72:
+Complete-file planning additionally charges the current `.larc` manifest, 522 page records, Q4 page headers, 4 KiB alignment, plus a conservative 4 MiB tokenizer/config reserve:
 
-- weights: **10.6171×** vs exact Q4_K_M;
-- weights + 4K KV: **10.6374×**;
-- equal-common-scratch headroom: **32,660,096 B**.
+- serialized weight `.larc`: **371,302,608 B**;
+- with auxiliary reserve: **375,496,912 B**;
+- conservative file ratio **11.6338×**;
+- remaining bytes before the exact 10× file ceiling: **61,346,979 B**.
 
-These are exact arithmetic for the stated representations and exact Q4_K_M file baseline, but **Mistral quality is completely unvalidated**.
+That ~61 MB is quality budget. The converter should spend it only where real held-out validation shows the largest gain/byte.
 
-## Run-5 budget policy
+The overhead-aware sweep also rejects rank144: tensor payload alone appears barely above 10×, but container + auxiliary reserve gives only **9.964×**.
 
-1. Build a core comfortably smaller than the 10× ceiling.
-2. Measure validation sensitivity per layer/matrix.
-3. Spend remaining bytes on rank increments or residual rescue pages in descending validation-gain/byte order.
-4. Stop when the complete serialized/resident configuration reaches the 10× boundary.
-5. Do not pursue extra compression merely because it is possible.
+**Mistral quality is completely unvalidated.**
 
-The initial rank-96 core is deliberately below the budget so real-model validation can decide where the remaining bytes are most valuable.
+## Runtime
 
-## Conversion architecture
+`runtime/larc_q4.cpp` now directly evaluates packed `Sx + A(Bx)`. Native L1 correctness against separately dequantized S/A/B has max absolute error **9.54e-7**, rank-sized scratch, and no dense W reconstruction.
 
-SoftShare preserves the original requirement that the entire source model need not exist locally at once.
+## Bounded-source-residency conversion
 
-The implemented converter works per matrix family:
+The converter does not require a complete source checkpoint to be stored locally.
 
-**Pass 1**
-- read one source tensor at a time from local SafeTensors or an HTTP byte range;
-- accumulate the shared mean;
-- quantize the finalized shared base to canonical Q4;
-- discard the float precursor;
-- reconstruct only the stored/dequantized Q4 base used as the residual reference.
+### Input
 
-**Pass 2**
-- stream each source layer tensor again;
-- subtract the stored/dequantized shared base;
-- compute the budgeted low-rank residual;
-- quantize/write A and B immediately into the streaming `.larc` writer;
-- discard tensor and SVD workspace before the next layer.
+`larc/safetensors_range.py` reads individual tensors from local shards or exact remote ranges. Remote responses must be HTTP `206` with `Content-Range`; a server that ignores Range is rejected instead of silently transferring a full multi-GB shard.
 
-The `.larc` streaming writer retains page records but does not retain all payload pages. The SafeTensors remote reader requires HTTP `206` plus `Content-Range`; it aborts rather than silently consuming a server response that ignored `Range`.
+### Output
+
+`LARCv2StreamWriter` reserves the manifest/page table, writes each compressed payload immediately, keeps only page records, and patches metadata at finalize.
+
+### SoftShare conversion
+
+Per matrix family:
+
+1. stream source layers and accumulate shared mean;
+2. quantize the mean to canonical Q4;
+3. discard the float precursor;
+4. reconstruct the **stored/dequantized** shared base;
+5. stream each source layer again;
+6. fit its low-rank residual against that stored base;
+7. quantize/write A and B immediately;
+8. release source/SVD state before continuing.
+
+A local synthetic integration test with two actual SafeTensors shards passed: **42 expected/actual pages** and every `.larc` CRC verified. This validates the mechanism, not real Mistral conversion.
 
 ## Hard gates
 
-Run 5 does not count as a real 10× success until:
+Run 5 is not a real 10× success until:
 
-- [ ] real pretrained Mistral conversion (L3);
-- [ ] same-token perplexity/task comparison against the named Q4_K_M baseline;
-- [ ] complete output file <= 436,843,891 bytes (10% of exact baseline, subject to integer file-size accounting);
-- [x] direct packed SoftShare operator correctness (L1);
-- [ ] measured process/device peak memory at a stated context (L4);
-- [ ] long-context quality with selected KV rank;
-- [ ] streaming converter demonstrates bounded source residency end to end on a real checkpoint.
+- [ ] real pretrained Mistral conversion (L3)
+- [ ] same-token perplexity/tasks/generation versus the named Q4_K_M baseline
+- [ ] actual self-contained output file ≤ **436,843,891 B**
+- [x] direct packed SoftShare CPU operator correctness (L1)
+- [ ] real conversion demonstrates bounded source residency
+- [ ] realistic-context KV quality
+- [ ] measured same-context process/device peak memory (L4)
+- [ ] comparison against a genuinely ~10× smaller dense/distilled model and other feasible iso-byte alternatives
