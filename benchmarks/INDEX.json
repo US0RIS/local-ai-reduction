@@ -1,5 +1,5 @@
 {
-  "policy_version": 4,
+  "policy_version": 5,
   "rules": {
     "promoted_requires_committed_generator": true,
     "superseded_artifacts_may_remain_for_history": true,
@@ -8,7 +8,8 @@
     "quality_representation_must_match_memory_representation": true,
     "compression_calibration_must_be_disjoint_from_final_evaluation": true,
     "multi_seed_and_native_packed_are_independent_evidence_axes": true,
-    "full_runtime_gate_requires_weight_and_kv_native_primitives_plus_integrated_measurement": true
+    "full_runtime_gate_requires_weight_and_kv_native_primitives_plus_integrated_measurement": true,
+    "real_model_gate_thresholds_must_be_committed_before_observing_results": true
   },
   "artifacts": [
     {"path":"benchmark_hrvq_run1.json","status":"historical","generator":"tools/benchmark_synthetic.py"},
@@ -36,6 +37,11 @@
     {"path":"run5_e4m3_multiseed.json","status":"current_preferred_L2C_multiseed_codec_quality","generator":"tools/run5_e4m3_multiseed.py","note":"KV codec semantics match native packed Run-4 attention primitive; group64 weights use reference-dequantized quality execution"},
     {"path":"run5_packed_context_sweep.json","status":"current_preferred_packed_arithmetic","generator":"tools/run5_packed_context_sweep.py"},
     {"path":"run5_native_q4_group64.json","status":"current_L1_native_packed_weight","generator":"tests/native_q4_group64.cpp"},
-    {"path":"RUN5_FINAL_STATUS.json","status":"current_summary","generator":null}
+    {"path":"RUN5_FINAL_STATUS.json","status":"current_summary","generator":null},
+    {"path":"run6_partial_memory_plan.json","status":"current_run6_structural_arithmetic","generator":"tools/run6_partial_memory_plan.py"},
+    {"path":"run6_real_model_falsification.json","status":"pending_real_checkpoint_execution","generator":"tools/run6_real_model_falsification.py"},
+    {"path":"run6_activation_aware_projection.json","status":"pending_real_checkpoint_execution","generator":"tools/run6_activation_aware_projection.py"},
+    {"path":"run6_partial_real_conversion.json","status":"pending_real_checkpoint_execution","generator":"tools/run6_partial_real_conversion.py"},
+    {"path":"RUN6_GATE.json","status":"pending_real_checkpoint_execution","generator":"tools/run6_decision_gate.py","note":"gate thresholds committed before observing real-model outputs"}
   ]
 }
