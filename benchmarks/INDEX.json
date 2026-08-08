@@ -26,6 +26,6 @@
     {"path":"run4_context_sweep.json","status":"current_arithmetic","generator":"tools/run4_context_sweep.py"},
     {"path":"run4_control_reproduction.json","status":"current_reproduction","generator":"tools/run4_control_reproduction.py"},
     {"path":"run4_q4_weight_quality.json","status":"current_reproduction","generator":"tools/run4_control_reproduction.py"},
-    {"path":"run4_kivi_memory_plan_rank16.json","status":"current_arithmetic","generator":"tools/memory_plan.py"}
+    {"path":"run4_kivi_memory_plan_rank16.json","status":"current_arithmetic","generator":"tools/run4_kivi_memory_plan.py"}
   ]
 }
