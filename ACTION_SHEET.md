@@ -22,7 +22,7 @@ A result only counts as a breakthrough if it simultaneously improves:
 
 ## Status
 
-**Format architecture established; two structural codec families implemented; first synthetic experiments completed. Raw 10–30× storage regime is reachable, but intelligence retention at that ratio is not yet demonstrated.**
+**Format architecture established; two codecs implemented; first synthetic experiments completed. Raw 10–30× storage regime is reachable, but intelligence retention at that ratio is not yet demonstrated.**
 
 ## Repository starting state
 
@@ -95,7 +95,7 @@ For a hypothetical 135M-weight model with one globally amortized codebook set, e
 | 2 | 5.34 MB | 19.67× |
 | 3 | 7.48 MB | 14.04× |
 
-*Not apples-to-apples yet: the LARC estimate excludes tokenizer/manifest and non-matrix treatment, while the 105 MB value is the complete published GGUF. This table is a target-scale estimate, not a demonstrated model conversion.
+\*Not apples-to-apples yet: the LARC estimate excludes tokenizer/manifest and non-matrix treatment, while the 105 MB value is the complete published GGUF. This table is a target-scale estimate, not a demonstrated model conversion.
 
 ### HRVQ synthetic quality result
 
@@ -107,13 +107,19 @@ Benchmark: 768×768 matrices; codebook overhead included in effective bpw for th
 
 **Decision:** HRVQ is not a viable base representation at these bitrates. Keep it as a residual/refinement codec where the remaining signal is lower-importance and activation-weighted.
 
+Full artifact: `benchmarks/benchmark_hrvq_run1.json`.
+
 ### 3. Activation-subspace projection bundles
 
 `larc/projection.py`, `larc/q4.py`, `larc/q8.py`
 
-For multiple operators `W_i` consuming the same input activation space, learn a calibration basis `U_k` and store `A_i = W_i U_k`.
+For multiple operators `W_i` consuming the same input activation space, learn a calibration basis `U_k` and store:
 
-Runtime computes `z = U_k^T x` once, then `y_i = A_i z` for every operator in the bundle.
+`A_i = W_i U_k`.
+
+Runtime:
+
+`z = U_k^T x` once, then `y_i = A_i z` for every operator in the bundle.
 
 This exploits a property GGUF cannot express: multiple logical tensors share one learned input representation.
 
@@ -138,20 +144,26 @@ Best storage-target cases:
 Interpretation:
 
 - The **10–30× storage band is mechanically reachable** for a projection core when activations are strongly concentrated.
-- Q8 factors reduce quantization error while still landing above 10× at very low retained rank.
+- Q8 factors substantially reduce quantization error while still landing above 10× at very low retained rank.
 - The dominant unanswered question is whether real LLM layer activations have enough compressible subspace, consistently enough across prompts/domains, to preserve actual language-model capability.
 - Synthetic covariance results must not be represented as model benchmark results.
+
+Full artifact: `benchmarks/benchmark_projection_run1.json`.
 
 ## Test status
 
 `pytest -q` → **3 passed**.
 
-Tests cover HRVQ shape/finite output, container manifest write/read, and Q4/projection-bundle execution.
+Tests currently cover:
+
+- HRVQ encode/decode shape and finite output,
+- container manifest write/read,
+- Q4 and projection-bundle execution path.
 
 ## Known limitations / blockers
 
-1. **No real-model quality benchmark yet.** The Run 1 environment could inspect Hugging Face metadata but could not retrieve the 269 MB SmolLM2-135M SafeTensors object into the execution sandbox. The published source size is 269 MB and an available Q4_K_M GGUF is ~105 MB, so SmolLM2-135M remains the first intended real target.
-2. Projection bundles assume calibration activations generalize. Cross-domain held-out calibration tests are required.
+1. **No real-model quality benchmark yet.** The environment used for Run 1 could inspect Hugging Face metadata but could not retrieve the 269 MB SmolLM2-135M SafeTensors object into the execution sandbox. The published source size is 269 MB and an available Q4_K_M GGUF is ~105 MB, so SmolLM2-135M remains the first intended real target.
+2. Projection bundles assume calibration activations generalize. We need cross-domain held-out calibration tests, not just in-distribution covariance tests.
 3. Current factor quantizers are simple row-wise Q4/Q8 reference implementations, not optimized kernels.
 4. HRVQ codebooks are learned with MiniBatchKMeans and are not activation-aware yet.
 5. No sparse rescue path, Hadamard transform, or error-feedback optimization is implemented.
@@ -165,13 +177,17 @@ Tests cover HRVQ shape/finite output, container manifest write/read, and Q4/proj
 - Build a streaming SafeTensors reader/converter that processes one source tensor/shard at a time.
 - Target SmolLM2-135M first, then 360M, before moving to 1B+.
 - Capture calibration activations for each bundle candidate.
-- Measure activation covariance spectra per layer and tensor family.
-- Determine whether 2–5% retained dimensions can capture enough task-relevant activation energy.
+- Measure activation covariance spectra per layer and per tensor family.
+- Determine whether 2–5% retained dimensions plausibly capture 90–98% of task-relevant activation energy.
 - Evaluate perplexity and generation quality at 10×, 15×, 20×, and 30× storage targets.
 
 ### P0 — Residual rescue
 
-Optimize residuals against `||(W - W_core - R) X||_F^2`, not raw weight Frobenius error.
+Implement an activation-weighted residual objective:
+
+`min ||(W - W_core - R) X||_F^2`
+
+rather than raw weight Frobenius error.
 
 Candidate residual stack:
 
@@ -184,15 +200,30 @@ Pages should be ordered by marginal validation gain per byte.
 
 ### P1 — Bundle discovery
 
-Automatically group operators with common input spaces. Attention Q/K/V and MLP gate/up are initial candidates.
+Automatically group operators with common input spaces and determine whether a shared basis is cheaper/better than per-tensor bases. Attention Q/K/V and MLP gate/up are initial candidates.
 
 ### P1 — Runtime kernel
 
-Implement CPU reference kernels for `A(U^T x)` directly from Q4/Q8 factors, without materializing dense weights. Measure memory bandwidth, extra arithmetic, cache behavior, and break-even rank versus Q4 GGUF.
+Implement CPU reference kernels that compute `A(U^T x)` directly from Q4/Q8 factors. Do not materialize reconstructed dense weights.
+
+Measure:
+
+- memory bandwidth,
+- extra arithmetic from two-stage matvec,
+- cache behavior,
+- break-even rank at which LARC is faster/slower than Q4 GGUF.
 
 ### P1 — Format hardening
 
-After real-model evidence: fixed binary manifest, 4–256 KiB page alignment experiments, checksums, dependency graph, quality-tier profiles, deterministic codec IDs, and architecture/tokenizer mappings.
+After real-model evidence:
+
+- fixed binary manifest schema,
+- 4–256 KiB page/chunk alignment experiment,
+- checksums,
+- dependency graph,
+- quality-tier profile table,
+- deterministic codec identifiers,
+- architecture and tokenizer metadata mapping.
 
 ## Current assessment
 
@@ -200,4 +231,14 @@ After real-model evidence: fixed binary manifest, 4–256 KiB page alignment exp
 
 **Deprioritized as a standalone solution:** sub-0.5-bpw vector-codebook coding of entire raw weight matrices. It meets the byte target but Run 1 distortion is too high.
 
-**Confidence:** low-to-moderate that 10× over Q4 can be made useful on at least some models/layers; low that 20–30× will retain broadly comparable intelligence without strong activation subspace concentration, calibration/fine-tuning, conditional paging, or architecture-aware transformations. The project should test this rather than assume it.
+**Confidence:** low-to-moderate that 10× over Q4 can be made useful on at least some models/layers; low that 20–30× will retain broadly comparable intelligence without either strong activation subspace concentration, calibration/fine-tuning, conditional paging, or architecture-aware transformations. The project should aggressively test this rather than assume it.
+
+## Run 1 repository artifacts
+
+Machine-readable evidence committed with this run:
+
+- `benchmarks/benchmark_hrvq_run1.json` — all nine HRVQ synthetic reconstruction/output-error cases.
+- `benchmarks/benchmark_projection_run1.json` — all eighteen projection-bundle compression/output-error cases.
+- `benchmarks/run1_model_scale_estimate.json` — explicitly labeled SmolLM2-135M payload extrapolation against the published ~105 MB Q4_K_M reference file.
+
+Reproducibility boundary: the two synthetic benchmark JSON files are direct outputs from the checked-in Python benchmark programs. The SmolLM2 file is an arithmetic scale estimate only; it is **not** evidence that SmolLM2 has been converted or retains quality at those sizes. The next run must replace that estimate with real-model measurements before any model-level 10–30× claim is accepted.
