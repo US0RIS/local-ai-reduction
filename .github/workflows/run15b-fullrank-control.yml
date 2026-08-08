@@ -1,0 +1,79 @@
+name: Run 15B embedding factorization full-rank control
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/run15b-fullrank-control.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fullrank-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          path: external/llama.cpp
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install CPU evaluation stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'transformers==4.57.6' accelerate 'huggingface-hub>=0.34,<1'
+
+      - name: Fetch canonical WikiText-2 test corpus
+        run: |
+          (cd external/llama.cpp && bash scripts/get-wikitext-2.sh)
+          test -f external/llama.cpp/wikitext-2-raw/wiki.test.raw
+
+      - name: Run high-rank and exact-rank controls
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+          OMP_NUM_THREADS: '4'
+          MKL_NUM_THREADS: '4'
+        run: |
+          mkdir -p benchmarks
+          python tools/run15_embedding_factorization.py \
+            --model HuggingFaceTB/SmolLM2-135M \
+            --evaluation external/llama.cpp/wikitext-2-raw/wiki.test.raw \
+            --ranks 384,448,512,576 \
+            --eval-tokens 8192 --context 512 \
+            --out benchmarks/run15b_fullrank_control.json
+
+      - name: Enforce FP32 full-rank reconstruction sanity
+        run: |
+          python - <<'PY'
+          import json, math
+          p='benchmarks/run15b_fullrank_control.json'
+          d=json.load(open(p))
+          r576=next(x for x in d['configs'] if x['rank']==576)
+          fp=r576['integrated_input_and_head']['fp32_factors']
+          head=r576['head_only']['fp32_factors']
+          emb=r576['occurrence_weighted_input_embedding_nmse']['fp32_factors']
+          print({'embedding_nmse':emb,'head_ppl_ratio':head['ppl_ratio_vs_reference'],'integrated_ppl_ratio':fp['ppl_ratio_vs_reference']})
+          if emb > 1e-8:
+              raise SystemExit(f'full-rank FP32 embedding reconstruction NMSE too high: {emb}')
+          if abs(head['ppl_ratio_vs_reference']-1.0) > 1e-4:
+              raise SystemExit(f'full-rank FP32 head PPL ratio not unity: {head["ppl_ratio_vs_reference"]}')
+          if abs(fp['ppl_ratio_vs_reference']-1.0) > 1e-3:
+              raise SystemExit(f'full-rank FP32 integrated PPL ratio not unity: {fp["ppl_ratio_vs_reference"]}')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: run15b-fullrank-control
+          path: benchmarks/run15b_fullrank_control.json
+          if-no-files-found: error
+          retention-days: 90
