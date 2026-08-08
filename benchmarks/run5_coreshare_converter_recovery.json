@@ -1,0 +1,23 @@
+{
+  "run": 5,
+  "strategy": "CoreShare-10X converter-style recovery",
+  "evidence_level": "controlled L2C converter-feasibility study",
+  "source_teacher_representation": "canonical Q4_ROW",
+  "initializer": "streamable randomized shared residual subspaces; shared S/U/V quantized first; C_l least-squares fitted against stored/dequantized U/V",
+  "model": {"hidden":128,"layers":16,"context":64,"rank":16},
+  "training_seed": 3,
+  "evaluation_seed": 333,
+  "evaluation_chars": 32768,
+  "calibration": {"sequences":48,"tokens_per_sequence":32,"teacher_hidden_pairs_cached":true},
+  "teacher_q4_nll": 1.9054734408855438,
+  "raw_converter_initialized_nll": 3.8903074115514755,
+  "after_400_layerwise_cached_target_steps_nll": 1.9298605173826218,
+  "after_layerwise_perplexity_ratio": 1.0246885372060932,
+  "teacher_free_q4_ce_steps": 150,
+  "final_nll": 1.8885725736618042,
+  "final_delta_nats_per_char": -0.016900867223739624,
+  "final_perplexity_ratio": 0.9832411573140167,
+  "complete_toy_tensor_reduction_x": 10.223962199250503,
+  "teacher_required_during_final_ce_recovery": false,
+  "claim_boundary": "This validates the actual bounded-memory randomized CoreShare initialization plus streamed layerwise calibration on the controlled Q4 source. It is not L3/L4 and the sub-1 perplexity ratio reflects extra optimization of a finite-step teacher, not increased general intelligence."
+}
