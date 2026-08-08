@@ -1,0 +1,61 @@
+{
+  "run": 15,
+  "date": "2026-08-08",
+  "status": "completed_validated_tied_embedding_low_rank_failure",
+  "model": "HuggingFaceTB/SmolLM2-135M",
+  "source_model_commit": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "evidence_level": "L3 real-pretrained tied embedding/head component diagnostic on fixed held-out WikiText-2 slice",
+  "geometry": {
+    "vocab_size": 49152,
+    "hidden_size": 576,
+    "tied_embedding_parameter_count": 28311552,
+    "unique_model_parameter_count": 134515008,
+    "tied_embedding_fraction_of_unique_parameters": 0.2104713252516775,
+    "unchanged_tied_embedding_absolute_weight_reduction_ceiling_x_if_everything_else_free": 4.751241048177083
+  },
+  "evaluation": {
+    "corpus": "WikiText-2 raw test",
+    "predicted_tokens": 8192,
+    "context": 512,
+    "reference_ppl_run15": 24.54240136498145,
+    "reference_ppl_run15b": 24.542191813886298,
+    "note": "The two independent workflow runs differ only at ~8.5e-6 relative PPL from CPU numerical variation."
+  },
+  "representation": "E ~= A B from eig(E^T E); same factors for input embedding and output head; packed arm uses Q4_GROUP64 A+B and no dense E shadow",
+  "low_rank_results": [
+    {"rank":64,"spectral_energy_retained":0.6310886775793357,"q4_reduction_vs_tied_q4_x":8.895752895752896,"fp32_integrated_ppl_ratio":580.1774644401826,"q4_integrated_ppl_ratio":1387.300541026537},
+    {"rank":128,"spectral_energy_retained":0.7013489822677954,"q4_reduction_vs_tied_q4_x":4.447876447876448,"fp32_integrated_ppl_ratio":796.0963276414644,"q4_integrated_ppl_ratio":3727.253255163416},
+    {"rank":192,"spectral_energy_retained":0.7630416207264993,"q4_reduction_vs_tied_q4_x":2.965250965250965,"fp32_integrated_ppl_ratio":1439.5396631741328,"q4_integrated_ppl_ratio":8377.637991938678},
+    {"rank":256,"spectral_energy_retained":0.8182155335529696,"q4_reduction_vs_tied_q4_x":2.223938223938224,"fp32_integrated_ppl_ratio":1853.0545067499343,"q4_integrated_ppl_ratio":9959.502574830225}
+  ],
+  "high_rank_validation": [
+    {"rank":384,"spectral_energy_retained":0.9118753461109997,"q4_reduction_vs_tied_q4_x":1.4826254826254825,"fp32_occurrence_embedding_nmse":0.2636385139503536,"fp32_head_ppl_ratio":68.82164365574187,"fp32_integrated_ppl_ratio":780.5848630360235,"q4_integrated_ppl_ratio":5978.044268712541},
+    {"rank":448,"spectral_energy_retained":0.9504132880328892,"q4_reduction_vs_tied_q4_x":1.2708218422504136,"fp32_occurrence_embedding_nmse":0.19166492019534703,"fp32_head_ppl_ratio":35.46697919233923,"fp32_integrated_ppl_ratio":237.81706715638475,"q4_integrated_ppl_ratio":1209.4558502544405},
+    {"rank":512,"spectral_energy_retained":0.9820894519427806,"q4_reduction_vs_tied_q4_x":1.111969111969112,"fp32_occurrence_embedding_nmse":0.10010295038708114,"fp32_head_ppl_ratio":11.573296782329482,"fp32_integrated_ppl_ratio":30.350834705803226,"q4_integrated_ppl_ratio":140.54828740048387},
+    {"rank":576,"spectral_energy_retained":1.0,"q4_reduction_vs_tied_q4_x":0.9884169884169884,"fp32_occurrence_embedding_nmse":1.5278707378832817e-12,"fp32_head_ppl_ratio":1.0000001639127867,"fp32_integrated_ppl_ratio":1.0000002980232683,"q4_occurrence_embedding_nmse":0.05224459554366521,"q4_head_ppl_ratio":1.7289813831458418,"q4_integrated_ppl_ratio":1.9336465619495644}
+  ],
+  "full_rank_sanity_gate": {
+    "embedding_nmse_threshold": 1e-8,
+    "head_ppl_ratio_absolute_tolerance_from_one": 0.0001,
+    "integrated_ppl_ratio_absolute_tolerance_from_one": 0.001,
+    "passed": true,
+    "interpretation": "The rank576 FP32 factorization reproduces the tied matrix and reference language-model quality, validating the factorized input/head implementation."
+  },
+  "decision": {
+    "formal_precommitted_component_gate": "fail_component_gate",
+    "substantive_classification": "fail_posthoc_global_low_rank_tied_embedding_head",
+    "promote_low_rank_factorization": false,
+    "reason": "No rank with meaningful storage reduction preserves held-out language-model quality. Even rank512 retains 98.21% of Frobenius spectral energy but gives 30.35x FP32 integrated PPL while reducing the tied matrix only 1.112x. Full rank restores FP32 quality but removes compression; factorizing then quantizing both factors compounds error and is worse than storing the original tied Q4 matrix."
+  },
+  "next_implication": "Preserve full-rank vocabulary geometry using a compositional representation such as direct-packed row product quantization (Run 17), or train the vocabulary/tokenizer interface jointly with the final compact architecture. Do not pursue more post-hoc global SVD ranks.",
+  "workflow_provenance": {
+    "run15_workflow_run": 31280083413,
+    "run15_artifact_id": 9028211113,
+    "run15_artifact_sha256": "f8b9326f60a8284d232fd7c62217abcc4c0acfc1ad1750e7607138e703fa0119",
+    "run15b_workflow_run": 31280346134,
+    "run15b_artifact_id": 9028475440,
+    "run15b_artifact_sha256": "8123c63955a312bbd79afedcf87869c5736325da748ea0f1d0c687bdf262fc2b"
+  },
+  "generator": "tools/run15_embedding_factorization.py",
+  "claim_boundary": "Validated real-pretrained component failure on a fixed 8K prediction slice. No full-corpus promotion, no Q4_K_M parity statement, no native factor kernel, RSS, VRAM, or whole-model compression claim."
+}
