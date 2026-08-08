@@ -1,0 +1,10 @@
+[
+  {"context":64,"baseline_fp16_kv_bytes":524288,"larc_q2_kv_plus_q4_bases_and_two_metrics_bytes":71936,"kv_reduction_x":7.288256227758007,"baseline_total_bytes":1662474,"larc_total_bytes":157962,"modeled_total_reduction_x":10.52451855509553},
+  {"context":128,"baseline_fp16_kv_bytes":1048576,"larc_q2_kv_plus_q4_bases_and_two_metrics_bytes":137472,"kv_reduction_x":7.62756052141527,"baseline_total_bytes":2186762,"larc_total_bytes":223498,"modeled_total_reduction_x":9.784257577249013},
+  {"context":256,"baseline_fp16_kv_bytes":2097152,"larc_q2_kv_plus_q4_bases_and_two_metrics_bytes":268544,"kv_reduction_x":7.809342230695901,"baseline_total_bytes":3235338,"larc_total_bytes":354570,"modeled_total_reduction_x":9.124680599035452},
+  {"context":512,"baseline_fp16_kv_bytes":4194304,"larc_q2_kv_plus_q4_bases_and_two_metrics_bytes":530688,"kv_reduction_x":7.90352146647371,"baseline_total_bytes":5332490,"larc_total_bytes":616714,"modeled_total_reduction_x":8.646617394772942},
+  {"context":1024,"baseline_fp16_kv_bytes":8388608,"larc_q2_kv_plus_q4_bases_and_two_metrics_bytes":1054976,"kv_reduction_x":7.951468090269352,"baseline_total_bytes":9526794,"larc_total_bytes":1141002,"modeled_total_reduction_x":8.349498072746586},
+  {"context":2048,"baseline_fp16_kv_bytes":16777216,"larc_q2_kv_plus_q4_bases_and_two_metrics_bytes":2103552,"kv_reduction_x":7.975660216624072,"baseline_total_bytes":17915402,"larc_total_bytes":2189578,"modeled_total_reduction_x":8.182125505462697},
+  {"context":4096,"baseline_fp16_kv_bytes":33554432,"larc_q2_kv_plus_q4_bases_and_two_metrics_bytes":4200704,"kv_reduction_x":7.987811566823085,"baseline_total_bytes":34692618,"larc_total_bytes":4286730,"modeled_total_reduction_x":8.093026152801785},
+  {"context":8192,"baseline_fp16_kv_bytes":67108864,"larc_q2_kv_plus_q4_bases_and_two_metrics_bytes":8395008,"kv_reduction_x":7.9939011374378675,"baseline_total_bytes":68247050,"larc_total_bytes":8481034,"modeled_total_reduction_x":8.047019974215408}
+]
