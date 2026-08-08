@@ -1,0 +1,70 @@
+name: Run 17 tied vocabulary product quantization
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/run17_vocab_product_quantization.py'
+      - '.github/workflows/run17-vocab-pq.yml'
+      - 'docs/RUN17_VOCAB_PQ.md'
+      - 'benchmarks/RUN17_STATUS.json'
+  pull_request:
+    paths:
+      - 'tools/run17_vocab_product_quantization.py'
+      - '.github/workflows/run17-vocab-pq.yml'
+      - 'docs/RUN17_VOCAB_PQ.md'
+
+permissions:
+  contents: read
+
+jobs:
+  vocab-pq:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          path: external/llama.cpp
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install CPU evaluation stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'transformers==4.57.6' accelerate 'huggingface-hub>=0.34,<1'
+          python -m py_compile tools/run17_vocab_product_quantization.py
+
+      - name: Fetch canonical WikiText-2 test corpus
+        run: |
+          (cd external/llama.cpp && bash scripts/get-wikitext-2.sh)
+          test -f external/llama.cpp/wikitext-2-raw/wiki.test.raw
+
+      - name: Fit and evaluate direct-packed tied vocabulary PQ
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+          OMP_NUM_THREADS: '4'
+          MKL_NUM_THREADS: '4'
+        run: |
+          mkdir -p benchmarks
+          python tools/run17_vocab_product_quantization.py \
+            --model HuggingFaceTB/SmolLM2-135M \
+            --evaluation external/llama.cpp/wikitext-2-raw/wiki.test.raw \
+            --subdims 8,12,16,24,32 \
+            --kmeans-iters 6 \
+            --eval-tokens 8192 --context 512 \
+            --out benchmarks/run17_vocab_product_quantization.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run17-vocab-product-quantization
+          path: benchmarks/run17_vocab_product_quantization.json
+          if-no-files-found: error
+          retention-days: 90
