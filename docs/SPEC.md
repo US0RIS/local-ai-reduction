@@ -2,16 +2,16 @@
 
 **Status:** experimental research specification; v0.2 container framing retained  
 **Extension:** `.larc`  
-**Objective:** maximize retained model capability per **peak resident inference byte**, not merely file bytes.
+**Current research target:** **10×** versus a named Q4-class deployment at the same context, while retaining useful capability.
 
-LARC permits the logical Transformer graph to differ from a list of independently stored dense tensors. Logical operators can reference shared physical blocks, activation-subspace factors, progressive residuals, low-bit KV state, and random-access pages. A `DIRECT_PACKED` runtime executes stored representations without reconstructing the complete dense model.
+LARC permits the logical Transformer graph to differ from a list of independently stored dense tensors. A `DIRECT_PACKED` runtime executes stored representations without reconstructing the complete dense model.
 
 ## 1. Mandatory claim semantics
 
 Every memory/compression claim MUST state:
 
-1. exact baseline and codec,
-2. **context length** and batch/generation mode,
+1. exact named baseline and codec,
+2. context length and batch/generation mode,
 3. complete serialized bytes,
 4. unique resident weight bytes,
 5. KV bytes,
@@ -24,15 +24,44 @@ Every memory/compression claim MUST state:
 
 A GGUF Q4_K_M file size and LARC's internal `Q4_ROW` estimator are different baselines and MUST NOT be interchanged.
 
-**Representation-consistency rule:** if a memory claim charges Q4 weights, the associated quality path MUST execute the same Q4-dequantized values or their direct-packed mathematical equivalent.
+**Representation consistency:** if a memory claim charges a stored low-bit representation, the associated quality path MUST execute those stored/dequantized values or their direct-packed mathematical equivalent.
 
-The research target remains 10–30× lower peak resident inference memory than a named Q4-class deployment at the same context while retaining useful capability.
+**10× completeness rule:** a claim of “10×” MUST cover the complete byte pool named by the claim. Dominant-matrix-only or weights-only ratios MUST be labeled as such and cannot be promoted as complete-model/total-memory 10× evidence.
 
 ## 2. Logical graph / physical bundles
 
-The manifest separates `logical_nodes` from `physical_bundles`. Logical nodes may be `DENSE_REF`, `PROJECTION`, `RECURSIVE_REF`, `RELAXED_RECURSIVE_REF`, or `PROJECTION_RESIDUAL`.
+The manifest separates logical nodes from physical bundles. Research node types include:
 
-A shared physical page is counted once. Exact aliasing is lossless only when the logical model genuinely reuses that parameter object. Collapsing independent pretrained layers into one shared bundle is lossy conversion and requires independent quality accounting and recovery provenance.
+- `DENSE_REF`
+- `PROJECTION`
+- `RECURSIVE_REF`
+- `RELAXED_RECURSIVE_REF`
+- `PROJECTION_RESIDUAL`
+- **`SHARED_RESIDUAL_REF`**
+
+A shared physical page is counted once. Exact aliasing is lossless only when the logical model genuinely reuses that parameter object. Collapsing independent pretrained layers into shared state is lossy conversion and requires quality/recovery provenance.
+
+### 2.1 `SHARED_RESIDUAL_REF` / SoftShare
+
+Run-5 primary weight form:
+
+`W_(layer,type) = S_type + A_(layer,type) B_(layer,type)`.
+
+The physical bundle contains:
+
+- one shared full-rank base `S_type`, normally `Q4_ROW`;
+- one depth-specific low-rank A/B pair per logical layer;
+- depth-specific small state where applicable.
+
+The manifest MUST record the shared-base page, logical layer, matrix type, residual rank, factor codec, and dependency group.
+
+A conforming direct-packed runtime evaluates:
+
+`y = Sx + A(Bx)`
+
+without constructing `W = S + AB`.
+
+Run-5 policy is **budget-first rather than compression-maximal**: ranks/rescue pages SHOULD be increased while validation gain is positive until the configured 10× deployment boundary is approached. Extra compression is not itself an objective.
 
 ## 3. Canonical `Q4_ROW`
 
@@ -47,119 +76,133 @@ The v0.3-candidate storage contract is identical in Python/C++:
 - `q = clip(round(w/scale), -8, 7)`,
 - `w_hat = (code - 8) * scale`.
 
-This is the minimum positive scale that fits both signed extrema without deliberate clipping. Golden tests exercise both code 0 (`-8`) and code 15 (`+7`).
+Golden tests exercise both signed endpoints.
 
-## 4. Projection bundles
+## 4. Projection and residual fitting
 
-For operators sharing an input domain, LARC stores `y_i ~= A_i(Bx)`.
+For projected operators, fitting MUST target the representation actually stored/executed.
 
-The basis MUST be quantized before the final projected-operator fit when quality claims use quantized execution:
+For SoftShare conversion this means:
 
-1. derive calibration basis `B`,
-2. quantize/dequantize to `B_hat`,
-3. form `Z = B_hat X`,
-4. solve `min_A ||W X - A Z||_F^2` with documented regularization,
-5. encode `A`.
+1. derive/accumulate float shared base `S`,
+2. encode/decode it to obtain stored `S_hat`,
+3. discard the unavailable float precursor for quality/reference purposes,
+4. fit each residual against `R_layer = W_layer - S_hat`,
+5. encode residual A/B factors,
+6. if recovery training is used, constrain/reproject parameters to the storage grid for representation-consistent quality claims.
 
-A direct-packed runtime MUST NOT materialize `A B_hat`.
+This prevents quality from benefiting from an unstored float shared base.
 
-## 5. Progressive residuals / codebooks
+## 5. Progressive rescue pages
 
-Residual pages may contain sparse, low-rank, HRVQ64, or rotated low-bit corrections and SHOULD be ordered by validation gain per resident byte.
+Residual/refinement pages may contain additional low-rank capacity, sparse corrections, HRVQ64, or rotated low-bit corrections.
 
-Any codebook bpw claim MUST include amortized codebook bytes unless the codebook is normatively shared and its sharing scope is stated. A 256×64 FP16 HRVQ codebook is 32,768 B/stage.
+For a fixed deployment target such as 10×, refinements SHOULD be ordered by **held-out validation gain per resident byte**. A converter/runtime may add rank increments or rescue pages until the byte ceiling is reached.
+
+Any codebook bpw claim MUST include amortized codebook bytes unless codebook sharing scope is normative and explicit.
 
 ## 6. Latent KV
 
-Historical K/V may be stored as rank-`r` latent coefficients:
+Historical K/V may be represented in rank-r latent coordinates:
 
 `k_lat = B_k k`, `v_lat = B_v v`.
 
 ### 6.1 Q2 coefficients and metadata
 
-`LATENT_Q2_ROW` stores asymmetric 2-bit coefficients per latent vector. Four coefficients share one byte.
+`LATENT_Q2_ROW` stores asymmetric 2-bit coefficients. Supported research metadata profiles:
 
-Two metadata profiles are research-defined:
+- FP16 min + FP16 scale: 4 metadata bytes/vector;
+- E4M3-FN min + E4M3-FN scale: 2 metadata bytes/vector.
 
-- **FP16 metadata:** one FP16 min + FP16 scale per vector (4 metadata bytes/vector),
-- **E4M3-FN metadata:** one FP8 min + FP8 scale per vector (2 metadata bytes/vector).
+Metadata format MUST be declared. `LATENT_Q2_KIVI` may group key metadata while retaining per-token value metadata.
 
-Metadata format MUST be declared in the manifest. `LATENT_Q2_KIVI` may group key metadata over token groups while retaining per-token value metadata.
+### 6.2 Quantized-basis metrics
 
-### 6.2 Quantized-basis pseudo-inverse metrics
-
-A Q4-dequantized basis `B_hat` is not exactly row-orthonormal. **Both K and V paths require metric correction** unless an equivalent transform is folded into another stored operator.
-
-Store, reference FP16:
+For stored/dequantized basis `B_hat`, both K and V require inverse-Gram correction unless an equivalent transform is folded elsewhere:
 
 `G_K^-1 = (B_K_hat B_K_hat^T + lambda I)^-1`
 
 `G_V^-1 = (B_V_hat B_V_hat^T + lambda I)^-1`.
 
-Score:
+Scores use `G_K^-1`; value reconstruction uses `G_V^-1`. Metric bytes and all Q4 basis scales MUST be charged.
 
-`score_t ~= q_lat^T G_K^-1 k_lat_t / sqrt(d_head)`.
+### 6.3 Rank policy
 
-Value reconstruction:
-
-`v_out ~= (sum_t alpha_t v_lat_t) G_V^-1 B_V_hat`.
-
-The latter is the row-vector form of the Moore-Penrose row-space reconstruction. Metric bytes and every Q4 basis row scale MUST be charged.
-
-### 6.3 Calibration provenance
-
-Current reference basis fitting uses deterministic uncentered eigendecomposition of `X^T X`, not randomized PCA. Calibration data MUST be disjoint from final evaluation data for promoted quality claims.
+KV rank is not minimized independently. Under a fixed 10× deployment target, KV rank SHOULD be increased when doing so improves quality and the complete deployment budget remains compliant.
 
 ## 7. Direct packed execution
 
-### 7.1 Q4 operators
+### 7.1 Q4 / SoftShare
 
-`runtime/larc_q4.cpp` implements `q4_gemv`, `q4_transposed_gemv`, and projected `A(Bx)` without reconstructing complete dense weights.
+`runtime/larc_q4.cpp` implements:
+
+- `q4_gemv`
+- `q4_gemv_add`
+- `q4_transposed_gemv`
+- projected `A(Bx)`
+- `q4_shared_residual_gemv` for `Sx + A(Bx)`.
+
+SoftShare scratch is rank-sized; no full per-layer dense matrix is materialized.
 
 ### 7.2 Packed latent-Q2 attention
 
-`runtime/larc_q2_attention.cpp` consumes:
+`runtime/larc_q2_attention.cpp` consumes packed Q2 historical K/V, E4M3 metadata, Q4 bases, and FP16 K/V inverse-Gram matrices without materializing FP32 historical `T×r` arrays.
 
-- Q4 K/V bases,
-- FP16 K/V inverse-Gram matrices,
-- packed Q2 historical K/V,
-- E4M3-FN min/scale metadata,
+Reference scratch is `T + 4r` FP32 values for one head and may be reused across heads. This is a correctness/memory contract, not an optimized throughput claim.
 
-and computes one-head autoregressive attention without materializing historical latent K/V as FP32 `T×r` arrays.
+CUDA/Triton code remains reference-only until hardware validation.
 
-Required reference scratch is `T + 4r` FP32 values for one head: attention scores plus rank-sized current/aggregate vectors. Scratch may be reused across heads.
+## 8. Paged file layout and streaming output
 
-`tests/native_q2_attention.cpp` compares direct packed execution with a separately decoded reference. The implementation is a correctness/memory primitive, **not an optimized throughput claim**.
+The v0.2 framing remains: 64-byte header, 64-byte page records, aligned payloads, CRC32, dependency groups, and `REQUIRED/SHARED/REFINEMENT/STREAMABLE/KV_BASIS` flags.
 
-CUDA/Triton Q4 source remains reference-only until hardware validation.
+`LARCv2StreamWriter` is the required conversion pattern for large outputs when bounded conversion residency is claimed:
 
-## 8. Paged file layout
+1. page count/manifest are declared;
+2. page-table space is reserved;
+3. each compressed page is written immediately;
+4. only page records are retained;
+5. table/header are finalized after the last payload.
 
-The v0.2 framing remains: 64-byte little-endian header `<8sHHIQQQQQ8x`, 64-byte page records `<IHHQQQII24x`, default 4096-byte payload alignment, per-page CRC32, dependency groups, and `REQUIRED/SHARED/REFINEMENT/STREAMABLE/KV_BASIS` flags.
+A converter claiming bounded output residency MUST NOT accumulate all payload bytes before writing.
 
-Header/page-table authentication and verify-on-open vs verify-on-touch policy remain open standards work.
+## 9. Source streaming / SafeTensors range access
 
-## 9. Memory-budget execution
+A bounded-source-residency converter MAY read a sharded SafeTensors source by tensor byte range.
 
-A runtime SHOULD pin required/shared pages, allocate the selected KV tier at the requested context, reserve bounded scratch, admit refinement pages by marginal validation gain/byte, prefetch streamable pages, evict refinements before core pages, and report unique resident pages/bytes.
+For remote HTTP sources:
+
+- exact byte ranges SHOULD be requested;
+- a response MUST provide HTTP `206` and `Content-Range` before being accepted as a range response;
+- a server that ignores Range MUST be rejected rather than silently consumed as a full multi-gigabyte shard.
+
+The source index, tensor names/ranges, and whether complete local source files were required MUST be recorded in conversion provenance.
+
+A two-pass SoftShare converter may reread source tensors; bounded **residency** does not imply minimum network traffic.
+
+## 10. Memory-budget execution
+
+A runtime SHOULD pin required/shared pages, allocate the selected KV tier at requested context, reserve bounded scratch, admit refinement pages by marginal validation gain/byte, and report unique resident pages/bytes.
 
 A total-memory claim at one context MUST NOT be generalized to another context without a context sweep or measurement.
 
-## 10. Conversion / evaluation provenance
+For a fixed 10× policy, the runtime/converter SHOULD spend unused byte headroom on quality-improving capacity instead of reporting gratuitously higher compression.
 
-Record source architecture, sharing map, initialization, recovery objective/data, optimizer schedule, steps, Q4-aware recovery if used, calibration data, checkpoint-selection data, and final evaluation data.
+## 11. Conversion / evaluation provenance
+
+Record source architecture, sharing map, rank allocation, initialization, recovery objective/data, optimizer schedule, steps, calibration data, checkpoint-selection data, and final evaluation data.
 
 Training, checkpoint selection, compression calibration, and final evaluation SHOULD be disjoint for promoted held-out results.
 
-## 11. Artifact provenance
+## 12. Artifact provenance
 
 `benchmarks/INDEX.json` is authoritative about promoted/historical evidence. Promoted artifacts MUST name a committed generator and pass `tools/check_benchmark_provenance.py`.
 
-Current packed-runtime arithmetic is generated by `tools/run4_packed_context_sweep.py`; current controlled training is reproduced by `tools/run4_l2c_repro.py`.
+A numerical artifact that cannot be reproduced from its declared generator MUST be revoked/demoted.
 
-A numerical artifact that cannot be reproduced from its declared generator MUST be revoked or demoted rather than silently retained as current evidence.
+Exact external baseline bytes SHOULD replace rounded UI sizes whenever an exact file size/LFS pointer is available.
 
-## 12. Validation levels
+## 13. Validation levels
 
 - **L0:** format/codec integrity and byte accounting.
 - **L1:** operator/runtime correctness and explicit source/output error.
@@ -170,16 +213,20 @@ A numerical artifact that cannot be reproduced from its declared generator MUST 
 
 L0–L2C MUST NOT be presented as L3/L4.
 
-## 13. Current audited boundary
+## 14. Current research boundary
 
-At **context 64**, the current controlled L2C result is approximately:
+Run 4 hard recursion remains an important reference result but is no longer the preferred 10× architecture.
 
-- Q4 independent teacher NLL: **1.88548**,
-- Q4-recovered shared model NLL: **1.94078**,
-- shared + latent Q2/E4M3-FN metadata + both K/V metrics: **1.97525**,
-- total delta: **+0.08977 nats/char**,
-- perplexity ratio: **1.09392×**.
+Run-5 controlled strategy selection:
 
-Combining this L2C representation with the separately L1-validated direct-packed attention scratch contract gives approximately **12.04× modeled same-context inference-tensor reduction** at context 64. The packed structural sweep is ~**10.60× at 2K** and ~**10.50× at 8K**, but quality is validated only at context 64.
+- Q4 teacher NLL: **1.90547**;
+- SoftShare rank3/128 final Q4 NLL: **1.98021**, perplexity ×**1.07760**, but complete tiny-model reduction only **9.106×**;
+- exact tiny-model 10× profiles reach **10.142× / ppl×1.484** and **10.046× / ppl×1.401**, so they do not establish acceptable 10× quality.
 
-These are controlled synthetic/modelled results. They are not measured whole-process RAM/VRAM, not external-pretrained-model evidence, and not proof of long-context quality. L3 and L4 remain open.
+Named real planning baseline:
+
+- Mistral-7B-v0.1 Q4_K_M exact file bytes: **4,368,438,912**;
+- rank96 weight / rank64 KV structural model: **11.8600×** for weights + 4K KV;
+- equal-common-scratch headroom before 10×: **85,478,016 B**.
+
+Native packed SoftShare execution is L1-validated. Real Mistral conversion/quality (L3) and measured deployment memory (L4) remain open.
