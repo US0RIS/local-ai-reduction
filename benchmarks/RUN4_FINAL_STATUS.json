@@ -1,0 +1,52 @@
+{
+  "run": 4,
+  "date": "2026-08-08",
+  "strongest_current_level": "L2C",
+  "controlled_quality": {
+    "task": "synthetic character-level template language model",
+    "context": 64,
+    "evaluation_chars": 100032,
+    "streams": {"training":3,"checkpoint_selection":444,"basis_calibration":555,"final_evaluation":333},
+    "teacher_representation": "canonical Q4_ROW weights + FP16 KV",
+    "larc_weight_representation": "canonical Q4_ROW shared weights after projected-Q4 recovery",
+    "larc_kv_representation": "rank-16 latent Q2, E4M3-FN min/scale, Q4 K/V bases, FP16 K/V inverse-Gram metrics",
+    "teacher_q4_nll": 1.8854834153266267,
+    "q4_recovered_shared_nll": 1.9407754020666512,
+    "compressed_nll": 1.9752494143280401,
+    "total_delta_nats_per_char": 0.08976599900141347,
+    "perplexity_ratio": 1.0939182757844184
+  },
+  "packed_runtime": {
+    "context64_modeled_total_reduction_x": 12.040090606804222,
+    "context2048_modeled_total_reduction_x": 10.597161341228471,
+    "context8192_modeled_total_reduction_x": 10.502620086665468,
+    "quality_validated_contexts": [64],
+    "memory_is_measured_process_or_device_peak": false
+  },
+  "native_q2_attention_L1": {
+    "tokens": 2048,
+    "rank": 16,
+    "head_dim": 32,
+    "max_abs_error_vs_decoded_reference": 2.50292942e-09,
+    "scratch_bytes_per_head": 8448,
+    "packed_cache_bytes_per_head": 24576,
+    "full_fp32_decoded_latent_history_bytes_per_head": 262144
+  },
+  "revocations": {
+    "run3_l2c": "FP32 quality path did not match Q4 memory representation",
+    "run3_equal_compute": "not convergence evidence; continuation schedule was unstable",
+    "pre_q4_recovery_shared_model": "correlated repeated-block Q4 error was severe",
+    "pre_disjoint_calibration_l2c": "latent basis calibration touched final evaluation contexts"
+  },
+  "open": [
+    "converged multi-seed equal-compute control",
+    "real activation spectra",
+    "long-context quality",
+    "integrated packed full-model measured RSS",
+    "L3 external pretrained model",
+    "L4 CUDA/Metal VRAM",
+    "competitive iso-byte baselines",
+    "real-model 20-30x quality"
+  ],
+  "claim_boundary": "Controlled context-64 L2C quality plus separately L1-validated packed-attention runtime supports a modeled 12.04x tensor-residency contract at context64. 2K/8K >10x values are structural/runtime models without quality validation. No measured real-model RAM/VRAM claim."
+}

@@ -1,0 +1,13 @@
+{
+  "tokens": 2048,
+  "rank": 16,
+  "head_dim": 32,
+  "metadata": "E4M3-FN min+scale per K/V latent vector",
+  "packed_cache_bytes_per_head": 24576,
+  "direct_kernel_scratch_bytes_per_head": 8448,
+  "full_fp32_decoded_latent_history_bytes_per_head": 262144,
+  "decoded_history_to_direct_scratch_ratio": 31.03030303030303,
+  "max_abs_error_vs_separately_decoded_reference": 2.50292942e-09,
+  "kernel_contract": "historical latent K/V remain packed; only T scores plus O(rank) vectors are FP32 scratch",
+  "throughput_claim": false
+}
