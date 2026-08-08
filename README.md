@@ -1,91 +1,114 @@
 # local-ai-reduction / LARC
 
-**LARC (Local Adaptive Representation & Compute)** is an experimental local-AI model representation/runtime aimed at reducing complete inference-memory cost, not merely file bytes.
+**LARC (Local Adaptive Representation & Compute)** is an experimental local-AI model representation/runtime focused on reducing complete inference-memory cost, not merely model-file bytes.
 
 ## Target
 
-Research target: **10–30× lower peak resident inference memory than a named Q4-class baseline at the same context length while retaining useful capability.**
+This project's current target is **10×**, not maximum possible compression:
 
-## Current audited status — Run 4
+> Represent and execute a real pretrained model using no more than 10% of a named Q4-class deployment's relevant bytes at the same context, while retaining reasonable capability.
 
-The strongest current evidence is still controlled, not a real pretrained-model or measured-VRAM result.
+The target is **not yet proven on a real pretrained model or measured RAM/VRAM**.
 
-### Representation-consistent controlled quality
+## Current direction — Run 5: SoftShare-10X
 
-Synthetic character LM, **context 64**, 100,032 final-evaluation characters. Teacher and converted model both execute the canonical Q4 weight representation charged by memory accounting. Training, checkpoint selection, latent-basis calibration, and final evaluation use disjoint streams.
+Run 4 showed that exact/hard recursive sharing is too aggressive for a 10× goal: one Q4 block reused throughout depth suffers strongly correlated error and spends far less capacity on layer specialization than the byte budget requires.
 
-| path | NLL |
-|---|---:|
-| independent Q4 teacher | **1.88548** |
-| Q4-recovered shared model | **1.94078** |
-| shared + rank-16 latent Q2/E4M3 + Q4 K/V bases + both inverse-Gram metrics | **1.97525** |
+The primary weight representation is now:
 
-Total degradation: **+0.08977 nats/char**, perplexity ×**1.09392**.
+`W_(layer,type) = S_type + A_(layer,type) B_(layer,type)`
 
-Artifact: `benchmarks/run4_fp8meta_l2c.json`; generator: `tools/run4_l2c_repro.py`.
+- `S_type`: one shared full-rank canonical-Q4 base per matrix type;
+- `A B`: depth-specific low-rank Q4 residual;
+- small layer-specific state retained;
+- direct packed CPU execution evaluates `Sx + A(Bx)` without reconstructing dense per-layer weights;
+- ranks and rescue pages are allowed to consume the budget up to the **10× boundary**.
 
-### Direct packed latent-Q2 attention
+Latent-Q2/E4M3 KV remains part of the design, but its rank is increased when the 10× budget permits.
 
-`runtime/larc_q2_attention.cpp` consumes packed Q2 historical K/V, E4M3-FN min/scale metadata, Q4 bases, and both FP16 inverse-Gram metrics without constructing FP32 historical `T×rank` arrays.
+## Controlled strategy evidence
 
-At T=2048/rank16/head-dim32:
+Same 16-layer synthetic character-LM program used for prior controlled tests; canonical-Q4 teacher NLL **1.90547**:
 
-- max abs error vs separately decoded reference: **2.50e-9**;
-- packed cache/head: **24,576 B**;
-- direct scratch/head: **8,448 B**;
-- FP32 decoded latent K+V history/head: **262,144 B**.
+| profile | complete-model reduction | final Q4 NLL | ppl ratio |
+|---|---:|---:|---:|
+| SoftShare rank 3/128 | **9.106×** | **1.98021** | **1.07760×** |
+| uniform rank 2 | **10.142×** | **2.30033** | **1.48417×** |
+| adaptive `qkv2/o1/fc1=3/fc2=2` | **10.046×** | **2.24237** | **1.40059×** |
 
-Artifact: `benchmarks/run4_native_q2_attention.json`.
+The exact tiny-model 10× points have insufficient quality. The useful strategy signal is that rank3/128 = **2.34375% relative rank** preserves much more source information than hard recursion. On a 4096-hidden model that relative rank maps to rank96, where fixed overhead is far better amortized.
 
-### Context-indexed modeled tensor residency
+Artifact: `benchmarks/run5_softshare_control.json`.
 
-Using the direct-packed scratch contract:
+## Real target: Mistral-7B-v0.1
 
-| context | modeled reduction |
-|---:|---:|
-| 64 | **12.04×** |
-| 256 | **11.22×** |
-| 512 | **10.91×** |
-| 1K | **10.71×** |
-| 2K | **10.60×** |
-| 4K | **10.53×** |
-| 8K | **10.50×** |
+Named Q4 deployment baseline:
 
-Only context 64 has quality validation. These numbers are **modeled inference-tensor bytes, not measured process RAM/VRAM**.
+- `mistral-7b-v0.1.Q4_K_M.gguf`
+- exact size **4,368,438,912 bytes**
+- SHA-256 `ce6253d2e91adea0c35924b38411b0434fa18fcb90c52980ce68187dbcbbe40c`
 
-Artifact: `benchmarks/run4_packed_attention_context_sweep.json`; generator: `tools/run4_packed_context_sweep.py`.
+### Recommended starting core
 
-## Important negative results
+Weight residual rank **96**, latent-KV rank **64**:
 
-- Run-3's FP32-quality/Q4-memory headline is revoked.
-- Naively applying Q4 to one physical block reused 16 times causes severe correlated error; projected-Q4 recovery is required.
-- The old equal-compute control is not convergence evidence; stable tuned multi-seed convergence curves remain open.
-- Historical benchmark artifacts that lack a canonical generator are not promoted evidence.
+- modeled weight bytes: **369,495,040 B** = **11.8227×** smaller than the exact Q4_K_M file;
+- modeled 4K KV: **44,105,728 B** vs **536,870,912 B** FP16 = **12.1724×**;
+- weights + 4K KV: **11.8600×**;
+- equal-common-scratch headroom before the structural ratio falls to 10×: **85,478,016 B**.
 
-## SmolLM2
+A higher-capacity rank128/KV72 candidate is still **10.6374×** structurally on weights+4K KV before common scratch.
 
-The structural planner correctly uses SmolLM2-135M GQA geometry. Existing structural arithmetic remains promising, but **no SmolLM2 quality benchmark has run** because checkpoint bytes remain inaccessible in the current execution environment.
+These are exact byte calculations for the stated representations and exact named baseline. **No Mistral quality result exists yet.**
+
+Artifact: `benchmarks/run5_mistral7b_budget.json`.
+
+## Direct packed SoftShare — L1
+
+`runtime/larc_q4.cpp` implements packed:
+
+`y = Sx + A(Bx)`
+
+with rank-sized scratch and no dense `W=S+AB` reconstruction.
+
+Native correctness test:
+
+- max abs error vs separately dequantized reference: **9.54e-7**;
+- test residual rank: 23;
+- scratch: 92 B.
+
+Artifact: `benchmarks/run5_native_q4_softshare.json`.
+
+## Streaming conversion
+
+The Run-5 converter is designed so the complete source checkpoint never needs to exist locally at once:
+
+- `LARCv2StreamWriter` writes compressed pages immediately;
+- `larc/safetensors_range.py` reads individual tensors from local shards or exact HTTP byte ranges;
+- remote servers must honor `Range` with HTTP 206/`Content-Range`;
+- `tools/stream_softshare_convert.py` computes one shared matrix family at a time, then fits each layer residual against the **stored/dequantized Q4 shared base** and writes its factors immediately.
+
+`tests/test_stream_softshare_convert.py` builds a two-shard synthetic SafeTensors checkpoint and verifies the resulting `.larc` page graph/CRCs. CI execution is pending runner allocation.
 
 ## Evidence / reproduction
 
 - `ACTION_SHEET.md` — canonical technical status.
+- `docs/RUN5_10X_PIVOT.md` — strategy rationale and gate definition.
 - `benchmarks/INDEX.json` — artifact provenance registry.
-- `benchmarks/RUN4_FINAL_STATUS.json` — current machine-readable claim boundary.
-- `tools/check_benchmark_provenance.py` — provenance gate.
-- `tools/run4_l2c_repro.py` — checkpointed controlled L2C reproducer.
-- `tools/run4_packed_context_sweep.py` — packed runtime byte model.
-- `runtime/larc_q4.{h,cpp}` — canonical packed-Q4 CPU primitives.
-- `runtime/larc_q2_attention.{h,cpp}` — packed latent-Q2 attention primitive.
+- `benchmarks/RUN5_STATUS.json` — machine-readable current status.
+- `tools/run5_softshare_control.py` — controlled SoftShare study.
+- `tools/run5_budget_planner.py` — exact Mistral byte budget.
+- `tools/stream_softshare_convert.py` — bounded-source-residency converter.
+- `runtime/larc_q4.{h,cpp}` — packed Q4 and SoftShare primitives.
+- `runtime/larc_q2_attention.{h,cpp}` — packed latent-Q2 attention.
 
 ## Still open
 
-- real activation spectra;
-- long-context quality;
-- converged multi-seed equal-compute controls;
-- integrated full packed runtime with measured RSS;
-- L3 independent pretrained model;
-- L4 CUDA/Metal/CPU measured peak memory and optimized throughput;
-- competitive iso-byte baselines;
-- real-model 20–30× quality retention.
+- real Mistral tensor access and L3 conversion;
+- real-model perplexity/tasks/generation and adaptive validation-gain/byte rank allocation;
+- long-context KV quality;
+- final complete `.larc` <=10% of the named baseline;
+- integrated measured CPU RSS / CUDA or Metal memory and throughput (L4);
+- comparison against a 10× smaller dense/distilled model and other iso-byte alternatives.
 
-**Do not state that LARC has demonstrated 10–30× lower measured RAM/VRAM for real pretrained GGUF models.**
+**Do not state that LARC has demonstrated 10× lower measured RAM/VRAM or retained real-model intelligence yet.**
