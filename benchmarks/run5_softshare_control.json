@@ -2,7 +2,14 @@
   "run": 5,
   "evidence_level": "controlled L2C mechanism study",
   "task": "synthetic character-level template LM",
-  "model": {"hidden":128,"heads":4,"ffn":256,"layers":16,"context":64,"vocab":37},
+  "model": {
+    "hidden": 128,
+    "heads": 4,
+    "ffn": 256,
+    "layers": 16,
+    "context": 64,
+    "vocab": 37
+  },
   "training_seed": 3,
   "evaluation_seed": 333,
   "evaluation_chars": 32768,
@@ -15,7 +22,6 @@
     {
       "name": "scale_normalized_rank3",
       "ranks": {"qkv":3,"o":3,"fc1":3,"fc2":3},
-      "relative_rank_vs_hidden": 0.0234375,
       "raw_svd_nll": 3.0188744515180588,
       "recovered_fp_nll": 1.7795282527804375,
       "q4_before_constrained_recovery_nll": 2.1637772768735886,
@@ -23,9 +29,7 @@
       "delta_vs_q4_teacher_nats_per_char": 0.07473885267972946,
       "perplexity_ratio_vs_q4_teacher": 1.0776027010785967,
       "serialized_bytes": 124042,
-      "whole_model_reduction_x": 9.105641637509876,
-      "large_matrix_same_bit_reduction_x": 10.24,
-      "interpretation": "Quality-favorable mechanism point. It is NOT a whole-model 10x result on this tiny model because fixed/metadata overhead is disproportionately large. The same relative rank maps to rank96/4096 on Mistral, where structural planning remains above 10x."
+      "whole_model_reduction_x": 9.105641637509876
     },
     {
       "name": "uniform_rank2_exact_toy_10x",
@@ -37,8 +41,7 @@
       "delta_vs_q4_teacher_nats_per_char": 0.39485597610473633,
       "perplexity_ratio_vs_q4_teacher": 1.4841704195221341,
       "serialized_bytes": 111370,
-      "whole_model_reduction_x": 10.141707820777588,
-      "interpretation": "Exact whole-model toy 10x stress point; quality is not acceptable enough to promote as target success."
+      "whole_model_reduction_x": 10.141707820777588
     },
     {
       "name": "adaptive_exact_toy_10x",
@@ -50,9 +53,8 @@
       "delta_vs_q4_teacher_nats_per_char": 0.3368939608335495,
       "perplexity_ratio_vs_q4_teacher": 1.4005905384106918,
       "serialized_bytes": 112426,
-      "whole_model_reduction_x": 10.046448330457368,
-      "interpretation": "Validation-guided rank allocation improves the exact-budget frontier but the tiny model remains too capacity-starved at whole-model 10x."
+      "whole_model_reduction_x": 10.046448330457368
     }
   ],
-  "claim_boundary": "SoftShare is a stronger 10x strategy than hard recursion in controlled tests, but no real pretrained model has been converted/evaluated. The quality-favorable rank3 point is 9.11x whole-model on this tiny geometry; exact toy 10x points have substantially worse quality."
+  "claim_boundary": "Controlled mechanism evidence only; not a real-model 10x result."
 }
