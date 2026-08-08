@@ -1,0 +1,21 @@
+{
+  "run": 12,
+  "date": "2026-08-08",
+  "status": "calculator_implemented_pending_run9_measured_input",
+  "kind": "Q4-relative file and total-memory feasibility bound",
+  "input_artifact": "benchmarks/run9_llamacpp_baseline.json",
+  "exact_outputs": [
+    "Q4_K_M effective total-file bits per original parameter",
+    "10x/20x/30x maximum candidate file byte budgets",
+    "10x/20x/30x required effective total-file bpw",
+    "ideal same-parameter zero-metadata bounds at 4/3/2.5/2/1.58/1/0.5/0.25 bpw"
+  ],
+  "illustrative_outputs": [
+    "context/load-mode optimistic RSS floor if Q4 serialized bytes are treated as one-for-one removable resident weight bytes"
+  ],
+  "projection_geometry_fact": "Q+K are 12.5% and gate/up/down are 75% of SmolLM2's seven main decoder projection parameters",
+  "generator": "tools/run12_feasibility_bound.py",
+  "protocol_doc": "docs/RUN12_FEASIBILITY_BOUND.md",
+  "pending_artifact": "run12_feasibility_bound.json",
+  "claim_boundary": "File target arithmetic will be exact once driven by measured Run-9 file bytes and llama-bench parameter count. RSS projection is explicitly illustrative, not measured LARC memory."
+}
