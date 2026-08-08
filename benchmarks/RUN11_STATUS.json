@@ -1,0 +1,26 @@
+{
+  "run": 11,
+  "date": "2026-08-08",
+  "status": "implemented_pending_public_runner_execution",
+  "target_model": "HuggingFaceTB/SmolLM2-135M",
+  "kind": "operator-level second-order/rotation/outlier diagnostic",
+  "sampled_layers": [0, 5, 10, 15, 20, 25, 29],
+  "projection_sites": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+  "variants": [
+    "q2_asym_group64",
+    "block_gptq_q2",
+    "hadamard_q2",
+    "hadamard_block_gptq_q2",
+    "learned_orthogonal_q2_ceiling",
+    "block_gptq_q2_outlier_1pct",
+    "block_gptq_q2_outlier_2pct",
+    "block_gptq_q2_outlier_5pct",
+    "hadamard_block_gptq_q2_outlier_1pct",
+    "hadamard_block_gptq_q2_outlier_2pct",
+    "hadamard_block_gptq_q2_outlier_5pct"
+  ],
+  "calibration": "WikiText-2 raw train",
+  "evaluation": "WikiText-2 raw test",
+  "pending_artifact": "run11_second_order_diagnostic.json",
+  "claim_boundary": "No end-to-end quality or memory claim. Held-out operator-output NMSE and representation bytes only."
+}

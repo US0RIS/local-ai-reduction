@@ -1,0 +1,107 @@
+{
+  "run": 11,
+  "date": "2026-08-08",
+  "status": "completed_operator_level_real_model_diagnostic",
+  "model": "HuggingFaceTB/SmolLM2-135M",
+  "source_model_commit": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "evidence_level": "L3 mechanism diagnostic; held-out real pretrained activations, not end-to-end model quality",
+  "protocol": {
+    "layers": [0, 5, 10, 15, 20, 25, 29],
+    "sites": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+    "site_count": 49,
+    "calibration": "WikiText-2 raw train; 256 sampled activation rows/site",
+    "evaluation": "disjoint WikiText-2 raw test; 64 held-out activation rows/site",
+    "q2_contract": "2-bit asymmetric dense codes + FP16 min/scale per row/group64",
+    "gptq_contract": "block-diagonal activation covariance; 1% damping; inverse-Hessian Cholesky sequential error feedback; diagnostic implementation, not external GPTQ parity",
+    "outlier_contract": "full dense Q2 retained plus FP16 exact residual columns and uint16 column indices",
+    "hadamard_contract": "implicit normalized 64x64 Hadamard plus deterministic sign bit/input"
+  },
+  "aggregate": {
+    "plain_q2": {
+      "median_output_nmse": 0.1607219558088908,
+      "mean_output_nmse": 0.25128956857606244,
+      "fraction_nmse_lt_0_05": 0.061224489795918366,
+      "median_reduction_vs_fp16_x": 6.4
+    },
+    "block_gptq_q2": {
+      "median_output_nmse": 0.1652686223706224,
+      "mean_output_nmse": 0.23174278373200824,
+      "fraction_nmse_lt_0_05": 0.061224489795918366,
+      "median_reduction_vs_fp16_x": 6.4
+    },
+    "hadamard_q2": {
+      "median_output_nmse": 0.15554550101692835,
+      "mean_output_nmse": 0.2099790291910884,
+      "fraction_nmse_lt_0_05": 0.061224489795918366,
+      "median_reduction_vs_fp16_x": 6.395558639833449
+    },
+    "hadamard_block_gptq_q2": {
+      "median_output_nmse": 0.09554617573020238,
+      "mean_output_nmse": 0.10648740652813164,
+      "fraction_nmse_lt_0_01": 0.061224489795918366,
+      "fraction_nmse_lt_0_05": 0.3673469387755102,
+      "median_reduction_vs_fp16_x": 6.395558639833449,
+      "relative_median_nmse_improvement_vs_plain_q2": 0.4055188337565204
+    },
+    "learned_orthogonal_q2_ceiling": {
+      "median_output_nmse": 0.15906787487084614,
+      "mean_output_nmse": 0.24624737674182026,
+      "fraction_nmse_lt_0_05": 0.061224489795918366,
+      "median_reduction_vs_fp16_x": 3.74025974025974,
+      "interpretation": "No useful error/byte improvement despite charging dense FP16 64x64 transform matrices."
+    },
+    "plain_gptq_plus_outlier_5pct": {
+      "median_output_nmse": 0.11649647118670434,
+      "fraction_nmse_lt_0_05": 0.22448979591836735,
+      "median_reduction_vs_fp16_x": 4.8382891225409415
+    },
+    "hadamard_gptq_plus_outlier_1pct": {
+      "median_output_nmse": 0.10671147302903386,
+      "fraction_nmse_lt_0_05": 0.32653061224489793,
+      "median_reduction_vs_fp16_x": 5.995446167190718
+    },
+    "hadamard_gptq_plus_outlier_2pct": {
+      "median_output_nmse": 0.10685605793045101,
+      "fraction_nmse_lt_0_05": 0.30612244897959184,
+      "median_reduction_vs_fp16_x": 5.642448979591837
+    },
+    "hadamard_gptq_plus_outlier_5pct": {
+      "median_output_nmse": 0.10413870214126882,
+      "fraction_nmse_lt_0_05": 0.2857142857142857,
+      "median_reduction_vs_fp16_x": 4.83575041175356
+    }
+  },
+  "best_variant_by_operator_median_nmse": {
+    "q_proj": {"variant": "hadamard_block_gptq_q2", "median_output_nmse": 0.039086667511572526},
+    "k_proj": {"variant": "hadamard_block_gptq_q2", "median_output_nmse": 0.02993726473550174},
+    "v_proj": {"variant": "hadamard_block_gptq_q2", "median_output_nmse": 0.1910977257272989},
+    "o_proj": {"variant": "hadamard_block_gptq_q2", "median_output_nmse": 0.14008231253487255},
+    "gate_proj": {"variant": "hadamard_block_gptq_q2", "median_output_nmse": 0.08547100608692666},
+    "up_proj": {"variant": "hadamard_block_gptq_q2", "median_output_nmse": 0.15635206621297051},
+    "down_proj": {"variant": "hadamard_block_gptq_q2", "median_output_nmse": 0.15705395335515165}
+  },
+  "plain_q2_by_operator_median_nmse": {
+    "q_proj": 0.12559103758562665,
+    "k_proj": 0.08856522936133085,
+    "v_proj": 0.7642623303580401,
+    "o_proj": 0.17432627445560642,
+    "gate_proj": 0.12400599469649988,
+    "up_proj": 0.2611034844600004,
+    "down_proj": 0.19707063592519947
+  },
+  "decision": {
+    "promote_hadamard_plus_second_order_as_mechanism": true,
+    "promote_as_end_to_end_codec": false,
+    "promote_outlier_escape": false,
+    "promote_dense_learned_rotation": false,
+    "reason": "Hadamard + second-order feedback cuts median operator NMSE by ~40.6% at essentially unchanged bytes, and Q/K become relatively strong. However V/O/up/down remain far too inaccurate for an end-to-end W2 promotion. Adding residual outlier columns after Hadamard+GPTQ worsens aggregate error/byte tradeoff; dense covariance eigen-rotations do not justify their transform cost."
+  },
+  "workflow_artifact": {
+    "run_id": 31278590079,
+    "artifact_id": 9027744924,
+    "artifact_sha256": "ef4145385d3ed5ce7761ba8ead540226bb0f3e9f85fe79cb15d4f61b83ee2192",
+    "full_result_filename": "run11_second_order_diagnostic.json"
+  },
+  "generator": "tools/run11_second_order_diagnostic.py",
+  "claim_boundary": "Operator-level held-out activation diagnostic only. No end-to-end perplexity, task accuracy, native packed runtime, RSS, or VRAM claim."
+}
