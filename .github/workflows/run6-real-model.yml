@@ -7,6 +7,11 @@ on:
     paths:
       - 'tools/run6_real_activation_geometry.py'
       - '.github/workflows/run6-real-model.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/run6_real_activation_geometry.py'
+      - '.github/workflows/run6-real-model.yml'
 
 jobs:
   smollm2-geometry:
