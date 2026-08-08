@@ -1,0 +1,61 @@
+{
+  "run": 3,
+  "date": "2026-08-08",
+  "branch": "larc-run3-audit-corrections",
+  "strongest_current_level": "L2C",
+  "supersedes": [
+    "benchmarks/run2_native_q4_kernel.json output_nmse_vs_dense_q4=0.046151",
+    "benchmarks/run2_posttrain_conversion.json +13.8265% quality gate",
+    "Run-2 joint L2/L2C basis-memory quality claims that counted Q4 bases but executed FP32 bases"
+  ],
+  "corrected_l2c": {
+    "evaluation_chars": 100032,
+    "teacher_nll": 1.77359189395331,
+    "recovered_student_nll": 1.8855587134968372,
+    "compressed_student_nll": 1.9095292411701692,
+    "structural_delta_nats_per_char": 0.11196681954352727,
+    "structural_perplexity_ratio": 1.1184757484934609,
+    "kv_delta_nats_per_char": 0.023970527673331965,
+    "kv_perplexity_ratio": 1.0242601301166239,
+    "total_delta_nats_per_char": 0.13593734721685924,
+    "total_perplexity_ratio": 1.1456101156842005,
+    "modeled_same_context_inference_tensor_reduction_x": 10.662762805136165,
+    "memory_is_measured_process_or_vram": false
+  },
+  "equal_compute_control": {
+    "teacher_steps": 120,
+    "recovery_steps": 200,
+    "scratch_recurrent_steps": 320,
+    "converted_post_recovery_nll": 1.8556326888501644,
+    "scratch_recurrent_nll": 2.965583574026823,
+    "control_favors_conversion_on_controlled_task": true
+  },
+  "canonical_q4": {
+    "range": "[-8,7]",
+    "scale_dtype": "IEEE binary16 per row",
+    "low_nibble_first": true,
+    "python_cpp_golden_semantics_added": true,
+    "triton_hardware_conformance": false
+  },
+  "native_q4_rerun": {
+    "resident_payload_reduction_x": 12.062392,
+    "speedup_vs_project_scalar_reference_x": 13.133769,
+    "output_nmse_vs_dense_q4": 0.287793997,
+    "output_nmse_vs_fp32": 0.268433327,
+    "old_0_046151_nmse_revoked": true
+  },
+  "smollm2_rank16_structural_only": {
+    "kv_reduction_2k_x": 18.618181818181817,
+    "kv_reduction_8k_x": 19.412322274881518,
+    "10x_profile_modeled_total_2k_x": 13.938236515372154,
+    "10x_profile_modeled_total_8k_x": 16.21946553434212
+  },
+  "open": {
+    "measured_process_ram": true,
+    "L3_external_pretrained_model": true,
+    "L4_cuda_or_metal_vram": true,
+    "real_model_20_to_30x_quality": true,
+    "competitive_iso_byte_baselines": true
+  },
+  "claim_boundary": "LARC has corrected controlled L2C evidence for 10.66x modeled same-context inference-tensor reduction with perplexity x1.1456 on a synthetic character-LM task. It does not yet demonstrate 10-30x lower measured RAM/VRAM for real pretrained GGUF models."
+}
