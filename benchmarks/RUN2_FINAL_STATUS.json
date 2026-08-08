@@ -1,0 +1,19 @@
+{
+  "run": 2,
+  "date": "2026-08-08",
+  "merged_commit": "eea2e149b810dc31c338fec970bd003bb39b6b5d",
+  "strongest_passed_level": "L2C",
+  "passed": {
+    "q4_style_weight_reduction_x": 14.607511445642896,
+    "same_context_total_inference_tensor_reduction_x": 10.8046871953518,
+    "final_nll_increase_pct": 13.826501673997837,
+    "quality_screening_threshold_pct": 15.0,
+    "packed_cpu_kernel": true,
+    "paged_v02_container": true
+  },
+  "open": {
+    "L3_external_pretrained_conversion": "blocked by inaccessible external model payloads in current execution environment",
+    "L4_measured_gpu_vram": "blocked by no CUDA/Metal accelerator in current execution environment"
+  },
+  "claim_boundary": "Do not claim 10-30x lower VRAM for arbitrary real-world GGUF/pretrained models until L3 and L4 pass."
+}
