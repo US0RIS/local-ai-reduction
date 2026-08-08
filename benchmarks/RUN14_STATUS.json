@@ -1,0 +1,33 @@
+{
+  "run": 14,
+  "date": "2026-08-08",
+  "status": "protocol_implemented_pending_execution",
+  "target_model": "HuggingFaceTB/SmolLM2-135M",
+  "kind": "trained nonlinear shared-MLP function diagnostic",
+  "targeted_pool": "gate_proj + up_proj + down_proj across all 30 decoder layers",
+  "targeted_fraction_of_seven_main_projection_parameters": 0.75,
+  "sharing_arms": [
+    {"logical_layers_per_physical_mlp": 10, "physical_mlp_count": 3},
+    {"logical_layers_per_physical_mlp": 5, "physical_mlp_count": 6}
+  ],
+  "depth_conditioning": "FP16 FiLM scale_in[576] + scale_mid[1536] + scale_out[576] per logical layer",
+  "training": {
+    "teacher_pairs": "real pretrained MLP input/output activations",
+    "steps_per_physical_group": 120,
+    "balanced_rows_per_logical_layer_per_step": 4,
+    "loss": "mean of site-normalized per-logical-layer output MSE",
+    "weight_lr": 0.0003,
+    "film_lr": 0.003
+  },
+  "packed_representation": "Q4_GROUP64 physical MLP matrices + FP16 layer FiLM scales",
+  "baseline": "independent Q4_GROUP64 gate/up/down matrices for all 30 logical MLPs",
+  "component_gate": {
+    "pass": "MLP-pool reduction >=8x; packed median site NMSE <=0.05; packed p90 <=0.15; worst physical-group median <=0.10",
+    "borderline": "MLP-pool reduction >=7x; packed median <=0.10; packed p90 <=0.25; worst physical-group median <=0.15",
+    "aggregation": "site-normalized per-logical-layer NMSE only; no raw cross-site output-energy weighting"
+  },
+  "workflow": ".github/workflows/run14-trained-mlp-sharing.yml",
+  "protocol_doc": "docs/RUN14_TRAINED_MLP_SHARING.md",
+  "pending_artifacts": ["run14_trained_mlp_share10.json", "run14_trained_mlp_share5.json"],
+  "claim_boundary": "Real-pretrained MLP component diagnostic only. No attention, end-to-end PPL, native runtime, RSS, VRAM, or whole-model compression claim."
+}
