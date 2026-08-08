@@ -17,8 +17,7 @@ jobs:
       - run: git diff --exit-code -- benchmarks/run4_context_sweep.json
       - run: python tools/run4_packed_context_sweep.py
       - run: git diff --exit-code -- benchmarks/run4_packed_attention_context_sweep.json
-      - run: python tools/run5_budget_planner.py
-      - run: git diff --exit-code -- benchmarks/run5_mistral7b_budget.json
+      - run: python tools/run5_budget_planner.py --check
       - name: Run streaming converter tests
         run: pytest -q tests/test_stream_softshare_convert.py
       - name: Native packed-Q2 attention correctness
