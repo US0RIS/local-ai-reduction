@@ -1,0 +1,78 @@
+name: Run 19 medium recursive recovery
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/run19_recursive_medium.py'
+      - '.github/workflows/run19-recursive-medium.yml'
+      - 'docs/RUN19_RECURSIVE_MEDIUM.md'
+      - 'benchmarks/RUN19_STATUS.json'
+  pull_request:
+    paths:
+      - 'tools/run19_recursive_medium.py'
+      - '.github/workflows/run19-recursive-medium.yml'
+      - 'docs/RUN19_RECURSIVE_MEDIUM.md'
+
+permissions:
+  contents: read
+
+jobs:
+  recursive-medium:
+    strategy:
+      fail-fast: false
+      matrix:
+        rank: [8, 16]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          path: external/llama.cpp
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install CPU training stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'transformers==4.57.6' accelerate 'huggingface-hub>=0.34,<1'
+          python -m py_compile tools/run16_global_recursive_pilot.py tools/run19_recursive_medium.py
+
+      - name: Fetch disjoint WikiText-2 train/test corpora
+        run: |
+          (cd external/llama.cpp && bash scripts/get-wikitext-2.sh)
+          test -f external/llama.cpp/wikitext-2-raw/wiki.train.raw
+          test -f external/llama.cpp/wikitext-2-raw/wiki.test.raw
+
+      - name: Run P2 medium recursive recovery
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+          OMP_NUM_THREADS: '4'
+          MKL_NUM_THREADS: '4'
+        run: |
+          mkdir -p benchmarks
+          python tools/run19_recursive_medium.py \
+            --model HuggingFaceTB/SmolLM2-135M \
+            --train-corpus external/llama.cpp/wikitext-2-raw/wiki.train.raw \
+            --eval-corpus external/llama.cpp/wikitext-2-raw/wiki.test.raw \
+            --rank ${{ matrix.rank }} \
+            --steps 512 --seq-len 64 --batch-sequences 4 \
+            --temperature 2.0 \
+            --base-lr 1e-4 --adapter-lr 5e-4 --norm-lr 1e-4 \
+            --warmup-steps 32 --eval-predictions 4096 \
+            --out benchmarks/run19_recursive_p2_r${{ matrix.rank }}.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run19-recursive-p2-r${{ matrix.rank }}
+          path: benchmarks/run19_recursive_p2_r${{ matrix.rank }}.json
+          if-no-files-found: error
+          retention-days: 90

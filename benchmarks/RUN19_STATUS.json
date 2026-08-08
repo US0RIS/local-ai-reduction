@@ -1,0 +1,39 @@
+{
+  "run": 19,
+  "date": "2026-08-08",
+  "status": "protocol_implemented_pending_execution",
+  "kind": "medium-budget global recursive recovery at 10x-compatible adapter capacities",
+  "target_model": "HuggingFaceTB/SmolLM2-135M",
+  "physical_projection_phases": 2,
+  "ranks": [8, 16],
+  "structural": {
+    "rank8_main_projection_parameter_reduction_x": 11.151984511132623,
+    "rank16_main_projection_parameter_reduction_x": 8.875192604006163,
+    "rank8_minimum_run17_pq_subdim_for_current_10x_envelope": 12,
+    "rank16_minimum_run17_pq_subdim_for_current_10x_envelope": 24
+  },
+  "medium_training": {
+    "steps": 512,
+    "batch_sequences": 4,
+    "sequence_length": 64,
+    "sampled_training_tokens": 131072,
+    "token_budget_multiple_vs_run16_short_p2": 12.8,
+    "objective": "0.75 forward-KL teacher distillation at T=2 + 0.25 next-token CE",
+    "schedule": "32-step linear warmup then cosine decay to 10% initial LR",
+    "shared_base_lr": 0.0001,
+    "adapter_lr": 0.0005,
+    "norm_lr": 0.0001,
+    "train_corpus": "WikiText-2 raw train",
+    "heldout_corpus": "WikiText-2 raw test"
+  },
+  "quality": "end-to-end teacher/student PPL on 4096 held-out predictions at context256",
+  "gate": {
+    "pass": ">=8x main-projection parameter reduction and held-out PPL ratio <=1.5x teacher",
+    "promising_extend": ">=8x, PPL ratio <=10x teacher, and best training-loss improvement >=50%",
+    "failure_scope": "this 131,072-token conversion recipe only; not billion-token recursive uptraining/pretraining"
+  },
+  "workflow": ".github/workflows/run19-recursive-medium.yml",
+  "protocol_doc": "docs/RUN19_RECURSIVE_MEDIUM.md",
+  "pending_artifacts": ["run19_recursive_p2_r8.json", "run19_recursive_p2_r16.json"],
+  "claim_boundary": "No packed recursive model, native runtime, RSS or VRAM. Tied embedding/head remains unchanged."
+}
