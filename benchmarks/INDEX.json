@@ -1,5 +1,5 @@
 {
-  "policy_version": 9,
+  "policy_version": 10,
   "rules": {
     "promoted_requires_committed_generator": true,
     "superseded_artifacts_may_remain_for_history": true,
@@ -13,7 +13,8 @@
     "negative_real_model_results_must_not_be_overridden_by_synthetic_success": true,
     "external_competitive_baseline_required_before_new_real_model_compression_claim": true,
     "operator_level_mechanism_success_must_not_be_promoted_as_end_to_end_model_quality": true,
-    "cross_operator_quality_gates_must_aggregate_site_normalized_errors_before_cross_site_aggregation": true
+    "cross_operator_quality_gates_must_aggregate_site_normalized_errors_before_cross_site_aggregation": true,
+    "packed_failure_must_not_be_attributed_to_quantization_when_the_unquantized_structural_ceiling_already_fails": true
   },
   "artifacts": [
     {"path":"benchmark_hrvq_run1.json","status":"historical","generator":"tools/benchmark_synthetic.py"},
@@ -56,10 +57,17 @@
     {"path":"run8_residual_pq_real_model.json","status":"current_L3_precheck_failed_residual_pq","generator":"tools/run8_residual_pq_real_model.py"},
     {"path":"RUN8_RPQ_GATE.json","status":"current_real_model_gate","generator":"tools/run8_rpq_decision_gate.py","note":"precommitted gate rejected naive per-layer residual product quantization"},
     {"path":"RUN8_FINAL_STATUS.json","status":"summary","generator":null},
+    {"path":"run9a_fast_file_bound_input.json","status":"current_external_exact_file_rate_input","generator":null,"note":"reproduces the Run-9 llama.cpp conversion/quantization path and records exact F16/Q4_K_M/Q2_K bytes, hashes and llama-bench parameter count; no quality/RSS claim"},
     {"path":"RUN11_STATUS.json","status":"historical_pending_status","generator":null},
-    {"path":"RUN11_FINAL_STATUS.json","status":"current_L3_operator_mechanism_diagnostic","generator":"tools/run11_second_order_diagnostic.py","note":"Hadamard + block second-order error feedback is a positive operator-level mechanism only; no end-to-end quality or memory promotion. Full per-site JSON retained as recorded workflow artifact."},
-    {"path":"RUN12_STATUS.json","status":"current_pending_bound","generator":"tools/run12_feasibility_bound.py","note":"calculator committed before the Run-9 result; no numeric Run-12 artifact exists until the external Q4_K_M baseline completes"},
+    {"path":"RUN11_FINAL_STATUS.json","status":"current_L3_operator_mechanism_diagnostic","generator":"tools/run11_second_order_diagnostic.py","note":"Hadamard + block second-order error feedback is a positive operator-level mechanism only; no end-to-end quality or memory promotion"},
+    {"path":"RUN12_STATUS.json","status":"historical_pre_result_bound_protocol","generator":"tools/run12_feasibility_bound.py"},
+    {"path":"RUN12_FILE_BOUND_STATUS.json","status":"current_exact_serialized_file_feasibility_bound","generator":null,"note":"10x/20x/30x versus measured Q4_K_M require <=0.627164/0.313582/0.209055 effective total-file bpw; RSS portion awaits full Run 9"},
     {"path":"RUN13_STATUS.json","status":"historical_pending_status","generator":null},
-    {"path":"RUN13_FINAL_STATUS.json","status":"current_L3_structural_mechanism_failure","generator":"tools/run13_additive_residual_sharing.py","note":"formal precommitted gate reported pass because raw cross-operator output-energy weighting masked severe normalized errors; site-normalized audit rejects viability at ranks <=32; formal output is preserved but no end-to-end promotion is made"}
+    {"path":"RUN13_FINAL_STATUS.json","status":"current_L3_structural_mechanism_failure","generator":"tools/run13_additive_residual_sharing.py","note":"formal raw-energy gate output preserved but rejected as validity signal; site-normalized audit fails all compression-relevant ranks"},
+    {"path":"RUN14_STATUS.json","status":"historical_pending_status","generator":null},
+    {"path":"RUN14_FINAL_STATUS.json","status":"current_L3_trained_shared_function_failure","generator":"tools/run14_trained_mlp_sharing.py","note":"post-hoc local shared nonlinear MLP distillation fails at both 5- and 10-layer spans; FP32 ceiling is already ~0.92-0.94 median normalized MLP-output NMSE"},
+    {"path":"RUN15_STATUS.json","status":"current_pending_validation","generator":"tools/run15_embedding_factorization.py","note":"low-rank tied embedding/head factorization formally failed; Run 15B exact-rank control is pending before architectural interpretation"},
+    {"path":"RUN16_STATUS.json","status":"current_pending_global_recursive_pilot","generator":"tools/run16_global_recursive_pilot.py","note":"2/3 physical projection phases with rank8 depth LoRA and <=10,240-token global KL+CE distillation; failure scope is deliberately short-budget only"},
+    {"path":"RUN17_STATUS.json","status":"current_pending_direct_packed_vocab_pq","generator":"tools/run17_vocab_product_quantization.py","note":"full-rank row product quantization of the tied vocabulary with direct compressed-domain input/head semantics; frozen component gate pending execution"}
   ]
 }
