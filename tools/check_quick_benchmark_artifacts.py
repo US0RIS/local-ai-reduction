@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse,json,math
+import argparse,json,math,sys
 from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
 from larc.latent_kv import fp16_cache_bytes,kivi_latent_cache_bytes
 from tools.memory_plan import CONFIG,PROFILES,GGUF_Q4,weight_bytes,workspace_bound
-
-ROOT=Path(__file__).resolve().parents[1]
 
 
 def controlled_context_sweep():
