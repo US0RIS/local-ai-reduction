@@ -18,7 +18,10 @@
     "whole_model_weight_reduction_x": 1.0839751430626157,
     "whole_model_weight_saved_fraction": 0.07746962059052015
   },
-  "execution_blocker": "Local sandbox cannot follow Hugging Face Xet/CDN checkpoint redirect and cannot install Transformers from its restricted package index. GitHub Actions workflow is accepted but hosted jobs remain queued without runner allocation in this session.",
+  "execution_blocker": {
+    "local": "Sandbox cannot follow Hugging Face Xet/CDN checkpoint redirects and its restricted package index cannot install Transformers.",
+    "github_actions": "Run 31274396594 and the unrelated benchmark-provenance run both completed with failure but zero recorded workflow steps. GitHub's job-log blob was unavailable (BlobNotFound). This is consistent with a pre-step hosted-runner/infrastructure failure, not an observed failure of the Run-6 Python protocol."
+  },
   "workflow": ".github/workflows/run6-real-model.yml",
   "protocol_doc": "docs/RUN6_REAL_MODEL_PLAN.md",
   "pending_artifacts": ["run6_real_model_falsification.json","run6_activation_aware_projection.json","run6_partial_real_conversion.json","RUN6_GATE.json"],
