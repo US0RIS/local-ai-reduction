@@ -97,3 +97,5 @@ A failure at rank128 or higher would mean the vocabulary matrix itself requires 
 ## Evidence boundary
 
 Run 15 is a real-pretrained **component** diagnostic. The decoder remains original. Q4_GROUP64 is the component byte reference, not llama.cpp Q4_K_M. The fixed 8K-token slice is not promoted as full WikiText-2 quality. There is no native packed factor kernel, process RSS, VRAM, or whole-model compression claim.
+
+Execution provenance: the implementation, rank set, fixed evaluation slice, Q4 factor byte contract, and pass/borderline thresholds above were merged to `main` at `971dc36723b3e2c24b3f56bb966f61f157923ab3` before this execution-only documentation update was opened.
