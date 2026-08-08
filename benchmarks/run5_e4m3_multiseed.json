@@ -1,0 +1,19 @@
+{
+  "evidence_level":"L2C multi-seed quality using native-packed-equivalent KV codec",
+  "quality_context":64,
+  "training_seeds":[3,7,11,19,23],
+  "evaluation_chars_per_seed":100032,
+  "baseline":"project canonical row-Q4 teacher + normal/full KV",
+  "larc_weights":"teacher-layer function prefit + hard-projected group-64 QAT",
+  "larc_kv":"rank16 latent Q2 with E4M3-FN min/scale per vector, deterministic Q4 K/V bases, both ridge-stabilized inverse-Gram metrics; semantic codec matches upstream native packed latent-attention L1 path",
+  "seeds":[
+    {"seed":3,"baseline_row_q4_nll":1.9104986965694415,"larc_e4m3_full_nll":2.08693208163622,"delta_nats_per_char":0.17643338506677853,"perplexity_ratio":1.192954955497944,"fp32_teacher_nll":1.7361557948917283,"perplexity_ratio_vs_fp32":1.420169579611462},
+    {"seed":7,"baseline_row_q4_nll":2.2774606437463447,"larc_e4m3_full_nll":2.133750224830398,"delta_nats_per_char":-0.14371041891594682,"perplexity_ratio":0.8661385290809239,"fp32_teacher_nll":1.8664139682332903,"perplexity_ratio_vs_fp32":1.3064796848911155},
+    {"seed":11,"baseline_row_q4_nll":2.1419989768313203,"larc_e4m3_full_nll":2.0893790940024193,"delta_nats_per_char":-0.052619882828901066,"perplexity_ratio":0.9487405765337219,"fp32_teacher_nll":1.8267394155549912,"perplexity_ratio_vs_fp32":1.300358087482804},
+    {"seed":19,"baseline_row_q4_nll":2.1578440406882295,"larc_e4m3_full_nll":2.0371294906333097,"delta_nats_per_char":-0.12071455005491982,"perplexity_ratio":0.8862869140391794,"fp32_teacher_nll":1.7230983741452734,"perplexity_ratio_vs_fp32":1.3689323322511968},
+    {"seed":23,"baseline_row_q4_nll":2.0254354617264663,"larc_e4m3_full_nll":2.179266270047491,"delta_nats_per_char":0.15383080832102491,"perplexity_ratio":1.1662935429217363,"fp32_teacher_nll":1.9414837032423062,"perplexity_ratio_vs_fp32":1.2684333633201557}
+  ],
+  "statistics":{"mean_delta_nats_per_char_vs_row_q4":0.002643868317607145,"sample_std_delta_nats_per_char_vs_row_q4":0.15227544608808716,"mean_perplexity_ratio_vs_row_q4":1.012082903614701,"sample_std_perplexity_ratio_vs_row_q4":0.15623080864486438,"mean_perplexity_ratio_vs_fp32_teacher":1.3328746095113468},
+  "execution_boundary":"Quality is Python/reference execution of the same Q2+E4M3+basis/metric mathematics validated by runtime/larc_q2_attention.cpp. Group-64 weight execution is still dequantized reference execution; no native group-64 packed weight kernel has run.",
+  "memory_artifact":"benchmarks/run5_packed_context_sweep.json"
+}
