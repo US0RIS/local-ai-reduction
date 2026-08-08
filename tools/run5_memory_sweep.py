@@ -18,7 +18,7 @@ CONTEXTS=[64,128,256,512,1024,2048,4096,8192]
 
 def row(context:int):
     base_kv=fp16_cache_bytes(layers=LAYERS,seq=context,kv_heads=HEADS,head_dim=HEAD_DIM)
-    larc_kv=grouped_latent_cache_bytes(layers=LAYERS,seq=context,kv_heads=HEADS,head_dim=HEAD_DIM,rank=RANK,group_tokens=GROUP,residual_tail_fp16=True)
+    larc_kv=grouped_latent_cache_bytes(layers=LAYERS,seq=context,kv_heads=HEADS,head_dim=HEAD_DIM,rank=RANK,group_tokens=GROUP,residual_tail_fp16=True,basis_sets=1)
     scratch=reference_workspace_bytes(context=context,hidden=HIDDEN,heads=HEADS,rank=RANK,intermediate=INTERMEDIATE)
     base=BASELINE_ROW_Q4_WEIGHT_BYTES+base_kv+scratch
     larc=LARC_GROUP64_Q4_WEIGHT_BYTES+larc_kv+scratch
