@@ -1,24 +1,31 @@
 name: LARC real-model validation
 
+# Manual-only until this repository has a functioning hosted runner allocation.
 on:
-  pull_request:
   workflow_dispatch:
+    inputs:
+      profile:
+        description: LARC profile to validate
+        required: true
+        default: 10x
+        type: choice
+        options: [10x, 15x, 20x, 30x]
 
 permissions:
   contents: read
 
 jobs:
   smollm2:
-    name: SmolLM2 10x runner probe
+    name: SmolLM2 ${{ inputs.profile }}
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
-      - name: Clone experimental branch without reusable actions
+      - name: Clone repository without reusable actions
         env:
           TOKEN: ${{ github.token }}
         run: |
           rm -rf ./* ./.??* 2>/dev/null || true
-          git clone --depth=1 --branch larc-run2-real-model "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" .
+          git clone --depth=1 "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" .
           python --version
       - name: Install benchmark dependencies
         run: |
@@ -36,12 +43,10 @@ jobs:
           assert y.shape==(11,97) and torch.isfinite(y).all()
           print('packed q4 primitive OK', p.numel()+s.numel()*s.element_size(), 'resident bytes')
           PY
-      - name: Run real-model 10x benchmark
+      - name: Run real-model benchmark
         env:
           HF_HUB_DISABLE_TELEMETRY: '1'
           TOKENIZERS_PARALLELISM: 'false'
         run: |
-          PYTHONPATH=. python tools/real_model_benchmark.py --profile 10x --out benchmarks/run2_smollm2_10x.json
-          echo 'LARC_RESULT_BEGIN'
-          cat benchmarks/run2_smollm2_10x.json
-          echo 'LARC_RESULT_END'
+          PYTHONPATH=. python tools/real_model_benchmark.py --profile '${{ inputs.profile }}' --out 'benchmarks/run2_smollm2_${{ inputs.profile }}.json'
+          cat 'benchmarks/run2_smollm2_${{ inputs.profile }}.json'
