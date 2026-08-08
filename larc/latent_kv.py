@@ -52,18 +52,18 @@ class QuantizedHeadBasisQ4:
     def metric_inv(self):
         return None if self.metric_inv_fp16 is None else self.metric_inv_fp16.float()
 
-def quantize_head_basis_q4(basis:torch.Tensor,*,key_metric:bool=False)->QuantizedHeadBasisQ4:
+def quantize_head_basis_q4(basis:torch.Tensor,*,store_metric:bool=True)->QuantizedHeadBasisQ4:
     """Quantize [heads,rank,head_dim] bases exactly as stored.
 
-    For key bases, also store FP16 inverse Gram matrices. If B_hat is the
-    dequantized Q4 basis, latent scores use q_l^T (B_hat B_hat^T)^-1 k_l so
-    basis quantization does not silently turn the latent inner product into a
-    non-orthogonal metric.
+    For any quantized row basis B_hat, store an FP16 inverse Gram matrix
+    (B_hat B_hat^T + lambda I)^-1.  The metric is required both for key-space
+    inner products and for value reconstruction through the Moore-Penrose
+    left inverse B_hat^+ = B_hat^T (B_hat B_hat^T)^-1.
     """
     if basis.ndim!=3:raise ValueError('basis must be [heads, rank, head_dim]')
     h,r,d=basis.shape;p,s,c=q4_rows(basis.reshape(h*r,d));bh=dequantize_q4_rows(p,s,c).reshape(h,r,d)
     metric=None
-    if key_metric:
+    if store_metric:
         grams=bh@bh.transpose(-1,-2);eye=torch.eye(r,dtype=torch.float32,device=bh.device).expand(h,r,r);scale=torch.diagonal(grams,dim1=-2,dim2=-1).mean(-1).clamp_min(1e-8)
         grams=grams+eye*(scale[:,None,None]*1e-5);metric=torch.linalg.inv(grams).to(torch.float16).contiguous()
     return QuantizedHeadBasisQ4(p,s,c,h,r,bh,metric)
@@ -81,29 +81,51 @@ class EncodedKeyChannels:
 
 class LatentQ2KV:
     def __init__(self,k_basis:torch.Tensor,v_basis:torch.Tensor):
-        self.kq=quantize_head_basis_q4(k_basis,key_metric=True) if k_basis.ndim==3 else None
-        self.vq=quantize_head_basis_q4(v_basis,key_metric=False) if v_basis.ndim==3 else None
+        self.kq=quantize_head_basis_q4(k_basis,store_metric=True) if k_basis.ndim==3 else None
+        self.vq=quantize_head_basis_q4(v_basis,store_metric=True) if v_basis.ndim==3 else None
         self.k_basis=(self.kq.dequantized if self.kq else k_basis.float().contiguous());self.v_basis=(self.vq.dequantized if self.vq else v_basis.float().contiguous())
     def encode(self,k:torch.Tensor,v:torch.Tensor):
         ks=k.reshape(-1,k.shape[-1]).float()@self.k_basis.t();vs=v.reshape(-1,v.shape[-1]).float()@self.v_basis.t();pk,mk,sk,ck=pack_q2_rows(ks);pv,mv,sv,cv=pack_q2_rows(vs);return EncodedLatent(pk,mk,sk,ck),EncodedLatent(pv,mv,sv,cv),k.shape[:-1]
     def decode(self,ek:EncodedLatent,ev:EncodedLatent,prefix_shape):
-        k=(unpack_q2_rows(ek.p,ek.mn,ek.scale,ek.cols)@self.k_basis).reshape(*prefix_shape,-1);v=(unpack_q2_rows(ev.p,ev.mn,ev.scale,ev.cols)@self.v_basis).reshape(*prefix_shape,-1);return k,v
+        kl=unpack_q2_rows(ek.p,ek.mn,ek.scale,ek.cols);vl=unpack_q2_rows(ev.p,ev.mn,ev.scale,ev.cols)
+        if self.kq is not None:kl=kl@self.kq.metric_inv
+        if self.vq is not None:vl=vl@self.vq.metric_inv
+        k=(kl@self.k_basis).reshape(*prefix_shape,-1);v=(vl@self.v_basis).reshape(*prefix_shape,-1);return k,v
 
 class KIVILatentQ2KV:
     def __init__(self,k_basis:torch.Tensor,v_basis:torch.Tensor,group_tokens:int=64):
         if k_basis.ndim!=3 or v_basis.ndim!=3:raise ValueError('KIVI latent bases must be [heads,rank,head_dim]')
-        self.kq=quantize_head_basis_q4(k_basis,key_metric=True);self.vq=quantize_head_basis_q4(v_basis,key_metric=False);self.k_basis=self.kq.dequantized;self.v_basis=self.vq.dequantized;self.group_tokens=group_tokens
+        self.kq=quantize_head_basis_q4(k_basis,store_metric=True);self.vq=quantize_head_basis_q4(v_basis,store_metric=True);self.k_basis=self.kq.dequantized;self.v_basis=self.vq.dequantized;self.group_tokens=group_tokens
     @property
     def basis_storage_bytes(self):return self.kq.storage_bytes+self.vq.storage_bytes
     def encode_head(self,k:torch.Tensor,v:torch.Tensor,head:int):
         kb=self.k_basis[head];vb=self.v_basis[head];ks=k.reshape(-1,k.shape[-1]).float()@kb.t();vs=v.reshape(-1,v.shape[-1]).float()@vb.t();pk,mk,sk,r,n,g=pack_q2_key_channels(ks,self.group_tokens);pv,mv,sv,cv=pack_q2_rows(vs);return EncodedKeyChannels(pk,mk,sk,r,n,g),EncodedLatent(pv,mv,sv,cv),k.shape[:-1]
     def attention_head(self,q:torch.Tensor,ek:EncodedKeyChannels,ev:EncodedLatent,head:int):
-        kl=unpack_q2_key_channels(ek.p,ek.mn,ek.scale,ek.rank,ek.tokens,ek.group_tokens);vl=unpack_q2_rows(ev.p,ev.mn,ev.scale,ev.cols);kb=self.k_basis[head];vb=self.v_basis[head];ql=q.float()@kb.t();ql=ql@self.kq.metric_inv[head];a=torch.softmax((kl@ql)/math.sqrt(q.shape[-1]),dim=-1);return (a@vl)@vb
+        kl=unpack_q2_key_channels(ek.p,ek.mn,ek.scale,ek.rank,ek.tokens,ek.group_tokens);vl=unpack_q2_rows(ev.p,ev.mn,ev.scale,ev.cols);kb=self.k_basis[head];vb=self.v_basis[head]
+        ql=(q.float()@kb.t())@self.kq.metric_inv[head]
+        a=torch.softmax((kl@ql)/math.sqrt(q.shape[-1]),dim=-1)
+        vlat=(a@vl)@self.vq.metric_inv[head]
+        return vlat@vb
 
-def cache_bytes(*,layers:int,seq:int,kv_heads:int,head_dim:int,rank:int,bits:int=2,scale_bytes_per_vector:int=4,basis_bits:int=4):
-    vectors=layers*seq*kv_heads*2;latent_payload=math.ceil(vectors*rank*bits/8);quant_meta=vectors*scale_bytes_per_vector;basis_values=layers*kv_heads*2*rank*head_dim;basis_payload=math.ceil(basis_values*basis_bits/8);return latent_payload+quant_meta+basis_payload
+def _q4_basis_bytes(*,layers:int,kv_heads:int,rank:int,head_dim:int,scale_bytes:int=2)->int:
+    rows=layers*kv_heads*2*rank
+    payload=rows*math.ceil(head_dim/2)
+    scales=rows*scale_bytes
+    return payload+scales
 
-def kivi_latent_cache_bytes(*,layers:int,seq:int,kv_heads:int,head_dim:int,rank:int,bits:int=2,group_tokens:int=64,basis_bits:int=4,tail_fp16:bool=False,key_metric_fp16:bool=True):
-    vectors=layers*seq*kv_heads;payload=2*math.ceil(vectors*rank*bits/8);key_groups=layers*kv_heads*math.ceil(seq/group_tokens);key_meta=key_groups*rank*4;value_meta=vectors*4;basis_values=layers*kv_heads*2*rank*head_dim;basis_payload=math.ceil(basis_values*basis_bits/8);metric=layers*kv_heads*rank*rank*2 if key_metric_fp16 else 0;tail=layers*kv_heads*2*group_tokens*rank if tail_fp16 else 0;return payload+key_meta+value_meta+basis_payload+metric+tail
+def cache_bytes(*,layers:int,seq:int,kv_heads:int,head_dim:int,rank:int,bits:int=2,scale_bytes_per_vector:int=4,basis_bits:int=4,basis_scale_bytes:int=2,both_metrics_fp16:bool=True):
+    vectors=layers*seq*kv_heads*2;latent_payload=math.ceil(vectors*rank*bits/8);quant_meta=vectors*scale_bytes_per_vector
+    if basis_bits!=4:raise ValueError('v0.3 byte accounting currently defines Q4 basis storage only')
+    basis_payload=_q4_basis_bytes(layers=layers,kv_heads=kv_heads,rank=rank,head_dim=head_dim,scale_bytes=basis_scale_bytes)
+    metric=layers*kv_heads*rank*rank*2*(2 if both_metrics_fp16 else 1)
+    return latent_payload+quant_meta+basis_payload+metric
+
+def kivi_latent_cache_bytes(*,layers:int,seq:int,kv_heads:int,head_dim:int,rank:int,bits:int=2,group_tokens:int=64,basis_bits:int=4,basis_scale_bytes:int=2,tail_fp16:bool=False,key_metric_fp16:bool=True,value_metric_fp16:bool=True):
+    vectors=layers*seq*kv_heads;payload=2*math.ceil(vectors*rank*bits/8);key_groups=layers*kv_heads*math.ceil(seq/group_tokens);key_meta=key_groups*rank*4;value_meta=vectors*4
+    if basis_bits!=4:raise ValueError('v0.3 byte accounting currently defines Q4 basis storage only')
+    basis_payload=_q4_basis_bytes(layers=layers,kv_heads=kv_heads,rank=rank,head_dim=head_dim,scale_bytes=basis_scale_bytes)
+    metric=(layers*kv_heads*rank*rank*2 if key_metric_fp16 else 0)+(layers*kv_heads*rank*rank*2 if value_metric_fp16 else 0)
+    tail=layers*kv_heads*2*group_tokens*rank if tail_fp16 else 0
+    return payload+key_meta+value_meta+basis_payload+metric+tail
 
 def fp16_cache_bytes(*,layers:int,seq:int,kv_heads:int,head_dim:int):return layers*seq*kv_heads*head_dim*2*2
