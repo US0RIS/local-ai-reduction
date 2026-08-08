@@ -1,0 +1,26 @@
+{
+  "run": 17,
+  "date": "2026-08-08",
+  "status": "protocol_implemented_pending_execution",
+  "kind": "direct-packed tied-vocabulary product quantization component diagnostic",
+  "target_model": "HuggingFaceTB/SmolLM2-135M",
+  "representation": {
+    "row_norm": "FP16 one per token",
+    "codes": "uint8 one code per token/subspace",
+    "codebooks": "256 FP16 centroids per subspace",
+    "subdims": [8, 12, 16, 24, 32],
+    "dense_embedding_shadow": false,
+    "direct_input": "centroid gather/concatenate times token norm",
+    "direct_output": "256 centroid dot products per subspace plus code gather/sum times token norm"
+  },
+  "fit": "six deterministic full-vocabulary Lloyd iterations per subspace using pretrained embedding weights only",
+  "evaluation": "8192 next-token predictions from WikiText-2 raw test at context512; occurrence embedding NMSE, head-only PPL, integrated input+head PPL, and direct packed semantic conformance",
+  "component_gate": {
+    "pass": ">=5x tied-Q4 reduction; embedding NMSE <=0.05; head-only PPL <=1.05x; integrated <=1.10x; semantic error <=1e-4",
+    "borderline": ">=4x; NMSE <=0.10; head-only <=1.15x; integrated <=1.50x; semantic error <=1e-4"
+  },
+  "workflow": ".github/workflows/run17-vocab-pq.yml",
+  "protocol_doc": "docs/RUN17_VOCAB_PQ.md",
+  "pending_artifact": "run17_vocab_product_quantization.json",
+  "claim_boundary": "Component-only fixed-slice quality and exact representation bytes. No Q4_K_M parity, native optimized kernel, RSS, VRAM or whole-model claim."
+}
