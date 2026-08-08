@@ -63,7 +63,6 @@ def deterministic_kmeans(x: torch.Tensor, k: int, iters: int, seed: int) -> tupl
     x2 = x.square().sum(dim=1, keepdim=True)
     labels = torch.zeros(n, dtype=torch.long)
     for _ in range(iters):
-        # squared Euclidean distance without materializing [n,k,d]
         dist = x2 + c.square().sum(dim=1)[None, :] - 2.0 * (x @ c.T)
         labels = dist.argmin(dim=1)
         sums = torch.zeros_like(c)
@@ -71,7 +70,6 @@ def deterministic_kmeans(x: torch.Tensor, k: int, iters: int, seed: int) -> tupl
         counts = torch.bincount(labels, minlength=k)
         nonempty = counts > 0
         c[nonempty] = sums[nonempty] / counts[nonempty, None]
-        # Keep prior centroid for empty clusters; deterministic and stable.
     return c.contiguous(), labels.contiguous()
 
 
@@ -97,7 +95,7 @@ def fit_pq(e: torch.Tensor, subdim: int, iters: int) -> tuple[torch.Tensor, torc
             "min_nonzero_count": int(cnt[cnt > 0].min()) if (cnt > 0).any() else 0,
             "max_count": int(cnt.max()),
         })
-    cb = torch.stack(codebooks, dim=0).contiguous()  # [M,K,D]
+    cb = torch.stack(codebooks, dim=0).contiguous()
     return cb, codes, norm, {"subspaces": m, "occupancy": occupancy}
 
 
@@ -120,7 +118,7 @@ def direct_logits(h: torch.Tensor, codebooks: torch.Tensor, codes: torch.Tensor,
     out = torch.zeros((flat.shape[0], codes.shape[0]), dtype=flat.dtype)
     for s in range(m):
         hs = flat[:, s * subdim:(s + 1) * subdim]
-        table = hs @ codebooks[s].T  # [batch_positions, 256]
+        table = hs @ codebooks[s].T
         idx = codes[:, s].long()[None, :].expand(flat.shape[0], -1)
         out += torch.gather(table, 1, idx)
     out *= norm[None, :]
@@ -242,13 +240,10 @@ def main() -> None:
 
     for subdim in [int(x) for x in args.subdims.split(",")]:
         cb32, codes, norm32, fit_meta = fit_pq(e, subdim, args.kmeans_iters)
-        # Packed representation stores codebooks/norms as FP16. Evaluate the
-        # exact decoded values of that stored representation.
         cb = cb32.half().float().contiguous()
         norm = norm32.half().float().contiguous()
         dense = reconstruct(cb, codes, norm)
 
-        # Semantic conformance: direct packed-head math must match dense decoded E.
         probe_h = torch.randn((3, hidden), generator=torch.Generator().manual_seed(17017 + subdim))
         dense_logits = probe_h @ dense.T
         packed_logits = direct_logits(probe_h, cb, codes, norm)
@@ -318,13 +313,13 @@ def main() -> None:
             "token_norm": "FP16 one per vocabulary row",
             "subspace_codes": "uint8 one centroid index per token/subspace",
             "codebooks": "FP16 256 centroids per fixed contiguous subspace",
-            "dense_shadow_counted": false,
+            "dense_shadow_counted": False,
             "input_runtime": "centroid gathers + concatenate + token norm",
             "head_runtime": "256 dot products/subspace + code gathers/sums + token norm; no dense E reconstruction required",
         },
         "fit": {
-            "uses_model_weights_only": true,
-            "uses_evaluation_activations_or_labels": false,
+            "uses_model_weights_only": True,
+            "uses_evaluation_activations_or_labels": False,
             "kmeans_iters": args.kmeans_iters,
             "distance": "Euclidean on globally row-normalized token vectors",
         },
