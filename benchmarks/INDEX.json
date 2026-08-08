@@ -8,7 +8,7 @@
     "quality_representation_must_match_memory_representation": true,
     "compression_calibration_must_be_disjoint_from_final_evaluation": true,
     "ten_x_claims_must_use_complete_model_or_explicitly_label_partial_tensor_budget": true,
-    "planning_estimates_must_identify_rounded_external_baselines": true
+    "external_baseline_bytes_must_be_exact_when_an_exact_artifact_size_is_available": true
   },
   "artifacts": [
     {"path":"benchmark_hrvq_run1.json","status":"historical","generator":"tools/benchmark_synthetic.py"},
@@ -35,7 +35,7 @@
     {"path":"run4_native_q2_attention.json","status":"current_L1","generator":"tests/native_q2_attention.cpp"},
     {"path":"run4_packed_attention_context_sweep.json","status":"current_reference_arithmetic","generator":"tools/run4_packed_context_sweep.py"},
     {"path":"run5_softshare_control.json","status":"current_L2C_strategy_selection","generator":"tools/run5_softshare_control.py"},
-    {"path":"run5_mistral7b_budget.json","status":"current_structural_planning_rounded_baseline","generator":"tools/run5_budget_planner.py"},
+    {"path":"run5_mistral7b_budget.json","status":"current_structural_planning_exact_q4km_baseline","generator":"tools/run5_budget_planner.py"},
     {"path":"run5_native_q4_softshare.json","status":"current_L1","generator":"tests/native_q4_softshare.cpp"}
   ]
 }
