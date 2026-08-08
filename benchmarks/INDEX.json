@@ -1,5 +1,5 @@
 {
-  "policy_version": 6,
+  "policy_version": 7,
   "rules": {
     "promoted_requires_committed_generator": true,
     "superseded_artifacts_may_remain_for_history": true,
@@ -10,7 +10,8 @@
     "multi_seed_and_native_packed_are_independent_evidence_axes": true,
     "full_runtime_gate_requires_weight_and_kv_native_primitives_plus_integrated_measurement": true,
     "real_model_gate_thresholds_must_be_committed_before_observing_results": true,
-    "negative_real_model_results_must_not_be_overridden_by_synthetic_success": true
+    "negative_real_model_results_must_not_be_overridden_by_synthetic_success": true,
+    "external_competitive_baseline_required_before_new_real_model_compression_claim": true
   },
   "artifacts": [
     {"path":"benchmark_hrvq_run1.json","status":"historical","generator":"tools/benchmark_synthetic.py"},
@@ -33,20 +34,25 @@
     {"path":"run4_native_q2_attention.json","status":"current_L1_native_packed_kv","generator":"tests/native_q2_attention.cpp"},
     {"path":"run4_packed_attention_context_sweep.json","status":"historical_pre_run5_weight_recovery_arithmetic","generator":"tools/run4_packed_context_sweep.py"},
     {"path":"run5_weight_diagnostics.json","status":"historical_diagnostic","generator":null},
-    {"path":"run5_memory_context.json","status":"current_alternate_grouped_metadata_arithmetic","generator":"tools/run5_memory_sweep.py"},
-    {"path":"run5_fullstack_multiseed.json","status":"current_alternate_grouped_metadata_multiseed","generator":"tools/run5_fullstack_protocol_fp16tail.py","note":"grouped FP16 metadata reference path; not native packed"},
-    {"path":"run5_e4m3_multiseed.json","status":"current_controlled_L2C_multiseed_codec_quality","generator":"tools/run5_e4m3_multiseed.py","note":"strongest controlled result; real-model transfer assumptions were later falsified in Run 6/7"},
-    {"path":"run5_packed_context_sweep.json","status":"current_controlled_packed_arithmetic","generator":"tools/run5_packed_context_sweep.py"},
+    {"path":"run5_memory_context.json","status":"historical_controlled_alternate_arithmetic","generator":"tools/run5_memory_sweep.py"},
+    {"path":"run5_fullstack_multiseed.json","status":"historical_controlled_alternate_multiseed","generator":"tools/run5_fullstack_protocol_fp16tail.py"},
+    {"path":"run5_e4m3_multiseed.json","status":"historical_controlled_L2C_multiseed_codec_quality","generator":"tools/run5_e4m3_multiseed.py","note":"controlled-model result; its universal low-rank/cross-depth transfer assumptions were falsified by Run 6-8 real-model evidence"},
+    {"path":"run5_packed_context_sweep.json","status":"historical_controlled_packed_arithmetic","generator":"tools/run5_packed_context_sweep.py"},
     {"path":"run5_native_q4_group64.json","status":"current_L1_native_packed_weight","generator":"tests/native_q4_group64.cpp"},
     {"path":"RUN5_FINAL_STATUS.json","status":"historical_controlled_summary","generator":null},
     {"path":"run6_partial_memory_plan.json","status":"current_run6_structural_arithmetic","generator":"tools/run6_partial_memory_plan.py"},
     {"path":"run6_real_model_falsification.json","status":"current_L3_precheck_real_model_falsification","generator":"tools/run6_real_model_falsification.py"},
     {"path":"run6_activation_aware_projection.json","status":"current_L3_precheck_real_operator_falsification","generator":"tools/run6_activation_aware_projection.py"},
     {"path":"run6_partial_real_conversion.json","status":"current_L3_precheck_failed_partial_conversion","generator":"tools/run6_partial_real_conversion.py"},
-    {"path":"RUN6_GATE.json","status":"current_real_model_gate","generator":"tools/run6_decision_gate.py","note":"precommitted gate rejected uniform low-rank projection and current whole-block sharing"},
+    {"path":"RUN6_GATE.json","status":"current_real_model_gate","generator":"tools/run6_decision_gate.py"},
     {"path":"RUN6_FINAL_STATUS.json","status":"summary","generator":null},
     {"path":"run7_shared_basis_real_model.json","status":"current_L3_precheck_failed_segmented_shared_basis","generator":"tools/run7_shared_basis_real_model.py"},
-    {"path":"RUN7_GATE.json","status":"current_real_model_gate","generator":"tools/run7_decision_gate.py","note":"precommitted gate rejected current shared-output-basis recipe"},
-    {"path":"RUN7_FINAL_STATUS.json","status":"summary","generator":null}
+    {"path":"RUN7_GATE.json","status":"current_real_model_gate","generator":"tools/run7_decision_gate.py"},
+    {"path":"RUN7_FINAL_STATUS.json","status":"summary","generator":null},
+    {"path":"run8_additive_vq_real_model.json","status":"current_L3_precheck_failed_additive_vq","generator":"tools/run8_additive_vq_real_model.py"},
+    {"path":"RUN8_GATE.json","status":"current_real_model_gate","generator":"tools/run8_decision_gate.py","note":"precommitted gate rejected naive activation-RMS residual VQ"},
+    {"path":"run8_residual_pq_real_model.json","status":"current_L3_precheck_failed_residual_pq","generator":"tools/run8_residual_pq_real_model.py"},
+    {"path":"RUN8_RPQ_GATE.json","status":"current_real_model_gate","generator":"tools/run8_rpq_decision_gate.py","note":"precommitted gate rejected naive per-layer residual product quantization"},
+    {"path":"RUN8_FINAL_STATUS.json","status":"summary","generator":null}
   ]
 }
