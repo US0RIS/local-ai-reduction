@@ -1,0 +1,34 @@
+{
+  "run": 16,
+  "date": "2026-08-08",
+  "status": "protocol_implemented_pending_execution",
+  "kind": "global recursive depth-LoRA distillation short-budget pilot",
+  "target_model": "HuggingFaceTB/SmolLM2-135M",
+  "arms": [
+    {"physical_projection_phases": 2, "adapter_rank": 8, "expected_main_projection_parameter_reduction_x": 11.151984511132623},
+    {"physical_projection_phases": 3, "adapter_rank": 8, "expected_main_projection_parameter_reduction_x": 8.12985179957657}
+  ],
+  "representation": "for q/k/v/o/gate/up/down: W_layer = shared full-rank base_(layer mod P) + rank8 depth-specific LoRA; original per-layer RMSNorm retained; tied embedding/head unchanged and frozen",
+  "initialization": "shared base = arithmetic mean of assigned teacher matrices; depth LoRA = randomized-SVD residual initialization",
+  "global_training": {
+    "objective": "0.75 forward-KL teacher distillation at T=2 + 0.25 next-token CE",
+    "steps": 160,
+    "sequence_length": 64,
+    "maximum_sampled_training_tokens": 10240,
+    "shared_base_lr": 0.0001,
+    "adapter_lr": 0.0005,
+    "norm_lr": 0.0001,
+    "train_corpus": "WikiText-2 raw train",
+    "heldout_corpus": "WikiText-2 raw test"
+  },
+  "quality": "end-to-end teacher/student PPL on 4096 held-out next-token predictions at context256",
+  "pilot_gate": {
+    "pass": "main-projection parameter reduction >=8x and final held-out PPL ratio <=1.5x teacher",
+    "promising_extend": ">=8x reduction, PPL ratio <=3x, and best training loss improvement >=40%",
+    "failure_scope": "only this <=10,240-token conversion pilot; not the long-uptraining recursive architecture class"
+  },
+  "workflow": ".github/workflows/run16-global-recursive-pilot.yml",
+  "protocol_doc": "docs/RUN16_GLOBAL_RECURSIVE_PILOT.md",
+  "pending_artifacts": ["run16_recursive_p2_r8.json", "run16_recursive_p3_r8.json"],
+  "claim_boundary": "No packed file, low-bit weight claim, native recursive runtime, RSS or VRAM. Original embedding/head remains unchanged."
+}
