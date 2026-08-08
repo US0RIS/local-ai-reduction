@@ -8,8 +8,6 @@ BASELINE_SHA256='ce6253d2e91adea0c35924b38411b0434fa18fcb90c52980ce68187dbcbbe40
 TARGET_MAX_FILE_BYTES=BASELINE_Q4KM_BYTES//10
 ALIGNMENT=4096
 Q4_PAGE_HEADER_BYTES=16
-# Conservative planning reserve for tokenizer/config/special-token resources.
-# Final compliance is determined from the actual serialized .larc file, not this reserve.
 AUX_DEPLOYMENT_RESERVE_BYTES=4*1024*1024
 CANONICAL_SOURCE_INDEX='https://huggingface.co/mistralai/Mistral-7B-v0.1/resolve/main/model.safetensors.index.json'
 CFG={'model':'mistralai/Mistral-7B-v0.1','layers':32,'hidden':4096,'intermediate':14336,'heads':32,'kv_heads':8,'head_dim':128,'vocab':32000,'tied_embeddings':False,'sliding_window':4096}
@@ -66,6 +64,21 @@ def candidate(weight_rank:int,kv_rank:int,breakdown:bool=True):
 def build():
  return {'run':5,'strategy':'soft cross-layer sharing: one shared Q4 base per matrix type + depth-specific low-rank Q4 residuals; Q2/FP8 latent KV retained','target':'10x, not 50x','reference_model':CFG,'baseline':{'gguf':'TheBloke/Mistral-7B-v0.1-GGUF / mistral-7b-v0.1.Q4_K_M.gguf','exact_bytes':BASELINE_Q4KM_BYTES,'sha256':BASELINE_SHA256,'exact_size_source':'Hugging Face raw LFS pointer','ten_x_max_integer_file_bytes':TARGET_MAX_FILE_BYTES,'fp16_kv_bytes_at_sliding_window_4096':fp16_kv_bytes()},'planning_reserves':{'aux_tokenizer_config_bytes':AUX_DEPLOYMENT_RESERVE_BYTES,'note':'Conservative planning reserve only. Final 10x gate uses actual complete serialized .larc bytes.'},'rank_sweep':[candidate(r,64,False) for r in (64,80,96,112,128,136,140,144)],'recommended_core':candidate(96,64,True),'quality_max_candidate':candidate(128,72,True),'design_note':'Start at rank96 because 96/4096 equals the 2.34% relative rank of the successful rank3/d128 controlled probe. Spend the remaining complete-file/runtime 10x budget on validation-selected rescue ranks/pages; do not force harder sharing.'}
 
+def _semantic_equal(a,b,path='root'):
+ if isinstance(a,dict) and isinstance(b,dict):
+  if set(a)!=set(b):raise AssertionError(f'{path}: key mismatch {set(a)^set(b)}')
+  for k in a:_semantic_equal(a[k],b[k],f'{path}.{k}')
+ elif isinstance(a,list) and isinstance(b,list):
+  if len(a)!=len(b):raise AssertionError(f'{path}: length {len(a)} != {len(b)}')
+  for i,(x,y) in enumerate(zip(a,b)):_semantic_equal(x,y,f'{path}[{i}]')
+ elif isinstance(a,(int,float)) and isinstance(b,(int,float)):
+  if not math.isclose(float(a),float(b),rel_tol=1e-12,abs_tol=1e-9):raise AssertionError(f'{path}: {a} != {b}')
+ elif a!=b:raise AssertionError(f'{path}: {a!r} != {b!r}')
+
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('--output',default='benchmarks/run5_mistral7b_budget.json');a=ap.parse_args();text=json.dumps(build(),indent=2)+'\n';Path(a.output).write_text(text);print(text,end='')
+ ap=argparse.ArgumentParser();ap.add_argument('--output',default='benchmarks/run5_mistral7b_budget.json');ap.add_argument('--check',action='store_true');a=ap.parse_args();obj=build();p=Path(a.output)
+ if a.check:
+  _semantic_equal(json.loads(p.read_text()),obj);print(f'OK {p}')
+ else:
+  text=json.dumps(obj,indent=2)+'\n';p.write_text(text);print(text,end='')
 if __name__=='__main__':main()
