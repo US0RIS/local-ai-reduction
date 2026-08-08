@@ -1,0 +1,48 @@
+{
+  "run": "9A",
+  "kind": "early exact input for precommitted Run-12 file-rate bound",
+  "source_model": "HuggingFaceTB/SmolLM2-135M",
+  "source_model_commit": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "llama_cpp_commit": "687e7789271ec1276e3470f158428e11a4f80b6f",
+  "github_run_id": "31279862191",
+  "parameter_count_from_llama_bench": 134515008,
+  "files": {
+    "F16": {
+      "path": "models/SmolLM2-135M-F16.gguf",
+      "bytes": 270885504,
+      "sha256": "f2d0ca82008a27f4dca9ab4e2da320a6fa3f564a4c74e446c855d07fb7a9ffc8",
+      "effective_total_file_bpw": 16.110351285114596
+    },
+    "Q4_K_M": {
+      "path": "models/SmolLM2-135M-Q4_K_M.gguf",
+      "bytes": 105453696,
+      "sha256": "2e1a7f7eb5a41f643dbf5490f6f16d2f8f2f55a14e2e3abc1f1ea1e67c882780",
+      "effective_total_file_bpw": 6.271638983212936
+    },
+    "Q2_K": {
+      "path": "models/SmolLM2-135M-Q2_K.gguf",
+      "bytes": 88201344,
+      "sha256": "06da2577705e1ffbdccaeaf5cec8d46dae2942b162a6030ab4a2c8be153b77d9",
+      "effective_total_file_bpw": 5.2455912726110085
+    }
+  },
+  "exact_q4_relative_targets": {
+    "10": {
+      "max_candidate_total_file_bytes": 10545369.6,
+      "required_effective_total_file_bpw": 0.6271638983212936
+    },
+    "20": {
+      "max_candidate_total_file_bytes": 5272684.8,
+      "required_effective_total_file_bpw": 0.3135819491606468
+    },
+    "30": {
+      "max_candidate_total_file_bytes": 3515123.2,
+      "required_effective_total_file_bpw": 0.20905463277376454
+    }
+  },
+  "workflow_artifact": {
+    "artifact_id": 9028195999,
+    "artifact_sha256": "d9347f6a2924cb8a35d9f3cf049d6024805134ec2c50eef0e0011e242a3e6ffb"
+  },
+  "claim_boundary": "Exact serialized-file arithmetic only. No PPL, RSS, VRAM, throughput or LARC quality result. Full Run 9 remains authoritative for the deployment baseline."
+}

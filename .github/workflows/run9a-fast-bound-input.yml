@@ -1,0 +1,116 @@
+name: Run 9A fast Q4 file-bound input
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/run9a-fast-bound-input.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  file-bound-input:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          path: external/llama.cpp
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install minimal conversion/build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build cmake libcurl4-openssl-dev
+          python -m pip install --upgrade pip
+          python -m pip install -r external/llama.cpp/requirements/requirements-convert_hf_to_gguf.txt
+
+      - name: Build unified llama app
+        run: |
+          cmake -S external/llama.cpp -B external/llama.cpp/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGGML_NATIVE=ON \
+            -DLLAMA_BUILD_TESTS=OFF
+          cmake --build external/llama.cpp/build -j 2 --target llama-app
+          external/llama.cpp/build/bin/llama version
+
+      - name: Convert and quantize exact Run-9 model family
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+        run: |
+          mkdir -p models raw benchmarks
+          python external/llama.cpp/convert_hf_to_gguf.py \
+            --remote HuggingFaceTB/SmolLM2-135M \
+            --outfile models/SmolLM2-135M-F16.gguf \
+            --outtype f16 > raw/convert.log 2>&1
+          external/llama.cpp/build/bin/llama quantize \
+            models/SmolLM2-135M-F16.gguf models/SmolLM2-135M-Q4_K_M.gguf Q4_K_M \
+            > raw/quantize_Q4_K_M.log 2>&1
+          external/llama.cpp/build/bin/llama quantize \
+            models/SmolLM2-135M-F16.gguf models/SmolLM2-135M-Q2_K.gguf Q2_K \
+            > raw/quantize_Q2_K.log 2>&1
+
+      - name: Probe exact llama-bench parameter count
+        run: |
+          external/llama.cpp/build/bin/llama bench \
+            -m models/SmolLM2-135M-Q4_K_M.gguf \
+            -p 1 -n 0 -r 1 -o json -t "$(nproc)" -ngl 0 -dev none -mmp 1 \
+            > raw/bench_probe.json
+          cat raw/bench_probe.json
+
+      - name: Assemble exact file-bound input
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, subprocess
+          from pathlib import Path
+          from huggingface_hub import model_info
+
+          def sha256(p):
+              h=hashlib.sha256()
+              with open(p,'rb') as f:
+                  for b in iter(lambda:f.read(1<<20),b''): h.update(b)
+              return h.hexdigest()
+
+          files={
+              'F16':Path('models/SmolLM2-135M-F16.gguf'),
+              'Q4_K_M':Path('models/SmolLM2-135M-Q4_K_M.gguf'),
+              'Q2_K':Path('models/SmolLM2-135M-Q2_K.gguf'),
+          }
+          bench=json.loads(Path('raw/bench_probe.json').read_text())
+          if not bench or int(bench[0].get('model_n_params',0)) <= 0:
+              raise SystemExit('llama-bench did not expose a positive model_n_params')
+          n_params=int(bench[0]['model_n_params'])
+          result={
+              'run':'9A',
+              'kind':'early exact input for precommitted Run-12 file-rate bound',
+              'source_model':'HuggingFaceTB/SmolLM2-135M',
+              'source_model_commit':model_info('HuggingFaceTB/SmolLM2-135M').sha,
+              'llama_cpp_commit':subprocess.check_output(['git','-C','external/llama.cpp','rev-parse','HEAD'],text=True).strip(),
+              'github_run_id':os.getenv('GITHUB_RUN_ID'),
+              'parameter_count_from_llama_bench':n_params,
+              'files':{q:{'path':str(p),'bytes':p.stat().st_size,'sha256':sha256(p),'effective_total_file_bpw':p.stat().st_size*8/n_params} for q,p in files.items()},
+              'exact_q4_relative_targets':{
+                  str(r):{
+                      'max_candidate_total_file_bytes':files['Q4_K_M'].stat().st_size/r,
+                      'required_effective_total_file_bpw':files['Q4_K_M'].stat().st_size*8/(r*n_params)
+                  } for r in (10,20,30)
+              },
+              'claim_boundary':'Exact serialized-file arithmetic only. No PPL, RSS, VRAM, throughput or LARC quality result. Full Run 9 remains authoritative for the deployment baseline.'
+          }
+          Path('benchmarks/run9a_fast_file_bound_input.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps(result,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run9a-fast-file-bound-input
+          path: benchmarks/run9a_fast_file_bound_input.json
+          if-no-files-found: error
+          retention-days: 90

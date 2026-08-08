@@ -1,0 +1,61 @@
+{
+  "run": 12,
+  "date": "2026-08-08",
+  "status": "exact_file_rate_bound_completed_rss_bound_pending_full_run9",
+  "input": {
+    "artifact": "benchmarks/run9a_fast_file_bound_input.json",
+    "source_model": "HuggingFaceTB/SmolLM2-135M",
+    "source_model_commit": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+    "llama_cpp_commit": "687e7789271ec1276e3470f158428e11a4f80b6f",
+    "parameter_count": 134515008,
+    "q4_k_m_file_bytes": 105453696,
+    "q4_k_m_effective_total_file_bpw": 6.271638983212936
+  },
+  "exact_q4_relative_targets": {
+    "10x": {
+      "max_total_candidate_file_bytes": 10545369.6,
+      "required_effective_total_file_bpw": 0.6271638983212936,
+      "below_one_bit_per_original_parameter": true,
+      "below_half_bit_per_original_parameter": false
+    },
+    "20x": {
+      "max_total_candidate_file_bytes": 5272684.8,
+      "required_effective_total_file_bpw": 0.3135819491606468,
+      "below_one_bit_per_original_parameter": true,
+      "below_half_bit_per_original_parameter": true
+    },
+    "30x": {
+      "max_total_candidate_file_bytes": 3515123.2,
+      "required_effective_total_file_bpw": 0.20905463277376454,
+      "below_one_bit_per_original_parameter": true,
+      "below_half_bit_per_original_parameter": true,
+      "below_quarter_bit_per_original_parameter": true
+    }
+  },
+  "ideal_same_parameter_zero_metadata_bounds": {
+    "4_bpw": {"max_reduction_vs_measured_q4_k_m_x": 1.567909745803234},
+    "3_bpw": {"max_reduction_vs_measured_q4_k_m_x": 2.0905463277376453},
+    "2.5_bpw": {"max_reduction_vs_measured_q4_k_m_x": 2.5086555932851744},
+    "2_bpw": {"max_reduction_vs_measured_q4_k_m_x": 3.135819491606468},
+    "1.58_bpw": {"max_reduction_vs_measured_q4_k_m_x": 3.9693917615271745},
+    "1_bpw": {"max_reduction_vs_measured_q4_k_m_x": 6.271638983212936},
+    "0.5_bpw": {"max_reduction_vs_measured_q4_k_m_x": 12.543277966425872},
+    "0.25_bpw": {"max_reduction_vs_measured_q4_k_m_x": 25.086555932851745}
+  },
+  "decision": {
+    "ordinary_fixed_width_same_parameter_1bit_can_reach_10x_file_target": false,
+    "ordinary_fixed_width_same_parameter_2bit_can_reach_10x_file_target": false,
+    "ideal_zero_overhead_half_bit_can_reach_10x_file_target": true,
+    "ideal_zero_overhead_half_bit_can_reach_20x_file_target": false,
+    "ideal_zero_overhead_quarter_bit_can_reach_20x_file_target": true,
+    "ideal_zero_overhead_quarter_bit_can_reach_30x_file_target": false,
+    "implication": "The original 10x-30x Q4-relative serialized-size objective cannot be reached by conventional fixed-width >=1-bit quantization of the same 134.5M independent parameter set. At 10x, the entire file budget is only 0.627 total bits per original parameter including all metadata. Therefore substantial parameter elimination/reuse, genuinely sub-bit average structural/entropy coding, tokenizer/embedding restructuring, or a model trained for compressibility is mathematically required."
+  },
+  "pending": {
+    "full_run9_quality": true,
+    "measured_maxrss_and_allocator_pools": true,
+    "throughput": true,
+    "total_resident_memory_feasibility_bound": true
+  },
+  "claim_boundary": "The serialized-file arithmetic is exact for the measured Q4_K_M GGUF and llama-bench parameter count. It is not a LARC quality result and does not imply the same ratios for process RSS or VRAM. Full Run 9 remains authoritative for deployment quality, memory and speed."
+}
