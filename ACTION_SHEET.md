@@ -287,7 +287,7 @@ Initial measured result is extremely poor:
 
 Even FP32 factor ceilings and head-only replacement are catastrophic, suggesting the language-critical tied vocabulary geometry is not captured by a low global rank.
 
-However, because integrated PPL worsens non-monotonically as rank rises, **Run 15 is not yet accepted as architectural evidence**. Run 15B is queued as a hard implementation control:
+However, because integrated PPL worsens non-monotonically as rank rises, **Run 15 is not yet accepted as architectural evidence**. Run 15B is active as a hard implementation control:
 
 - ranks384/448/512/576;
 - rank576 FP32 must reconstruct embedding NMSE ≤1e-8;
@@ -348,7 +348,15 @@ Storage:
 
 Input inference is direct centroid gathering. Output logits are also direct: compute 256 centroid dot products per subspace, then gather/sum the selected entries for each token and multiply by token norm. A semantic test compares this packed-head computation against a separately decoded dense reference.
 
-Tested subspace dimensions 8/12/16/24/32 span roughly **3.8× to 11.7×** reduction versus the 15,040,512-byte tied Q4_GROUP64 component.
+Tested subspace dimensions 8/12/16/24/32 span exactly:
+
+| subdim | tied-vocab bytes | reduction vs tied Q4_GROUP64 | effective embedding bpw |
+|---:|---:|---:|---:|
+| 8 | 3,932,160 | 3.825× | 1.1111 |
+| 12 | 2,752,512 | 5.464× | 0.7778 |
+| 16 | 2,162,688 | 6.955× | 0.6111 |
+| 24 | 1,572,864 | 9.563× | 0.4444 |
+| 32 | 1,277,952 | 11.769× | 0.3611 |
 
 Frozen pass gate:
 
@@ -360,7 +368,67 @@ Frozen pass gate:
 
 Borderline: ≥4×, NMSE ≤0.10, head-only ≤1.15×, integrated ≤1.50×.
 
-If successful, this would remove the vocabulary matrix as a hard 10× barrier with a direct compressed-domain algorithm. If it fails, the vocabulary/tokenizer interface likely must be learned jointly with the final low-description-length architecture.
+The five frozen subdims are now scheduled as **independent matrix jobs** to avoid a serial CPU timeout; this changes execution scheduling only, not the experiment.
+
+---
+
+# Run 18 — combined description-budget envelope
+
+Run 18 does not test intelligence. It combines the exact byte contracts already frozen for Runs 16 and 17 and asks whether those components, **if they pass quality**, are sufficient for the measured 10× serialized-file target.
+
+Measured 10× budget: **10,545,369.6 B**.
+
+## Conservative overhead allowance
+
+Measured F16 GGUF is 270,885,504 B. Exact unique FP16 tensors are:
+
+`134,515,008 × 2 = 269,030,016 B`.
+
+Run 18 reserves the entire difference, **1,855,488 B**, as a conservative allowance for tokenizer/container/tensor metadata/alignment. No reduction in this overhead is assumed.
+
+All 35,136 remaining unique non-embedding/non-main-projection parameters are also kept at FP16: **70,272 B**.
+
+## Recursive decoder Q4_GROUP64 bytes
+
+P=2/rank8:
+
+- shared physical bases **3,760,128 B**;
+- depth LoRA **1,569,600 B**;
+- total **5,329,728 B**.
+
+P=3/rank8:
+
+- shared bases **5,640,192 B**;
+- depth LoRA **1,569,600 B**;
+- total **7,209,792 B**.
+
+## Combined conservative totals
+
+| physical phases | vocab PQ subdim | conservative total | modeled reduction vs measured Q4_K_M | 10× headroom |
+|---:|---:|---:|---:|---:|
+| 2 | 8 | 11,187,648 B | 9.426× | −642,278 B |
+| **2** | **12** | **10,008,000 B** | **10.537×** | **+537,370 B** |
+| 2 | 16 | 9,418,176 B | 11.197× | +1,127,194 B |
+| 2 | 24 | 8,828,352 B | 11.945× | +1,717,018 B |
+| 2 | 32 | 8,533,440 B | 12.358× | +2,011,930 B |
+| 3 | 8 | 13,067,712 B | 8.070× | −2,522,342 B |
+| 3 | 12 | 11,888,064 B | 8.871× | −1,342,694 B |
+| 3 | 16 | 11,298,240 B | 9.334× | −752,870 B |
+| 3 | 24 | 10,708,416 B | 9.848× | −163,046 B |
+| **3** | **32** | **10,413,504 B** | **10.127×** | **+131,866 B** |
+
+## Run-18 decision
+
+**The current structural byte contracts are sufficient in principle for the first 10× serialized-size milestone without requiring sub-1-bit physical decoder weights, if Run 16 and Run 17 survive quality.**
+
+- P=2/rank8 requires PQ subdim12 or more aggressive under this allowance.
+- P=3/rank8 crosses 10× only with subdim32.
+
+This is an important refinement of the Run-12 conclusion. Run 12 proves same-parameter ≥1-bit quantization is insufficient. Run 18 shows that after substantial parameter sharing and vocabulary composition, **ordinary Q4_GROUP64 physical decoder matrices can fit the first 10× description envelope**. Ternary/sub-1-bit training remains useful for more headroom, resident-memory reduction, and 20–30×, but is not inherently required for the initial file-size milestone.
+
+Canonical arithmetic: `RUN18_DESCRIPTION_BUDGET.json`; generator `tools/run18_description_budget.py`; detailed protocol `docs/RUN18_DESCRIPTION_BUDGET.md`.
+
+No quality, native runtime, RSS, VRAM, TTFT, or throughput claim is made by Run 18.
 
 ---
 
@@ -371,6 +439,8 @@ The exact Run-12 rate bound changes how the project should be framed:
 > **This is no longer primarily a quantization problem. It is a model-description-length problem.**
 
 A 10× candidate must fit **everything** in ~10.55 MB, equivalent to only 0.627 total bits per original SmolLM2 parameter. Conventional same-parameter 1–2 bit quantization cannot reach that. The model must have far fewer independently described degrees of freedom.
+
+Run 18 further shows that the **byte economics are no longer the blocker** for one concrete composite architecture: if the P=2/rank8 recursive decoder and a Run-17 PQ point at subdim12 or higher both preserve quality, the combined Q4 physical-weight description fits the measured 10× file budget even after a conservative 1.855 MB overhead allowance.
 
 Real-model evidence now says:
 
@@ -391,7 +461,8 @@ Real-model evidence now says:
 4. Hadamard rotation + covariance-aware/second-order rounding materially improves W2 operator fidelity;
 5. structural sharing can easily achieve 5–11× **byte/parameter economics**, but post-hoc local fitting has not preserved function;
 6. the tied vocabulary matrix is a mandatory compression target;
-7. rigorous provenance/gating now prevents synthetic/component arithmetic from becoming false whole-model claims.
+7. exact description-budget arithmetic now identifies P=2/r8 + vocabulary PQ subdim≥12 as a 10×-capable serialized contract **if quality survives**;
+8. rigorous provenance/gating prevents synthetic/component arithmetic from becoming false whole-model claims.
 
 ### Primary remaining hypothesis
 
@@ -403,7 +474,7 @@ The model must likely be **trained or globally distilled into a low-description-
 - a structured/compositional vocabulary interface rather than an unchanged 49k×576 dense matrix;
 - packed latent KV and direct compressed-domain kernels.
 
-Native ternary training is relevant because BitNet b1.58 demonstrates that very low-bit weights can remain competitive when low precision is built into training, but Run-12 arithmetic also shows **1.58 bits alone is nowhere near enough**: a same-parameter 1.58-bpw payload can only be ~3.97× smaller than the measured Q4_K_M file before overhead. Parameter reduction and low-bit training must be combined.
+Native ternary training is relevant because BitNet b1.58 demonstrates that very low-bit weights can remain competitive when low precision is built into training, but Run-12 arithmetic also shows **1.58 bits alone is nowhere near enough**: a same-parameter 1.58-bpw payload can only be ~3.97× smaller than the measured Q4_K_M file before overhead. Parameter reduction and low-bit training must be combined for the 20–30× extension.
 
 ---
 
@@ -418,13 +489,15 @@ What is now established:
 - one real-model low-bit mechanism (Hadamard + second-order rounding) is positive at operator level;
 - local nonlinear sharing fails even before quantization;
 - vocabulary compression is mathematically mandatory;
-- global recursive distillation and direct-packed vocabulary PQ are the next active tests.
+- a concrete Run-16/17 composite has sufficient modeled **serialized-byte economics** for 10× under conservative overhead, but its quality is unproven;
+- global recursive distillation and direct-packed vocabulary PQ are the next active quality tests.
 
 Do **not** claim:
 
-- 10× real-model compression;
-- Q4_K_M quality parity;
-- 10× RSS or VRAM;
+- 10× real-model compression achieved;
+- Q4_K_M quality parity achieved;
+- 10× RSS or VRAM achieved;
+- Run-18 modeled 10× byte feasibility as an executed `.larc` file;
 - that Run-11's ~6.4× matrix-vs-FP16 ratio is a Q4-relative whole-model ratio;
 - that Run-13/14 component byte ratios translate into a usable model;
 - that the provisional Run-15 low-rank failure is final before the rank576 sanity control;
@@ -437,12 +510,13 @@ Do **not** claim:
 1. **Finish full Run 9** and commit actual Q4_K_M/Q2_K PPL, MaxRSS, allocator pools, and throughput.
 2. **Complete Run 12 total-memory bound** using measured Run-9 RSS, distinguishing removable weight residency from KV/runtime fixed floors.
 3. **Validate Run 15 with rank576** before accepting its severe low-rank conclusion.
-4. **Execute Run 17** direct-packed vocabulary PQ. If it passes, build a native PQ lookup/head kernel and full-corpus validation.
-5. **Execute Run 16** global recursive rank8 distillation. If loss/PPL show recovery, extend uptraining instead of changing representation prematurely.
+4. **Execute Run 17** direct-packed vocabulary PQ. The first strategically important quality point is subdim12 because Run 18 shows it is the least aggressive P=2 vocabulary setting that still closes the 10× file budget.
+5. **Execute Run 16** global recursive rank8 distillation. P=2 has the best 10× description headroom; P=3 is the less aggressive structural-quality control but only crosses 10× with the most aggressive tested vocabulary PQ.
 6. **Finish Run 10** optimized W2. If W2 remains weak, PTQ-only work becomes secondary because the exact 0.627-bpw target already requires structural reduction regardless.
-7. If Run 16 short-budget recovery is promising, create a longer recursive uptraining series and then introduce low-bit/QAT physical bases.
-8. If Run 16 is not promising and Run 17 also fails, move to a **jointly trained recurrent student with a redesigned/factorized/compositional tokenizer interface** rather than further post-hoc conversion.
-9. Once a real L3 representation survives full-corpus quality, integrate it with the existing packed Q2/E4M3 KV primitive and measure real RSS/TTFT/tokens/s under the same protocol as Q4_K_M.
-10. Only then pursue CUDA/Metal L4 and the 20–30× extension.
+7. If Run 16 short-budget recovery is promising, extend uptraining before changing representation, then quantize/QAT the physical bases and adapters.
+8. If Run 17 passes, implement native PQ embedding/output-head kernels and full-corpus validation.
+9. If Run 16 is not promising and Run 17 also fails, move to a **jointly trained recurrent student with a redesigned/factorized/compositional tokenizer interface** rather than further post-hoc conversion.
+10. Once a real L3 representation survives full-corpus quality, integrate it with the existing packed Q2/E4M3 KV primitive and measure real RSS/TTFT/tokens/s under the same protocol as Q4_K_M.
+11. Only then pursue CUDA/Metal L4 and the 20–30× extension.
 
 The **20–30× objective remains open**. The exact file-rate evidence now makes clear that achieving it requires a model whose learned information content is fundamentally smaller than the original independent parameter tensor set—not merely a more aggressive conventional quantizer.
