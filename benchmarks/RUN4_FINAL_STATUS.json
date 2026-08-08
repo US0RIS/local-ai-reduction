@@ -1,0 +1,69 @@
+{
+  "run": 4,
+  "date": "2026-08-08",
+  "strongest_current_level": "L2C",
+  "controlled_quality": {
+    "task": "synthetic character-level template language model",
+    "context": 64,
+    "evaluation_chars": 100032,
+    "streams": {"training":3,"checkpoint_selection":444,"basis_calibration":555,"final_evaluation":333},
+    "teacher_representation": "canonical Q4_ROW weights + FP16 KV",
+    "larc_weight_representation": "canonical Q4_ROW shared weights after projected-Q4 recovery",
+    "larc_kv_representation": "rank-16 latent Q2, E4M3-FN min/scale metadata, Q4 K/V bases, FP16 K/V inverse-Gram metrics",
+    "teacher_q4_nll": 1.8854834153266267,
+    "q4_recovered_shared_nll": 1.9407754020666512,
+    "compressed_nll": 1.9752494143280401,
+    "structural_delta_nats_per_char": 0.05529198674002456,
+    "kv_delta_nats_per_char": 0.03447401226138891,
+    "total_delta_nats_per_char": 0.08976599900141347,
+    "perplexity_ratio": 1.0939182757844184
+  },
+  "context64_memory_models": {
+    "python_reference_with_T_by_rank_decode_scratch_x": 11.742459986721101,
+    "direct_packed_attention_contract_x": 12.040090606804222,
+    "memory_is_measured_process_or_device_peak": false
+  },
+  "direct_packed_attention_L1": {
+    "tokens": 2048,
+    "rank": 16,
+    "head_dim": 32,
+    "max_abs_error_vs_decoded_reference": 2.50292942e-09,
+    "scratch_bytes_per_head": 8448,
+    "packed_cache_bytes_per_head": 24576,
+    "full_fp32_decoded_latent_history_bytes_per_head": 262144
+  },
+  "packed_structural_context_sweep": {
+    "64": 12.040090606804222,
+    "256": 11.219894125564583,
+    "512": 10.91183917213735,
+    "1024": 10.712369353240984,
+    "2048": 10.597161341228471,
+    "4096": 10.534970319744055,
+    "8192": 10.502620086665468,
+    "quality_validated_contexts": [64]
+  },
+  "important_failures_and_revocations": {
+    "run3_l2c_headline": "revoked because quality used FP32 weights while memory charged Q4",
+    "run3_equal_compute_control": "revoked as convergence evidence because continuation schedule degraded teacher",
+    "run4_pre_q4_recovery": "Q4 shared+latent path perplexity was ~2.186x teacher, demonstrating correlated repeated-block quantization failure",
+    "run4_pre_disjoint_calibration_fp8_result": "superseded because latent basis was calibrated on final-evaluation contexts"
+  },
+  "recovery_provenance": {
+    "teacher_steps": 120,
+    "structural_recovery_steps": 200,
+    "projected_q4_recovery_steps_run": 200,
+    "selected_projected_q4_step": 150,
+    "projected_q4_learning_rate": 0.0003
+  },
+  "open": {
+    "converged_equal_compute_multi_seed": true,
+    "real_activation_spectra": true,
+    "long_context_quality": true,
+    "full_end_to_end_packed_runtime_measured_RSS": true,
+    "L3_external_pretrained_model": true,
+    "L4_cuda_or_metal_vram": true,
+    "competitive_iso_byte_baselines": true,
+    "real_model_20_to_30x_quality": true
+  },
+  "claim_boundary": "LARC has controlled context-64 L2C quality evidence with representation-consistent Q4 weights and a separately L1-validated packed Q2 attention primitive. The 12.04x context-64 and 10.50-10.60x 2K/8K figures are modeled/composed tensor-residency contracts, not measured whole-process RAM/VRAM; quality beyond context64 and external pretrained-model performance remain unproven."
+}
