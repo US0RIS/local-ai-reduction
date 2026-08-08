@@ -1,0 +1,8 @@
+[
+  {"rank":8,"rank_fraction":0.125,"k_nmse":0.42311474680900574,"v_nmse":0.3443634808063507,"attention_output_nmse":0.5214970111846924,"encoded_test_bytes":17408,"kv_2048_bytes":1612800,"kv_2048_reduction":29.257142857142856,"kv_8192_bytes":6312960,"kv_8192_reduction":29.8978102189781},
+  {"rank":12,"rank_fraction":0.1875,"k_nmse":0.28797051310539246,"v_nmse":0.1989174783229828,"attention_output_nmse":0.12357558310031891,"encoded_test_bytes":22016,"kv_2048_bytes":2050560,"kv_2048_reduction":23.01123595505618,"kv_8192_bytes":7994880,"kv_8192_reduction":23.608069164265128},
+  {"rank":16,"rank_fraction":0.25,"k_nmse":0.20901285111904144,"v_nmse":0.12217783182859421,"attention_output_nmse":0.008307697251439095,"encoded_test_bytes":26624,"kv_2048_bytes":2488320,"kv_2048_reduction":18.962962962962962,"kv_8192_bytes":9676800,"kv_8192_reduction":19.504761904761907},
+  {"rank":24,"rank_fraction":0.375,"k_nmse":0.20801173150539398,"v_nmse":0.18759113550186157,"attention_output_nmse":0.013370905071496964,"encoded_test_bytes":35840,"kv_2048_bytes":3363840,"kv_2048_reduction":14.027397260273972,"kv_8192_bytes":13040640,"kv_8192_reduction":14.473498233215548},
+  {"rank":32,"rank_fraction":0.5,"k_nmse":0.20697714388370514,"v_nmse":0.2534196972846985,"attention_output_nmse":0.010132413357496262,"encoded_test_bytes":45056,"kv_2048_bytes":4239360,"kv_2048_reduction":11.130434782608695,"kv_8192_bytes":16404480,"kv_8192_reduction":11.50561797752809},
+  {"rank":48,"rank_fraction":0.75,"k_nmse":0.20489488542079926,"v_nmse":0.3919227719306946,"attention_output_nmse":0.016329776495695114,"encoded_test_bytes":63488,"kv_2048_bytes":5990400,"kv_2048_reduction":7.876923076923077,"kv_8192_bytes":23132160,"kv_8192_reduction":8.159362549800797}
+]
