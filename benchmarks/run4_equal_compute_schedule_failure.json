@@ -1,0 +1,13 @@
+{
+  "evaluation_chars": 100032,
+  "context": 64,
+  "same_eval_stream": true,
+  "schedule": "teacher120: 120 steps lr=2e-3; teacher320 continuation +200 steps lr=1.5e-3; converted recovery +200 steps lr=1.5e-3; scratch: 120 steps lr=2e-3 +200 steps lr=1.5e-3",
+  "nll": {
+    "teacher120_fp32": 1.67675473487156,
+    "teacher320_fp32": 2.83685927534439,
+    "converted_fp32": 2.1695398610140066,
+    "scratch320_fp32": 3.2875235588674125
+  },
+  "conclusion": "The Run-3 equal-compute control is revoked as evidence of converged conversion advantage. The continuation schedule itself is unstable/poor: the independent teacher degrades sharply from 120 to 320 steps, so early-training warm-start comparisons cannot answer the convergence question."
+}
