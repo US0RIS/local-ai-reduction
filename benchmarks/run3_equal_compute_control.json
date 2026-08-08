@@ -1,0 +1,21 @@
+{
+  "experiment": "equal_compute_recurrent_control",
+  "seed": 3,
+  "model": {"d":128,"heads":4,"ff":256,"logical_depth":16,"context":64,"vocab":37},
+  "evaluation_contexts": 32,
+  "evaluation_chars": 2048,
+  "teacher_independent_blocks": 16,
+  "teacher_steps": 120,
+  "teacher_eval_nll": 1.716840099543333,
+  "teacher_train_seconds": 12.787229299545288,
+  "converted_pre_recovery_nll": 55.14017879962921,
+  "converted_recovery_steps": 200,
+  "converted_post_recovery_nll": 1.8556326888501644,
+  "converted_recovery_seconds": 18.394479751586914,
+  "teacher_plus_recovery_seconds": 31.181709051132202,
+  "scratch_recurrent_steps": 320,
+  "scratch_recurrent_eval_nll": 2.965583574026823,
+  "scratch_recurrent_train_seconds": 34.31242489814758,
+  "converted_vs_scratch_nll_ratio": 0.6257240044514017,
+  "interpretation": "At the same 320 optimizer-step budget, teacher pretraining followed by structural conversion/recovery substantially outperformed training the one-block recurrent architecture from scratch. This is a controlled optimization result on the synthetic template corpus; it does not establish transfer to converged external LLMs."
+}
