@@ -32,16 +32,30 @@ def _source(tmp_path:Path,layers=2):
 def test_local_safetensors_tensor_range_reader(tmp_path):
     p=tmp_path/'one.safetensors';x=torch.arange(24,dtype=torch.float16).reshape(4,6);_write_safetensors(p,{'x':x});f=SafeTensorFile(p);got=f.read_tensor('x');assert torch.equal(got,x);assert f.bytes_fetched < p.stat().st_size+64
 
-def test_sharded_softshare_conversion_is_streamed_and_valid(tmp_path):
+def test_sharded_softshare_conversion_is_streamed_self_contained_and_valid(tmp_path):
     index,src_tensors=_source(tmp_path);src=ShardedSafeTensorSource(index);assert 'model.layers.0.self_attn.q_proj.weight' in set(src.names())
-    out=tmp_path/'tiny.larc';report=convert(index,out,{k:2 for k in MATRIX_TYPES},oversample=2,niter=1,seed=7)
-    expected_pages=3+2*2+len(MATRIX_TYPES)*(1+2*2)
-    assert report['page_count']==expected_pages==42
+    config=tmp_path/'config.json';config.write_bytes(b'{"model_type":"mistral"}\n');tokenizer=tmp_path/'tokenizer.json';tokenizer.write_bytes(b'{"version":"1.0","model":{}}\n')
+    out=tmp_path/'tiny.larc';synthetic_baseline=10_000_000
+    report=convert(index,out,{k:2 for k in MATRIX_TYPES},oversample=2,niter=1,seed=7,aux=[('config.json',str(config)),('tokenizer.json',str(tokenizer))],baseline_bytes=synthetic_baseline)
+    expected_pages=3+2*2+len(MATRIX_TYPES)*(1+2*2)+2
+    assert report['page_count']==expected_pages==44
     assert report['bounded_local_source_file_required'] is False
     assert report['largest_single_source_tensor_bytes']==max(t.numel()*2 for t in src_tensors.values())
+    assert report['conversion_peak_explicit_tensor_lower_bound_excluding_internal_svd_workspace_bytes']>=report['largest_single_source_tensor_bytes']
+    assert report['internal_svd_workspace_peak_measured'] is False
+    assert report['aux_resource_count']==2
+    assert report['aux_resource_bytes']==config.stat().st_size+tokenizer.stat().st_size
+    assert report['final_larc_bytes']==out.stat().st_size
+    assert report['ten_x_max_integer_file_bytes']==synthetic_baseline//10
+    assert report['passes_10x_file_gate'] is True
+    assert report['file_reduction_x']>=10.0
     with LARCv2File(out) as f:
         assert len(f.pages)==expected_pages
         assert f.manifest['softshare']['equation']=='W_layer = shared_Q4 + A_Q4 @ B_Q4'
+        assert f.manifest['softshare']['factor_codec']=='Q4_ROW'
         assert f.manifest['softshare']['residual_fit_reference']=='dequantized stored shared_Q4'
+        aux_by_name={p['resource_name']:p['page_id'] for p in f.manifest['pages'] if p['role']=='aux_resource'}
+        assert bytes(f.page_view(aux_by_name['config.json'],verify=True))==config.read_bytes()
+        assert bytes(f.page_view(aux_by_name['tokenizer.json'],verify=True))==tokenizer.read_bytes()
         for page_id in sorted(f.pages):
             v=f.page_view(page_id,verify=True);assert len(v)==f.pages[page_id].stored_length;del v
