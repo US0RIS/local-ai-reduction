@@ -1,0 +1,26 @@
+{
+  "run": 6,
+  "date": "2026-08-08",
+  "status": "implemented_protocol_pending_real_checkpoint_execution",
+  "target_model": "HuggingFaceTB/SmolLM2-135M",
+  "target_geometry": {"layers":30,"hidden":576,"intermediate":1536,"attention_heads":9,"kv_heads":3,"head_dim":64,"max_context":8192},
+  "implemented": {
+    "input_pca_heldout_operator_test": true,
+    "activation_aware_reduced_rank_regression_test": true,
+    "raw_real_layer_alias_nll_test": true,
+    "partial_4_to_1_real_layer_qat_distillation": true,
+    "precommitted_decision_gate": true,
+    "github_actions_checkpoint_runner": true,
+    "deterministic_partial_weight_arithmetic": true
+  },
+  "partial_4_to_1_arithmetic": {
+    "group_weight_reduction_x": 3.7870257037943698,
+    "whole_model_weight_reduction_x": 1.0839751430626157,
+    "whole_model_weight_saved_fraction": 0.07746962059052015
+  },
+  "execution_blocker": "Local sandbox cannot follow Hugging Face Xet/CDN checkpoint redirect and cannot install Transformers from its restricted package index. GitHub Actions workflow is accepted but hosted jobs remain queued without runner allocation in this session.",
+  "workflow": ".github/workflows/run6-real-model.yml",
+  "protocol_doc": "docs/RUN6_REAL_MODEL_PLAN.md",
+  "pending_artifacts": ["run6_real_model_falsification.json","run6_activation_aware_projection.json","run6_partial_real_conversion.json","RUN6_GATE.json"],
+  "claim_boundary": "No Run-6 L3 quality result exists until a real checkpoint execution completes and generated artifacts are inspected/committed. Run-5 remains the strongest current measured/computed evidence."
+}
