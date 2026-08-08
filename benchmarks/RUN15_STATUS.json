@@ -1,0 +1,33 @@
+{
+  "run": 15,
+  "date": "2026-08-08",
+  "status": "protocol_implemented_pending_execution",
+  "target_model": "HuggingFaceTB/SmolLM2-135M",
+  "kind": "tied input-embedding / LM-head factorization diagnostic",
+  "geometry": {
+    "vocab_size": 49152,
+    "hidden_size": 576,
+    "tied_embedding_parameter_count": 28311552,
+    "model_unique_parameter_count": 134515008,
+    "tied_embedding_fraction": 0.2104713252516775,
+    "unchanged_embedding_absolute_weight_reduction_ceiling_x_if_all_other_parameters_free": 4.751241048177083
+  },
+  "ranks": [64, 128, 192, 256],
+  "factorization": "E ~= A B from eig(E^T E), shared for input embedding and output head",
+  "packed_representation": "Q4_GROUP64 A + Q4_GROUP64 B; no dense tied E shadow",
+  "baseline": "single tied E stored as Q4_GROUP64",
+  "evaluation": {
+    "corpus": "WikiText-2 raw test",
+    "prediction_tokens": 8192,
+    "context": 512,
+    "tests": ["occurrence-weighted input embedding NMSE", "head-only next-token NLL", "integrated factorized-input + factorized-head NLL through original decoder"]
+  },
+  "component_gate": {
+    "pass": "Q4 tied-matrix reduction >=4x; embedding NMSE <=0.05; head-only PPL ratio <=1.05; integrated PPL ratio <=1.10",
+    "borderline": "reduction >=3x; embedding NMSE <=0.10; head-only PPL ratio <=1.10; integrated PPL ratio <=1.25"
+  },
+  "workflow": ".github/workflows/run15-embedding-factorization.yml",
+  "protocol_doc": "docs/RUN15_EMBEDDING_FACTORIZATION.md",
+  "pending_artifact": "run15_embedding_factorization.json",
+  "claim_boundary": "Real-pretrained tied embedding/head component diagnostic on a fixed WikiText-2 slice. No full-corpus promotion, Q4_K_M parity, native packed runtime, RSS, VRAM, or whole-model compression claim."
+}
