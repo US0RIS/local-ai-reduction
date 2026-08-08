@@ -217,16 +217,23 @@ L0–L2C MUST NOT be presented as L3/L4.
 
 Run 4 hard recursion remains an important reference result but is no longer the preferred 10× architecture.
 
-Run-5 controlled strategy selection:
+Authoritative Run-5 controlled strategy selection uses **canonical Q4_ROW for the residual factors, matching the converter/runtime**:
 
 - Q4 teacher NLL: **1.90547**;
-- SoftShare rank3/128 final Q4 NLL: **1.98021**, perplexity ×**1.07760**, but complete tiny-model reduction only **9.106×**;
-- exact tiny-model 10× profiles reach **10.142× / ppl×1.484** and **10.046× / ppl×1.401**, so they do not establish acceptable 10× quality.
+- SoftShare rank3: NLL **1.85275**, ppl×**0.94864**, complete tiny-model tensor reduction **7.099×**;
+- rank2: NLL **1.98593**, ppl×**1.08378**, reduction **8.095×**;
+- rank1: NLL **1.91066**, ppl×**1.00520**, reduction **8.411×**.
+
+Earlier Run-5 toy results that paired grouped-Q4 residual-factor quality with a different converter/runtime codec are revoked. The tiny d=128 model is not a useful complete-file 10× proxy because Q4 per-row scale bytes dominate 1–3-wide factors.
 
 Named real planning baseline:
 
 - Mistral-7B-v0.1 Q4_K_M exact file bytes: **4,368,438,912**;
-- rank96 weight / rank64 KV structural model: **11.8600×** for weights + 4K KV;
-- equal-common-scratch headroom before 10×: **85,478,016 B**.
+- exact 10× file ceiling: **436,843,891 B**;
+- rank96 weight `.larc` estimate: **371,302,608 B** before auxiliary resources;
+- with conservative 4 MiB tokenizer/config reserve: **375,496,912 B = 11.63375×**;
+- remaining complete-file planning headroom: **61,346,979 B**;
+- rank96/KV64 tensor model: **11.8600×** for weights + 4K KV;
+- equal-common-scratch headroom before tensor ratio reaches 10×: **85,478,016 B**.
 
-Native packed SoftShare execution is L1-validated. Real Mistral conversion/quality (L3) and measured deployment memory (L4) remain open.
+Native packed SoftShare execution is L1-validated and a local synthetic two-shard streaming conversion passes. Real Mistral conversion/quality (L3) and measured deployment memory (L4) remain open.
