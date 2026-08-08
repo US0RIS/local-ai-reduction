@@ -1,0 +1,77 @@
+name: Run 14 trained nonlinear MLP sharing
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/run14_trained_mlp_sharing.py'
+      - '.github/workflows/run14-trained-mlp-sharing.yml'
+      - 'docs/RUN14_TRAINED_MLP_SHARING.md'
+      - 'benchmarks/RUN14_STATUS.json'
+  pull_request:
+    paths:
+      - 'tools/run14_trained_mlp_sharing.py'
+      - '.github/workflows/run14-trained-mlp-sharing.yml'
+      - 'docs/RUN14_TRAINED_MLP_SHARING.md'
+
+permissions:
+  contents: read
+
+jobs:
+  trained-mlp-sharing:
+    strategy:
+      fail-fast: false
+      matrix:
+        layers_per_physical: [10, 5]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          path: external/llama.cpp
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install CPU training stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'transformers==4.57.6' accelerate 'huggingface-hub>=0.34,<1'
+
+      - name: Fetch disjoint WikiText-2 corpora
+        run: |
+          (cd external/llama.cpp && bash scripts/get-wikitext-2.sh)
+          test -f external/llama.cpp/wikitext-2-raw/wiki.train.raw
+          test -f external/llama.cpp/wikitext-2-raw/wiki.test.raw
+          sha256sum external/llama.cpp/wikitext-2-raw/wiki.train.raw external/llama.cpp/wikitext-2-raw/wiki.test.raw
+
+      - name: Train shared nonlinear MLP functions
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+          OMP_NUM_THREADS: '4'
+          MKL_NUM_THREADS: '4'
+        run: |
+          mkdir -p benchmarks
+          python tools/run14_trained_mlp_sharing.py \
+            --model HuggingFaceTB/SmolLM2-135M \
+            --calibration external/llama.cpp/wikitext-2-raw/wiki.train.raw \
+            --evaluation external/llama.cpp/wikitext-2-raw/wiki.test.raw \
+            --layers-per-physical ${{ matrix.layers_per_physical }} \
+            --cal-rows 128 --eval-rows 64 --windows 2 --ctx 512 \
+            --steps 120 --batch-per-layer 4 \
+            --weight-lr 3e-4 --film-lr 3e-3 \
+            --out benchmarks/run14_trained_mlp_share${{ matrix.layers_per_physical }}.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run14-trained-mlp-share${{ matrix.layers_per_physical }}
+          path: benchmarks/run14_trained_mlp_share${{ matrix.layers_per_physical }}.json
+          if-no-files-found: error
+          retention-days: 90
