@@ -2,6 +2,13 @@ name: Run 13 additive residual sharing
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/run13_additive_residual_sharing.py'
+      - '.github/workflows/run13-additive-residual-sharing.yml'
+      - 'docs/RUN13_ADDITIVE_RESIDUAL_SHARING.md'
+      - 'benchmarks/RUN13_STATUS.json'
   pull_request:
     paths:
       - 'tools/run13_additive_residual_sharing.py'
