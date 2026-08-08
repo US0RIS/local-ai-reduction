@@ -1,216 +1,139 @@
 # LARC Action Sheet
 
-Canonical technical record for **LARC — Local Adaptive Representation & Compute**. Historical Run 1–3 details remain in `docs/RUN3_AUDIT_CORRECTIONS.md` and the benchmark artifacts; this sheet records the current claim boundary after the second external audit.
+Canonical technical record for **LARC — Local Adaptive Representation & Compute**. Historical Run 1–3 details remain in `docs/RUN3_AUDIT_CORRECTIONS.md` and historical benchmark artifacts. Current artifact authority is `benchmarks/INDEX.json`; current machine-readable status is `benchmarks/RUN4_FINAL_STATUS.json`.
 
 ## Objective
 
-Reduce peak resident local-LLM inference memory by roughly **10–30× versus a named Q4-class baseline at the same context length**, while retaining useful capability. Every result must identify context, baseline, quality metric, and whether memory is measured or modeled.
+Reduce local-LLM **peak resident inference memory by roughly 10–30× versus a named Q4-class baseline at the same context length**, while retaining useful capability. Every claim must name baseline, context, quality delta, byte pools, and evidence type.
 
-Evidence levels remain L0 format, L1 operator, L2 controlled model, L2C post-training conversion, L3 external pretrained model, L4 measured hardware.
+Evidence levels: **L0** format, **L1** operator/runtime, **L2** controlled trained model, **L2C** controlled post-training conversion, **L3** independent pretrained LLM, **L4** measured target hardware.
 
 ---
 
-# Run 4 — second audit closure
+# Run 4 — audited representation-consistent closure
 
-## 1. Value-basis correction — IMPLEMENTED
+## Audit corrections that survive
 
-Run 3 corrected non-orthogonality of the quantized key basis but reconstructed latent values as `v_lat @ B_hat`, which is only correct when the stored basis rows remain orthonormal.
+1. **Both latent K and V need inverse-Gram correction after Q4 basis quantization.** Current value reconstruction is `v_lat G_V^-1 B_V_hat`; scores use `G_K^-1`. Basis row scales and both FP16 metrics are charged.
+2. **Canonical Q4_ROW** remains `q in [-8,7]`, low nibble first, FP16 row scale, `scale=max(max_positive/7, abs(min_negative)/8, eps)`.
+3. **Quality and memory representations must match.** Run-3's FP32-weight quality / Q4-weight memory headline is revoked.
+4. **Compression calibration must be disjoint from final evaluation.** Current streams are training seed 3, Q4 checkpoint-selection 444, latent-basis calibration 555, final evaluation 333.
+5. **Context length is mandatory in every total-memory claim.**
+6. **Artifact provenance is systemic.** `benchmarks/INDEX.json` plus `tools/check_benchmark_provenance.py` governs promoted evidence; new current artifacts name committed generators.
 
-Run 4 changes value reconstruction to the pseudoinverse form:
+## Negative result: naive Q4 sharing fails
 
-`v_full = v_lat (B_hat B_hat^T)^-1 B_hat`.
+When the independent teacher and recursively shared model were both evaluated using the Q4 representation charged by the memory model, the unrecovered shared model degraded severely (approximately perplexity ×2.19 versus the Q4 teacher). This confirms that quantization error in one physical block reused across depth is highly correlated.
 
-Both key and value Q4 bases therefore store FP16 inverse-Gram matrices. `tests/test_latent_basis_metric.py` verifies that the corrected key score and value reconstruction equal the orthogonal projector for deliberately non-orthonormal row bases.
+**Decision:** aggressive recursive sharing requires representation-aware recovery; FP32 recovery alone is insufficient.
 
-The extra value metric and exact Q4 basis-scale bytes are now charged in memory accounting.
+## Projected-Q4 recovery
 
-## 2. Q4 format boundary — ALREADY CLOSED IN RUN 3
+After structural conversion/recovery, matrices are projected to canonical Q4 and 1-D parameters to FP16. Optimization continues at low LR, and after every optimizer step parameters are immediately reprojected onto the exact storage grid. Checkpoint selection uses a disjoint stream.
 
-The second audit correctly asked for a pinned scale derivation, but the current main source already has it:
+Recovery provenance for the current controlled result:
 
-- integer range `[-8,7]`;
-- code = `q + 8`;
-- scale = `max(max_positive/7, max_negative_magnitude/8)`;
-- FP16 row scale;
-- low nibble first.
+- teacher pretraining: 120 steps,
+- structural recovery: 200 steps,
+- projected-Q4 recovery: up to 200 steps,
+- selected projected-Q4 checkpoint: step 150.
 
-`tests/test_q4_format.py` exercises both code boundaries using a row containing `-8` and `+7`. No Run-4 format change was needed.
+Extra recovery compute is part of the method and must be disclosed.
 
-## 3. Native factor-fidelity benchmark — REDESIGNED
+## Current controlled quality result — L2C
 
-The old `W=AB+0.02 epsilon` benchmark had an unavoidable rank-32 NMSE floor of about 0.187, so it was unsuitable for isolating factor quantization.
+Synthetic character LM, **context 64**, final evaluation **100,032 characters**:
 
-New source: `tests/native_q4_fidelity.cpp` with residual noise std `0.002`.
+| path | NLL |
+|---|---:|
+| independent canonical-Q4 teacher | **1.88548** |
+| Q4-recovered shared model, normal KV | **1.94078** |
+| shared + rank-16 latent Q2 + E4M3-FN metadata + Q4 bases + both metrics | **1.97525** |
 
-Measured locally:
+Quality decomposition:
 
-- resident factor reduction: **12.06239×**;
-- theoretical source rank-32 floor: **0.002299 NMSE**;
-- projected Q4 output NMSE vs exact FP32 W: **0.033299**;
-- projected Q4 output NMSE vs direct row-Q4: **0.056634**.
+- structural/Q4-recovery penalty: **+0.05529 nats/char**,
+- latent-KV penalty: **+0.03447 nats/char**,
+- total: **+0.08977 nats/char**,
+- perplexity ratio: **1.09392×**.
 
-Artifact: `benchmarks/run4_native_q4_fidelity.json`.
+Artifact: `benchmarks/run4_fp8meta_l2c.json`. Generator: `tools/run4_l2c_repro.py`.
 
-**Interpretation:** once truncation is nearly removed, current Q4 factor quantization still contributes substantial operator error. Better factor quantization is required before projection factors can be treated as high-fidelity.
+This is the strongest current **quality** result. It is a narrow synthetic controlled model, not broad-intelligence or external-pretrained evidence.
 
-## 4. Equal-compute control on the 100k evaluation stream — REPRODUCTION SUPPORTS CONVERSION, PROVENANCE ISSUE FOUND
+## E4M3-FN latent-Q2 metadata
 
-The second audit correctly noted that Run 3's equal-compute control used only 32 contexts, not the 100,032-character stream used by the L2C headline.
+Rank-16/head-dim-32 row-Q2 stores 4 coefficient bytes plus one E4M3-FN min and one scale byte per vector. K+V therefore cost **12 B/token** versus **128 B/token FP16**, a raw **10.6667× KV reduction** without lowering latent rank.
 
-A Run-4 reconstruction of the documented protocol uses:
+## Direct packed latent-Q2 attention — L1
 
-- training seed 3;
-- 90% of the generated training corpus;
-- evaluation stream seed 999;
-- **100,032 evaluation characters**;
-- teacher 120 steps;
-- converted student +200 recovery steps;
-- scratch recurrent model 320 steps.
+Implemented `runtime/larc_q2_attention.{h,cpp}` and `q4_transposed_gemv`.
 
-Independent reconstruction produced:
+The CPU reference consumes packed Q2 K/V, E4M3 metadata, Q4 bases, and both inverse-Gram metrics without materializing FP32 historical `T×rank` K/V arrays.
 
-- teacher FP32 NLL: **1.81268**;
-- recovered converted student FP32 NLL: **2.01538**;
-- scratch recurrent 320-step FP32 NLL: **2.92223**.
+At **T=2048, rank=16, head_dim=32**:
 
-Thus the same-stream control still strongly favors teacher→shared warm-start conversion over scratch recurrent training at the same optimizer-step count.
+- max absolute error vs separately decoded reference: **2.50e-9**,
+- packed cache/head: **24,576 B**,
+- direct scratch/head: **8,448 B**,
+- FP32 decoded latent K+V history/head: **262,144 B**.
 
-However, these numbers do **not** match the archived Run-3 100k artifact (teacher 1.77359 / recovered student 1.88556). The Run-3 headline artifact has no committed canonical generator script. Therefore Run 3's exact numerical headline is now classified as **historical, missing canonical generator**, not reproducibly promoted evidence.
+Artifact: `benchmarks/run4_native_q2_attention.json`; generator: `tests/native_q2_attention.cpp`.
 
-Current generator: `tools/run4_control_reproduction.py`.
-Artifacts: `benchmarks/run4_control_reproduction.json`, `benchmarks/run4_q4_weight_quality.json`.
+This is correctness/memory-contract evidence, not optimized throughput.
 
-## 5. Weight-quality vs weight-accounting mismatch — CONFIRMED MATERIAL
+## Packed-runtime structural context sweep
 
-The second audit correctly identified that previous quality comparisons executed FP32 weights while memory accounting assumed Q4 weights.
+Combining current Q4/shared weight bytes, E4M3 latent-Q2 cache bytes, and the direct-packed scratch contract gives:
 
-Run 4 evaluates the same reconstructed teacher and converted student after applying the canonical row-Q4 representation to every 2-D parameter and FP16 rounding to 1-D parameters.
-
-On the same 100,032-character seed-999 stream:
-
-| path | FP32 NLL | dequantized-Q4 NLL | Q4 delta |
-|---|---:|---:|---:|
-| 16 independent teacher blocks | 1.81268 | **2.04418** | **+0.23149 nats/char** |
-| one recurrent converted block | 2.01538 | **2.45371** | **+0.43832 nats/char** |
-
-The recurrent path suffers **+0.20683 nats/char more Q4 damage** than the teacher beyond the teacher's own Q4 degradation.
-
-This is consistent with the audit hypothesis that quantization error in one reused block is depth-correlated and can compound through the residual stream.
-
-**Consequence:** the former L2C claim coupling FP32 quality with Q4 weight bytes is no longer sufficient. A future headline must evaluate the weight representation actually charged in memory.
-
-## 6. Context sweep — RESTORED AS A HARD GATE
-
-With the corrected row/row latent-Q2 cache used by the controlled L2C model, Q4 bases, both inverse-Gram matrices, and exact basis-scale bytes, modeled total-memory reduction is strongly context-dependent:
-
-| context | modeled total reduction |
+| context | modeled total tensor reduction |
 |---:|---:|
-| 64 | **10.5245×** |
-| 128 | **9.7843×** |
-| 256 | **9.1247×** |
-| 512 | **8.6466×** |
-| 1K | **8.3495×** |
-| 2K | **8.1821×** |
-| 4K | **8.0930×** |
-| 8K | **8.0470×** |
+| 64 | **12.04×** |
+| 256 | **11.22×** |
+| 512 | **10.91×** |
+| 1K | **10.71×** |
+| 2K | **10.60×** |
+| 4K | **10.53×** |
+| 8K | **10.50×** |
 
-Artifact: `benchmarks/run4_context_sweep.json`.
+Artifact: `benchmarks/run4_packed_attention_context_sweep.json`; generator: `tools/run4_packed_context_sweep.py`.
 
-Therefore the old `10.66× total memory` statement is valid only near the 64-token controlled context and is not a general long-context result. At practical contexts this particular codec asymptotically approaches roughly **8×** total reduction.
+**Quality is validated only at context 64.** The 2K/8K rows are structural/runtime byte models, not long-context quality and not measured RSS/VRAM.
 
-Every future total-memory claim MUST include context length in the headline.
+## Existing mainline Run-4 evidence preserved
 
-## 7. SmolLM2 structural planner — ACCOUNTING CORRECTED AGAIN
+Current `main` already contained:
 
-Run 4 adds:
+- exact Q4 endpoint/scale semantics,
+- both K/V inverse-Gram accounting,
+- low-noise native factor-fidelity benchmark,
+- context-sweep and SmolLM2 structural generators,
+- `benchmarks/INDEX.json` provenance policy and CI gate,
+- same-stream reconstruction diagnostics.
 
-- value inverse-Gram storage;
-- Q4 basis row-scale storage omitted by the older planner.
+Those files remain in place; the promoted packed-runtime/L2C artifacts above are layered on top rather than replacing historical evidence.
 
-For rank-16 KIVI-style latent KV:
+## SmolLM2 status
 
-- KV reduction at 2K: **18.245×**;
-- KV reduction at 8K: **19.309×**.
-
-For the nominal 10x weight profile, modeled total reduction becomes:
-
-- 2K: **13.873×**;
-- 8K: **16.173×**.
-
-These remain structural arithmetic only. No SmolLM2 quality result exists.
-
-Artifact: `benchmarks/run4_kivi_memory_plan_rank16.json`.
-
-## 8. Old 6.63× loose end — RESOLVED
-
-The 196,608 B term in `run2_recurrent_conformance.json` was not a KV cache. The source defines it directly as scratch:
-
-`4 * 64 * 128 * 6 = 196,608 B`.
-
-That experiment did not include KV memory at all. The old 6.63× ratio is reconstructible as weight bytes plus this manually modeled scratch term.
-
-## 9. Benchmark artifact provenance — SYSTEMIC GUARD ADDED
-
-The stale Run-2 operator artifact and the missing generator for the Run-3 100k model artifact are treated as a systemic reproducibility issue.
-
-Added:
-
-- `benchmarks/INDEX.json`: classifies artifacts as current, historical, superseded, or missing-generator;
-- `tools/check_benchmark_provenance.py`: current artifacts must have committed generators;
-- `.github/workflows/benchmark-provenance.yml`: PR check for provenance plus deterministic context-sweep regeneration;
-- Run-4 current artifacts all have committed generators.
-
-Historical artifacts are retained for audit history rather than silently overwritten.
-
-The hosted Actions environment previously failed before allocating steps, so the workflow's existence does not constitute a successful CI execution until GitHub actually runs it.
-
-## 10. Q4 scale audit note
-
-The audit suggestion to use llama.cpp Q4_0's signed-extremum convention is reasonable as an alternative codec, but LARC's candidate codec is intentionally pinned to the range-aware rule above. It uses both negative and positive endpoints without clipping either row extremum. Competitive comparison against Q4_0/Q4_K/IQ codecs remains open.
+The structural planner uses SmolLM2's GQA geometry (`kv_heads=3`, `head_dim=64`). Current structural arithmetic remains promising (>10× modeled total for aggressive profiles), but **no SmolLM2 quality benchmark has run**. External checkpoint payload access remains the L3 blocker in this environment.
 
 ---
 
-# Current claim boundary after Run 4
+# Current claim boundary
 
-The former Run-3 headline is **downgraded** because:
+The strongest defensible statement is:
 
-1. value-basis pseudoinverse bytes were missing;
-2. total reduction exceeds 10× only at the 64-token controlled context for the current row/row KV codec;
-3. Q4 weight quality was not measured and is materially worse for the recurrent student;
-4. the exact Run-3 100k artifact lacks a committed generator and an independent reconstruction does not reproduce its NLL values.
+> In a controlled synthetic post-training language-model conversion at **context 64**, with teacher and LARC quality paths executing the same canonical Q4 weight representation and with disjoint training/selection/calibration/evaluation streams, LARC's rank-16 latent-Q2/E4M3 representation produces **+0.08977 nats/char** degradation (perplexity ×**1.09392**). Combining that L2C result with the separately L1-validated direct-packed attention scratch contract yields a **12.04× modeled same-context inference-tensor reduction**. The corresponding structural model remains ~10.60× at 2K and ~10.50× at 8K, but long-context quality is unvalidated.
 
-What remains defensible:
+Do **not** claim that LARC has demonstrated 10–30× lower measured RAM/VRAM for real pretrained GGUF models.
 
-- L0 paged format implementation;
-- lossless aliasing when a logical model truly reuses identical parameters;
-- direct packed CPU Q4 execution property;
-- synthetic projection feasibility under deliberately favorable activation geometry;
-- controlled evidence that teacher→shared warm-start recovery trains much better than a scratch recurrent model under the tested finite-step budget;
-- corrected structural memory arithmetic;
-- evidence that recurrent depth sharing makes naive row-Q4 quantization substantially more damaging.
+## Open hard gates
 
-What is **not currently passed** as a complete headline gate:
-
-- ≥10× total memory at practical context with the exact weight+KV representation whose quality is measured;
-- converged equal-compute comparison;
-- measured process RSS or device VRAM;
-- external pretrained LLM conversion;
-- real-model activation-rank validation;
-- 20–30× retained-quality result;
-- competitive iso-byte comparison against optimized GGUF/IQ/AQLM/QuIP# or a smaller dense model.
-
-## Highest-priority next experiments
-
-1. **Fix recurrent weight quantization.** Test Q8 factors, per-block residual rescue, depth-conditioned adapters, and quantization-aware recovery so reused-block error does not compound coherently.
-2. **Improve KV metadata efficiency.** The current controlled row/row Q2 codec spends half of its per-token bytes on min/scale metadata. Test grouped value metadata and error-vs-attention-entropy before lowering latent rank further.
-3. **Convergence study.** Teacher-120, teacher-320, converted/recovered, and scratch recurrent arms with matched/tuned schedules, multiple seeds, learning curves, and the same 100k evaluation stream.
-4. **Canonical artifact regeneration.** Re-run every promoted/current artifact from committed generators and reject any value without source provenance.
-5. **Real activation spectra.** First accessible Transformer checkpoint: cumulative energy at ranks 8/16/32/64/128 by projection site.
-6. **Integrated packed runtime + measured RSS.** Weight Q4/Q8 + latent KV in one inference process.
-7. **L3/L4.** Independent 135M+ pretrained model, real quality suite, then CUDA/Metal memory and throughput.
-
-## Current status
-
-**The project no longer claims that the controlled experiment has already met the complete 10× memory+quality goal.** Run 4 shows that the 10× result was context-specific and that using the actual Q4 weight representation creates substantially more quality loss in the recurrent model than the FP32 quality tests captured.
-
-The central research direction remains viable, but the next technical bottleneck is now clear: **depth-shared weight compression and practical-context KV efficiency**, not container overhead.
+1. **Converged equal-compute, multi-seed control.** The earlier control is not convergence evidence; stable tuned schedules and teacher-at-budget ceiling are required.
+2. **Real activation geometry.** Measure real Transformer activation spectra at candidate ranks.
+3. **Long-context quality.** Validate the packed codec at 256→8K, not just byte accounting.
+4. **Integrated packed full-model runtime.** Execute packed Q4 weights and packed latent KV together and measure actual RSS.
+5. **L3 external pretrained model.** SmolLM2-135M or larger, standard perplexity/tasks/generation and rare-token checks.
+6. **L4 hardware.** CUDA/Metal/CPU peak memory and optimized throughput against named baselines.
+7. **Competitive iso-byte baselines.** GGUF IQ/K quants, AQLM/QuIP# where runnable, and smaller dense models.
+8. **20–30× real-model quality.** Completely open.
