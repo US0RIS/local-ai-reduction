@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse,gc,json,math,re,struct
+import argparse,gc,json,re,struct
 from pathlib import Path
 from urllib.request import Request,urlopen
 import torch
 from larc.paged_container import LARCv2StreamWriter,CODEC_RAW,CODEC_Q4_ROW,FLAG_REQUIRED,FLAG_SHARED,FLAG_STREAMABLE
 from larc.q4_runtime import q4_rows,dequantize_q4_rows
 from larc.safetensors_range import ShardedSafeTensorSource
+from larc.gguf_range import MistralGGUFSource
 
 MATRIX_TYPES={'q_proj':'self_attn.q_proj.weight','k_proj':'self_attn.k_proj.weight','v_proj':'self_attn.v_proj.weight','o_proj':'self_attn.o_proj.weight','gate_proj':'mlp.gate_proj.weight','up_proj':'mlp.up_proj.weight','down_proj':'mlp.down_proj.weight'}
 LAYER_RE=re.compile(r'^model\.layers\.(\d+)\.(.+)$');Q4_HEAD=struct.Struct('<IIQ')
@@ -35,7 +36,15 @@ def parse_aux(items:list[str]|None):
  if len({n for n,_ in out})!=len(out):raise ValueError('duplicate aux resource name')
  return out
 
-def discover(src:ShardedSafeTensorSource):
+def _open_source(location,source_format='auto'):
+ fmt=source_format
+ if fmt=='auto':
+  clean=str(location).split('?',1)[0].lower();fmt='gguf' if clean.endswith('.gguf') else 'safetensors'
+ if fmt=='gguf':return MistralGGUFSource(location),fmt
+ if fmt=='safetensors':return ShardedSafeTensorSource(location),fmt
+ raise ValueError(f'unknown source format {source_format}')
+
+def discover(src):
  names=set(src.names());layers=sorted({int(m.group(1)) for n in names if (m:=LAYER_RE.match(n))})
  if not layers or layers!=list(range(max(layers)+1)):raise ValueError(f'non-contiguous/no layers: {layers[:8]}')
  L=len(layers)
@@ -48,7 +57,7 @@ def discover(src:ShardedSafeTensorSource):
    if layer_name(l,suf) not in names:raise KeyError(layer_name(l,suf))
  return L
 
-def make_page_plan(src,L,ranks,aux):
+def make_page_plan(src,L,ranks,aux,include_source_metadata=False):
  pages=[];pid=1
  def add(role,name,codec,flags,shape=None,layer=None,matrix_type=None,resource_name=None):
   nonlocal pid;d={'page_id':pid,'role':role,'source_name':name,'codec_id':codec,'flags':flags}
@@ -66,6 +75,7 @@ def make_page_plan(src,L,ranks,aux):
   shape=src.info(layer_name(0,suf)).shape;r=ranks[typ];add('shared_base',f'@shared/{typ}',CODEC_Q4_ROW,FLAG_REQUIRED|FLAG_SHARED|FLAG_STREAMABLE,shape,matrix_type=typ)
   for l in range(L):
    m,n=shape;src_name=layer_name(l,suf);add('residual_A',src_name,CODEC_Q4_ROW,FLAG_REQUIRED|FLAG_STREAMABLE,(m,r),layer=l,matrix_type=typ);add('residual_B',src_name,CODEC_Q4_ROW,FLAG_REQUIRED|FLAG_STREAMABLE,(r,n),layer=l,matrix_type=typ)
+ if include_source_metadata:add('source_metadata','@source/gguf_header',CODEC_RAW,FLAG_REQUIRED|FLAG_STREAMABLE,resource_name='source.gguf.header')
  for resource_name,location in aux:add('aux_resource',location,CODEC_RAW,FLAG_REQUIRED|FLAG_STREAMABLE,resource_name=resource_name)
  return pages
 
@@ -82,14 +92,15 @@ def parse_ranks(spec):
  if missing:raise ValueError(f'missing ranks for {sorted(missing)}')
  return out
 
-def convert(index,out_path,ranks,oversample=8,niter=2,seed=1234,aux=None,baseline_bytes=DEFAULT_MISTRAL_Q4KM_BYTES):
+def convert(source_location,out_path,ranks,oversample=8,niter=2,seed=1234,aux=None,baseline_bytes=DEFAULT_MISTRAL_Q4KM_BYTES,source_format='auto',preserve_source_metadata=True):
  aux=parse_aux(aux) if aux is None or (aux and isinstance(aux[0],str)) else list(aux)
- src=ShardedSafeTensorSource(index);L=discover(src);plan=make_page_plan(src,L,ranks,aux)
- manifest={'architecture':'mistral','conversion':'SoftShare-10X two-pass initialization','source':{'safetensors_index':str(index),'full_source_file_required_locally':False},'softshare':{'layers':L,'ranks':ranks,'equation':'W_layer = shared_Q4 + A_Q4 @ B_Q4','factor_codec':'Q4_ROW','residual_fit_reference':'dequantized stored shared_Q4','recovery_applied':False},'aux_resources':[{'name':n,'source':loc} for n,loc in aux],'pages':plan}
- peak_source=peak_shared=peak_residual=peak_factors=peak_core_lower=0;aux_bytes=0;page_lookup={(p['role'],p.get('matrix_type'),p.get('layer'),p.get('resource_name')):p for p in plan}
+ src,fmt=_open_source(source_location,source_format);L=discover(src);include_source_metadata=fmt=='gguf' and preserve_source_metadata;plan=make_page_plan(src,L,ranks,aux,include_source_metadata)
+ type_hist=src.type_histogram() if hasattr(src,'type_histogram') else None
+ manifest={'architecture':'mistral','conversion':'SoftShare-10X two-pass initialization','source':{'location':str(source_location),'format':fmt,'full_source_file_required_locally':False,'type_histogram':type_hist},'softshare':{'layers':L,'ranks':ranks,'equation':'W_layer = shared_Q4 + A_Q4 @ B_Q4','factor_codec':'Q4_ROW','residual_fit_reference':'dequantized stored shared_Q4','recovery_applied':False},'source_metadata_preserved':include_source_metadata,'aux_resources':[{'name':n,'source':loc} for n,loc in aux],'pages':plan}
+ peak_source=peak_shared=peak_residual=peak_factors=peak_core_lower=0;aux_bytes=source_metadata_bytes=0;page_lookup={(p['role'],p.get('matrix_type'),p.get('layer'),p.get('resource_name')):p for p in plan}
  with LARCv2StreamWriter(out_path,len(plan),manifest) as wr:
   for n,role in [('model.embed_tokens.weight','embedding'),('lm_head.weight','lm_head')]:
-   x=src.read_tensor(n);xb=x.numel()*x.element_size();peak_source=max(peak_source,xb);blob=q4_blob(x);p=page_lookup[(role,None,None,None)];wr.add_page(p['page_id'],p['codec_id'],p['flags'],blob,logical_length=x.numel()*2);del x,blob
+   x=src.read_tensor(n);xb=x.numel()*x.element_size();peak_source=max(peak_source,xb);peak_core_lower=max(peak_core_lower,xb+x.numel()*4);blob=q4_blob(x);p=page_lookup[(role,None,None,None)];wr.add_page(p['page_id'],p['codec_id'],p['flags'],blob,logical_length=x.numel()*2);del x,blob
   x=src.read_tensor('model.norm.weight');peak_source=max(peak_source,x.numel()*x.element_size());p=page_lookup[('final_norm',None,None,None)];wr.add_page(p['page_id'],p['codec_id'],p['flags'],fp16_blob(x),logical_length=x.numel()*2);del x
   for l in range(L):
    for suf,role in [('input_layernorm.weight','input_norm'),('post_attention_layernorm.weight','post_attention_norm')]:
@@ -98,10 +109,8 @@ def convert(index,out_path,ranks,oversample=8,niter=2,seed=1234,aux=None,baselin
    shared=None
    for l in range(L):
     x=src.read_tensor(layer_name(l,suf));xb=x.numel()*x.element_size();peak_source=max(peak_source,xb)
-    if shared is None:shared=x.float();del x
-    else:
-     # shared is FP32; in-place add casts the source without allocating a second full FP32 copy.
-     peak_core_lower=max(peak_core_lower,shared.numel()*4+xb);shared.add_(x);del x
+    if shared is None:shared=x.float();peak_core_lower=max(peak_core_lower,xb+shared.numel()*4);del x
+    else:peak_core_lower=max(peak_core_lower,shared.numel()*4+xb);shared.add_(x);del x
    shared.div_(L);shared_bytes=shared.numel()*shared.element_size();peak_shared=max(peak_shared,shared_bytes);logical=shared.numel()*2;parts=q4_parts(shared);del shared;shared_hat=dequantize_q4_rows(*parts);blob=q4_blob_from_parts(*parts);p=page_lookup[('shared_base',typ,None,None)];wr.add_page(p['page_id'],p['codec_id'],p['flags'],blob,logical_length=logical);del blob,parts
    for l in range(L):
     x=src.read_tensor(layer_name(l,suf));xb=x.numel()*x.element_size();peak_source=max(peak_source,xb);res=x.float();del x;res.sub_(shared_hat);rb=res.numel()*res.element_size();peak_residual=max(peak_residual,rb);peak_core_lower=max(peak_core_lower,xb+shared_hat.numel()*4+rb);A,B=fit_residual(res,ranks[typ],oversample,niter,seed+ti*1000+l);factor_bytes=(A.numel()+B.numel())*4;peak_factors=max(peak_factors,factor_bytes);peak_core_lower=max(peak_core_lower,shared_hat.numel()*4+rb+factor_bytes);del res
@@ -109,12 +118,16 @@ def convert(index,out_path,ranks,oversample=8,niter=2,seed=1234,aux=None,baselin
      blob=q4_blob(t);p=page_lookup[(role,typ,l,None)];wr.add_page(p['page_id'],p['codec_id'],p['flags'],blob,logical_length=t.numel()*2);del blob
     del A,B;gc.collect()
    del shared_hat;gc.collect()
+  if include_source_metadata:
+   data=src.raw_source_metadata();source_metadata_bytes=len(data);p=page_lookup[('source_metadata',None,None,'source.gguf.header')];wr.add_page(p['page_id'],p['codec_id'],p['flags'],data,logical_length=len(data));del data
   for resource_name,location in aux:
    data=_read_aux(location);aux_bytes+=len(data);p=page_lookup[('aux_resource',None,None,resource_name)];wr.add_page(p['page_id'],p['codec_id'],p['flags'],data,logical_length=len(data));del data
  final_bytes=Path(out_path).stat().st_size;ten_x_limit=baseline_bytes//10
- return {'output':str(out_path),'page_count':len(plan),'layers':L,'ranks':ranks,'source_bytes_fetched_or_read':src.bytes_fetched,'largest_single_source_tensor_bytes':peak_source,'largest_shared_fp32_base_bytes':peak_shared,'largest_residual_fp32_bytes':peak_residual,'largest_explicit_svd_factor_output_bytes':peak_factors,'conversion_peak_explicit_tensor_lower_bound_excluding_internal_svd_workspace_bytes':peak_core_lower,'internal_svd_workspace_peak_measured':False,'bounded_local_source_file_required':False,'aux_resource_count':len(aux),'aux_resource_bytes':aux_bytes,'final_larc_bytes':final_bytes,'baseline_bytes_for_file_gate':baseline_bytes,'ten_x_max_integer_file_bytes':ten_x_limit,'passes_10x_file_gate':final_bytes<=ten_x_limit,'file_reduction_x':baseline_bytes/final_bytes}
+ return {'output':str(out_path),'source_format':fmt,'source_type_histogram':type_hist,'page_count':len(plan),'layers':L,'ranks':ranks,'source_bytes_fetched_or_read':src.bytes_fetched,'largest_single_source_tensor_bytes':peak_source,'largest_shared_fp32_base_bytes':peak_shared,'largest_residual_fp32_bytes':peak_residual,'largest_explicit_svd_factor_output_bytes':peak_factors,'conversion_peak_explicit_tensor_lower_bound_excluding_internal_svd_and_q4_temporaries_bytes':peak_core_lower,'internal_svd_workspace_peak_measured':False,'internal_q4_temporary_peak_measured':False,'bounded_local_source_file_required':False,'source_metadata_bytes':source_metadata_bytes,'aux_resource_count':len(aux),'aux_resource_bytes':aux_bytes,'final_larc_bytes':final_bytes,'baseline_bytes_for_file_gate':baseline_bytes,'ten_x_max_integer_file_bytes':ten_x_limit,'passes_10x_file_gate':final_bytes<=ten_x_limit,'file_reduction_x':baseline_bytes/final_bytes}
 
 def main():
- ap=argparse.ArgumentParser(description='Two-pass tensor-range SoftShare converter; never requires a complete source checkpoint file locally.');ap.add_argument('--index',required=True);ap.add_argument('--output',required=True);ap.add_argument('--ranks',default='96');ap.add_argument('--oversample',type=int,default=8);ap.add_argument('--niter',type=int,default=2);ap.add_argument('--seed',type=int,default=1234);ap.add_argument('--aux',action='append',default=[],help='Embed NAME=PATH_OR_URL as a required RAW deployment resource; repeatable');ap.add_argument('--baseline-bytes',type=int,default=DEFAULT_MISTRAL_Q4KM_BYTES);ap.add_argument('--report');a=ap.parse_args();report=convert(a.index,a.output,parse_ranks(a.ranks),a.oversample,a.niter,a.seed,a.aux,a.baseline_bytes);text=json.dumps(report,indent=2)+'\n';print(text,end='')
+ ap=argparse.ArgumentParser(description='Two-pass tensor-range SoftShare converter. Prefer the exact named GGUF baseline for L3; sharded SafeTensors remains a higher-precision fallback.');ap.add_argument('--source',help='GGUF file/URL or model.safetensors.index.json path/URL');ap.add_argument('--index',help='Legacy alias for --source');ap.add_argument('--source-format',choices=['auto','gguf','safetensors'],default='auto');ap.add_argument('--output',required=True);ap.add_argument('--ranks',default='96');ap.add_argument('--oversample',type=int,default=8);ap.add_argument('--niter',type=int,default=2);ap.add_argument('--seed',type=int,default=1234);ap.add_argument('--aux',action='append',default=[],help='Embed NAME=PATH_OR_URL as a required RAW deployment resource; repeatable');ap.add_argument('--no-preserve-source-metadata',action='store_true');ap.add_argument('--baseline-bytes',type=int,default=DEFAULT_MISTRAL_Q4KM_BYTES);ap.add_argument('--report');a=ap.parse_args();source=a.source or a.index
+ if not source:ap.error('--source is required')
+ report=convert(source,a.output,parse_ranks(a.ranks),a.oversample,a.niter,a.seed,a.aux,a.baseline_bytes,a.source_format,not a.no_preserve_source_metadata);text=json.dumps(report,indent=2)+'\n';print(text,end='')
  if a.report:Path(a.report).write_text(text)
 if __name__=='__main__':main()
