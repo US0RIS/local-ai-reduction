@@ -5,25 +5,24 @@
   "target": "10x",
   "strategy_decision": "Hard recursive sharing is no longer the primary architecture. Spend the full 10x budget on shared Q4 bases plus depth-specific low-rank residuals and a higher-rank latent KV cache.",
   "controlled_evidence": {
-    "scale_normalized_rank3_over_128": {
-      "whole_model_reduction_x": 9.105641637509876,
-      "perplexity_ratio_vs_q4_teacher": 1.0776027010785967,
-      "note": "quality-favorable mechanism point; not whole-model 10x on tiny geometry"
-    },
-    "adaptive_exact_toy_10x": {
-      "whole_model_reduction_x": 10.046448330457368,
-      "perplexity_ratio_vs_q4_teacher": 1.4005905384106918,
-      "note": "exact 10x tiny-model stress point; quality not acceptable as target success"
-    }
+    "scale_normalized_rank3_over_128": {"whole_model_reduction_x":9.105641637509876,"perplexity_ratio_vs_q4_teacher":1.0776027010785967,"note":"quality-favorable mechanism point; not whole-model 10x on tiny geometry"},
+    "adaptive_exact_toy_10x": {"whole_model_reduction_x":10.046448330457368,"perplexity_ratio_vs_q4_teacher":1.4005905384106918,"note":"exact 10x tiny-model stress point; quality not acceptable as target success"}
   },
   "mistral7b_planning": {
     "baseline": "TheBloke Mistral-7B-v0.1 Q4_K_M",
     "baseline_exact_bytes": 4368438912,
     "baseline_sha256": "ce6253d2e91adea0c35924b38411b0434fa18fcb90c52980ce68187dbcbbe40c",
+    "ten_x_max_integer_file_bytes": 436843891,
     "recommended_weight_rank": 96,
     "recommended_kv_rank": 64,
-    "weight_reduction_x": 11.822726800338105,
-    "weights_plus_4096_kv_reduction_x": 11.86001140113937,
+    "resident_weight_tensor_bytes": 369495040,
+    "resident_weight_tensor_reduction_x": 11.822726800338105,
+    "estimated_serialized_weight_larc_bytes": 371302608,
+    "aux_tokenizer_config_planning_reserve_bytes": 4194304,
+    "estimated_deployment_file_bytes_with_aux_reserve": 375496912,
+    "estimated_deployment_file_reduction_x": 11.633754559345084,
+    "file_bytes_remaining_to_10x_limit_after_reserve": 61346979,
+    "weights_plus_4096_kv_tensor_reduction_x": 11.86001140113937,
     "equal_common_scratch_headroom_bytes_before_10x": 85478016,
     "quality_validated": false
   },
@@ -37,7 +36,8 @@
     "CI/synthetic end-to-end streaming converter validation",
     "real Mistral tensor access and L3 conversion",
     "real-model quality and adaptive rank allocation",
+    "actual tokenizer/config embedding and final complete-file measurement",
     "measured integrated RSS/device memory L4"
   ],
-  "claim_boundary": "Run 5 changes the preferred architecture and improves the controlled quality/capacity frontier. It does not yet prove 10x on a real pretrained model. Mistral ratios are exact structural byte calculations against the 4,368,438,912-byte Q4_K_M file, but Mistral quality is unvalidated."
+  "claim_boundary": "Run 5 changes the preferred architecture and improves the controlled quality/capacity frontier. It does not yet prove 10x on a real pretrained model. The rank96 Mistral plan remains 11.6338x after modeled LARC container overhead and a 4 MiB auxiliary-resource reserve, but Mistral quality and actual final serialized bytes remain unvalidated."
 }
