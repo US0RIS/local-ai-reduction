@@ -1,12 +1,13 @@
 {
-  "policy_version": 2,
+  "policy_version": 3,
   "rules": {
     "promoted_requires_committed_generator": true,
     "superseded_artifacts_may_remain_for_history": true,
     "long_training_artifacts_require_seed_and_evaluation_provenance": true,
     "current_claims_must_name_context_and_baseline": true,
     "quality_representation_must_match_memory_representation": true,
-    "compression_calibration_must_be_disjoint_from_final_evaluation": true
+    "compression_calibration_must_be_disjoint_from_final_evaluation": true,
+    "multi_seed_and_native_packed_are_independent_evidence_axes": true
   },
   "artifacts": [
     {"path":"benchmark_hrvq_run1.json","status":"historical","generator":"tools/benchmark_synthetic.py"},
@@ -25,12 +26,16 @@
     {"path":"run3_posttrain_corrected_100k.json","status":"historical_missing_canonical_generator","generator":null},
     {"path":"run3_kivi_memory_plan_rank16.json","status":"superseded_by_run4_metric_accounting","generator":"tools/memory_plan.py"},
     {"path":"run4_native_q4_fidelity.json","status":"current_L1","generator":"tests/native_q4_fidelity.cpp"},
-    {"path":"run4_context_sweep.json","status":"current_reference_arithmetic","generator":"tools/run4_context_sweep.py"},
+    {"path":"run4_context_sweep.json","status":"historical_reference_arithmetic","generator":"tools/run4_context_sweep.py"},
     {"path":"run4_control_reproduction.json","status":"historical_run4_reconstruction","generator":"tools/run4_control_reproduction.py"},
     {"path":"run4_q4_weight_quality.json","status":"historical_pre_q4_recovery_diagnostic","generator":"tools/run4_control_reproduction.py"},
     {"path":"run4_kivi_memory_plan_rank16.json","status":"current_structural_unvalidated_quality","generator":"tools/run4_kivi_memory_plan.py"},
-    {"path":"run4_fp8meta_l2c.json","status":"current_L2C_promoted","generator":"tools/run4_l2c_repro.py"},
-    {"path":"run4_native_q2_attention.json","status":"current_L1","generator":"tests/native_q2_attention.cpp"},
-    {"path":"run4_packed_attention_context_sweep.json","status":"current_preferred_arithmetic","generator":"tools/run4_packed_context_sweep.py"}
+    {"path":"run4_fp8meta_l2c.json","status":"current_L2C_single_seed_packed_codec_quality","generator":"tools/run4_l2c_repro.py"},
+    {"path":"run4_native_q2_attention.json","status":"current_L1_native_packed","generator":"tests/native_q2_attention.cpp"},
+    {"path":"run4_packed_attention_context_sweep.json","status":"current_preferred_packed_arithmetic","generator":"tools/run4_packed_context_sweep.py"},
+    {"path":"run5_memory_context.json","status":"current_L2C_grouped_reference_arithmetic","generator":"tools/run5_memory_sweep.py"},
+    {"path":"run5_fullstack_multiseed.json","status":"current_L2C_multiseed_reference_execution","generator":"tools/run5_fullstack_protocol_fp16tail.py","note":"final FP16-tail quality phase rerun on five retained trained models; full post-commit one-process replay remains pending"},
+    {"path":"run5_weight_diagnostics.json","status":"current_diagnostic","generator":null,"note":"mechanism diagnostics; not promoted deployment evidence"},
+    {"path":"RUN5_FINAL_STATUS.json","status":"current_summary","generator":null}
   ]
 }
