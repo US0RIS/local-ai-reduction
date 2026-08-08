@@ -1,0 +1,48 @@
+{
+  "run": 18,
+  "kind": "description_budget_envelope_arithmetic",
+  "measured_external_inputs": {
+    "q4_k_m_file_bytes": 105453696,
+    "f16_gguf_file_bytes": 270885504,
+    "unique_parameter_count": 134515008,
+    "ten_x_total_file_budget_bytes": 10545369.6
+  },
+  "model_geometry": {
+    "tied_embedding_parameters": 28311552,
+    "main_decoder_projection_parameters": 106168320,
+    "remaining_unique_parameters": 35136,
+    "independent_main_projection_q4_group64_bytes": 56401920,
+    "tied_vocab_q4_group64_bytes": 15040512
+  },
+  "conservative_allowance": {
+    "raw_fp16_unique_tensor_bytes": 269030016,
+    "f16_gguf_surplus_bytes": 1855488,
+    "interpretation": "Treat the entire measured F16 GGUF surplus over raw unique FP16 tensor bytes as a conservative allowance for tokenizer/container/tensor-metadata/alignment. This is not a claim that LARC will use GGUF metadata or exactly this overhead."
+  },
+  "configs": [
+    {"physical_projection_phases":2,"depth_lora_rank":8,"vocab_pq_subdim":8,"recursive_projection":{"shared_base_q4_bytes":3760128,"depth_lora_q4_bytes":1569600,"total":5329728},"vocabulary":{"subspaces":72,"codebooks_fp16":294912,"codes_uint8":3538944,"norms_fp16":98304,"total":3932160},"remaining_unique_params_fp16_bytes":70272,"tensor_payload_bytes":9332160,"conservative_non_tensor_allowance_bytes":1855488,"conservative_total_description_bytes":11187648,"headroom_to_10x_target_bytes":-642278.4,"modeled_file_reduction_vs_measured_q4_k_m_x":9.425903996979526,"fits_10x_serialized_file_budget":false},
+    {"physical_projection_phases":2,"depth_lora_rank":8,"vocab_pq_subdim":12,"recursive_projection":{"shared_base_q4_bytes":3760128,"depth_lora_q4_bytes":1569600,"total":5329728},"vocabulary":{"subspaces":48,"codebooks_fp16":294912,"codes_uint8":2359296,"norms_fp16":98304,"total":2752512},"remaining_unique_params_fp16_bytes":70272,"tensor_payload_bytes":8152512,"conservative_non_tensor_allowance_bytes":1855488,"conservative_total_description_bytes":10008000,"headroom_to_10x_target_bytes":537369.6,"modeled_file_reduction_vs_measured_q4_k_m_x":10.53694004796163,"fits_10x_serialized_file_budget":true},
+    {"physical_projection_phases":2,"depth_lora_rank":8,"vocab_pq_subdim":16,"recursive_projection":{"shared_base_q4_bytes":3760128,"depth_lora_q4_bytes":1569600,"total":5329728},"vocabulary":{"subspaces":36,"codebooks_fp16":294912,"codes_uint8":1769472,"norms_fp16":98304,"total":2162688},"remaining_unique_params_fp16_bytes":70272,"tensor_payload_bytes":7562688,"conservative_non_tensor_allowance_bytes":1855488,"conservative_total_description_bytes":9418176,"headroom_to_10x_target_bytes":1127193.6,"modeled_file_reduction_vs_measured_q4_k_m_x":11.196827920820338,"fits_10x_serialized_file_budget":true},
+    {"physical_projection_phases":2,"depth_lora_rank":8,"vocab_pq_subdim":24,"recursive_projection":{"shared_base_q4_bytes":3760128,"depth_lora_q4_bytes":1569600,"total":5329728},"vocabulary":{"subspaces":24,"codebooks_fp16":294912,"codes_uint8":1179648,"norms_fp16":98304,"total":1572864},"remaining_unique_params_fp16_bytes":70272,"tensor_payload_bytes":6972864,"conservative_non_tensor_allowance_bytes":1855488,"conservative_total_description_bytes":8828352,"headroom_to_10x_target_bytes":1717017.6,"modeled_file_reduction_vs_measured_q4_k_m_x":11.944890280768144,"fits_10x_serialized_file_budget":true},
+    {"physical_projection_phases":2,"depth_lora_rank":8,"vocab_pq_subdim":32,"recursive_projection":{"shared_base_q4_bytes":3760128,"depth_lora_q4_bytes":1569600,"total":5329728},"vocabulary":{"subspaces":18,"codebooks_fp16":294912,"codes_uint8":884736,"norms_fp16":98304,"total":1277952},"remaining_unique_params_fp16_bytes":70272,"tensor_payload_bytes":6677952,"conservative_non_tensor_allowance_bytes":1855488,"conservative_total_description_bytes":8533440,"headroom_to_10x_target_bytes":2011929.6,"modeled_file_reduction_vs_measured_q4_k_m_x":12.35770052874339,"fits_10x_serialized_file_budget":true},
+    {"physical_projection_phases":3,"depth_lora_rank":8,"vocab_pq_subdim":8,"recursive_projection":{"shared_base_q4_bytes":5640192,"depth_lora_q4_bytes":1569600,"total":7209792},"vocabulary":{"subspaces":72,"codebooks_fp16":294912,"codes_uint8":3538944,"norms_fp16":98304,"total":3932160},"remaining_unique_params_fp16_bytes":70272,"tensor_payload_bytes":11212224,"conservative_non_tensor_allowance_bytes":1855488,"conservative_total_description_bytes":13067712,"headroom_to_10x_target_bytes":-2522342.4,"modeled_file_reduction_vs_measured_q4_k_m_x":8.069790335140535,"fits_10x_serialized_file_budget":false},
+    {"physical_projection_phases":3,"depth_lora_rank":8,"vocab_pq_subdim":12,"recursive_projection":{"shared_base_q4_bytes":5640192,"depth_lora_q4_bytes":1569600,"total":7209792},"vocabulary":{"subspaces":48,"codebooks_fp16":294912,"codes_uint8":2359296,"norms_fp16":98304,"total":2752512},"remaining_unique_params_fp16_bytes":70272,"tensor_payload_bytes":10032576,"conservative_non_tensor_allowance_bytes":1855488,"conservative_total_description_bytes":11888064,"headroom_to_10x_target_bytes":-1342694.4,"modeled_file_reduction_vs_measured_q4_k_m_x":8.870552513849185,"fits_10x_serialized_file_budget":false},
+    {"physical_projection_phases":3,"depth_lora_rank":8,"vocab_pq_subdim":16,"recursive_projection":{"shared_base_q4_bytes":5640192,"depth_lora_q4_bytes":1569600,"total":7209792},"vocabulary":{"subspaces":36,"codebooks_fp16":294912,"codes_uint8":1769472,"norms_fp16":98304,"total":2162688},"remaining_unique_params_fp16_bytes":70272,"tensor_payload_bytes":9442752,"conservative_non_tensor_allowance_bytes":1855488,"conservative_total_description_bytes":11298240,"headroom_to_10x_target_bytes":-752870.4,"modeled_file_reduction_vs_measured_q4_k_m_x":9.333639221684086,"fits_10x_serialized_file_budget":false},
+    {"physical_projection_phases":3,"depth_lora_rank":8,"vocab_pq_subdim":24,"recursive_projection":{"shared_base_q4_bytes":5640192,"depth_lora_q4_bytes":1569600,"total":7209792},"vocabulary":{"subspaces":24,"codebooks_fp16":294912,"codes_uint8":1179648,"norms_fp16":98304,"total":1572864},"remaining_unique_params_fp16_bytes":70272,"tensor_payload_bytes":8852928,"conservative_non_tensor_allowance_bytes":1855488,"conservative_total_description_bytes":10708416,"headroom_to_10x_target_bytes":-163046.4,"modeled_file_reduction_vs_measured_q4_k_m_x":9.847739945851936,"fits_10x_serialized_file_budget":false},
+    {"physical_projection_phases":3,"depth_lora_rank":8,"vocab_pq_subdim":32,"recursive_projection":{"shared_base_q4_bytes":5640192,"depth_lora_q4_bytes":1569600,"total":7209792},"vocabulary":{"subspaces":18,"codebooks_fp16":294912,"codes_uint8":884736,"norms_fp16":98304,"total":1277952},"remaining_unique_params_fp16_bytes":70272,"tensor_payload_bytes":8558016,"conservative_non_tensor_allowance_bytes":1855488,"conservative_total_description_bytes":10413504,"headroom_to_10x_target_bytes":131865.6,"modeled_file_reduction_vs_measured_q4_k_m_x":10.126629422718809,"fits_10x_serialized_file_budget":true}
+  ],
+  "ten_x_feasible_configurations": [
+    {"physical_projection_phases":2,"vocab_pq_subdim":12,"conservative_total_description_bytes":10008000,"modeled_reduction_x":10.53694004796163,"headroom_bytes":537369.6},
+    {"physical_projection_phases":2,"vocab_pq_subdim":16,"conservative_total_description_bytes":9418176,"modeled_reduction_x":11.196827920820338,"headroom_bytes":1127193.6},
+    {"physical_projection_phases":2,"vocab_pq_subdim":24,"conservative_total_description_bytes":8828352,"modeled_reduction_x":11.944890280768144,"headroom_bytes":1717017.6},
+    {"physical_projection_phases":2,"vocab_pq_subdim":32,"conservative_total_description_bytes":8533440,"modeled_reduction_x":12.35770052874339,"headroom_bytes":2011929.6},
+    {"physical_projection_phases":3,"vocab_pq_subdim":32,"conservative_total_description_bytes":10413504,"modeled_reduction_x":10.126629422718809,"headroom_bytes":131865.6}
+  ],
+  "decision": {
+    "serialized_byte_economics_can_reach_10x_if_components_pass_quality": true,
+    "minimum_p2_vocab_setting_that_fits": 12,
+    "minimum_p3_vocab_setting_that_fits": 32,
+    "interpretation": "The current structural byte contracts are sufficient in principle for 10x serialized size without requiring sub-1-bit physical decoder weights. Quality, native runtime, and measured resident memory remain completely open."
+  },
+  "claim_boundary": "Deterministic byte arithmetic only. Run 16 and Run 17 are pending quality experiments, Q4_GROUP64 is not Q4_K_M, no LARC file exists, and no RSS/VRAM/speed reduction is measured."
+}
