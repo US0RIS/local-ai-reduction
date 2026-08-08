@@ -1,0 +1,11 @@
+{
+  "evidence_level":"L1 native CPU primitive",
+  "matrix":{"rows":7,"cols":130,"group_size":64,"groups_per_row":3},
+  "max_abs_error_vs_separately_decoded_reference":3.33786011e-06,
+  "storage_bytes":497,
+  "expected_storage_bytes":497,
+  "compiler":"g++ -O3 -std=c++17",
+  "kernel":"runtime/larc_q4.cpp::q4_grouped_gemv",
+  "test":"tests/native_q4_group64.cpp",
+  "interpretation":"Direct packed group-scale Q4 arithmetic is conformant at the primitive level. This is not an integrated full-model runtime or throughput result."
+}
