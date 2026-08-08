@@ -1,6 +1,6 @@
 name: Run 17 tied vocabulary product quantization
 
-# Execution-only trigger: representation and gate landed on main at 410a0bfc79b74f8c0555e32b63ab24146caca5d9.
+# Execution-only scheduling: representation/gate landed on main at 410a0bfc79b74f8c0555e32b63ab24146caca5d9.
 on:
   workflow_dispatch:
   push:
@@ -21,8 +21,12 @@ permissions:
 
 jobs:
   vocab-pq:
+    strategy:
+      fail-fast: false
+      matrix:
+        subdim: [8, 12, 16, 24, 32]
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -46,7 +50,7 @@ jobs:
           (cd external/llama.cpp && bash scripts/get-wikitext-2.sh)
           test -f external/llama.cpp/wikitext-2-raw/wiki.test.raw
 
-      - name: Fit and evaluate direct-packed tied vocabulary PQ
+      - name: Fit and evaluate frozen PQ operating point
         env:
           HF_HUB_DISABLE_TELEMETRY: '1'
           HF_XET_HIGH_PERFORMANCE: '1'
@@ -58,14 +62,14 @@ jobs:
           python tools/run17_vocab_product_quantization.py \
             --model HuggingFaceTB/SmolLM2-135M \
             --evaluation external/llama.cpp/wikitext-2-raw/wiki.test.raw \
-            --subdims 8,12,16,24,32 \
+            --subdims ${{ matrix.subdim }} \
             --kmeans-iters 6 \
             --eval-tokens 8192 --context 512 \
-            --out benchmarks/run17_vocab_product_quantization.json
+            --out benchmarks/run17_vocab_pq_subdim${{ matrix.subdim }}.json
 
       - uses: actions/upload-artifact@v4
         with:
-          name: run17-vocab-product-quantization
-          path: benchmarks/run17_vocab_product_quantization.json
+          name: run17-vocab-pq-subdim${{ matrix.subdim }}
+          path: benchmarks/run17_vocab_pq_subdim${{ matrix.subdim }}.json
           if-no-files-found: error
           retention-days: 90
