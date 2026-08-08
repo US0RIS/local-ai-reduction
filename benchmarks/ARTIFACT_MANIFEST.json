@@ -1,0 +1,42 @@
+{
+  "policy": {
+    "authoritative_current_claims_must_have_current_generator": true,
+    "historical_artifacts_may_be_retained_but_must_be_marked_superseded": true,
+    "timing_fields_are_not_expected_to_be_bit_reproducible_across_hardware": true,
+    "quick_current_artifacts": [
+      "benchmarks/run4_context_sweep.json",
+      "benchmarks/run4_smollm2_structural_rank16.json"
+    ],
+    "quick_check_command": "python tools/check_quick_benchmark_artifacts.py"
+  },
+  "artifacts": {
+    "benchmarks/benchmark_hrvq_run1.json": {"run":1,"status":"historical","source_generation":"5524fe9b10532860bbb5abce4ec9ecfd94430505-era","current_main_exact_reproduction":false},
+    "benchmarks/benchmark_projection_run1.json": {"run":1,"status":"superseded","superseded_by":"benchmarks/run3_projection_quantized_lstsq.json","current_main_exact_reproduction":false},
+    "benchmarks/run1_model_scale_estimate.json": {"run":1,"status":"historical_arithmetic_only","current_main_exact_reproduction":false},
+
+    "benchmarks/run2_latent_kv_synthetic.json": {"run":2,"status":"superseded","source_generation":"eea2e149b810dc31c338fec970bd003bb39b6b5d","current_main_exact_reproduction":false},
+    "benchmarks/run2_kivi_latent_kv_synthetic.json": {"run":2,"status":"superseded","reason":"basis metrics/scales and value pseudo-inverse changed","current_main_exact_reproduction":false},
+    "benchmarks/run2_memory_plan_rank16.json": {"run":2,"status":"superseded","current_main_exact_reproduction":false},
+    "benchmarks/run2_kivi_memory_plan_rank16.json": {"run":2,"status":"superseded","current_main_exact_reproduction":false},
+    "benchmarks/run2_native_q4_kernel.json": {"run":2,"status":"revoked","reason":"committed 0.046151 NMSE did not reproduce from checked-in source","current_main_exact_reproduction":false},
+    "benchmarks/run2_posttrain_conversion.json": {"run":2,"status":"revoked","reason":"mismatched evaluation aggregation and weight-quality representation","current_main_exact_reproduction":false},
+    "benchmarks/run2_recurrent_conformance.json": {"run":2,"status":"historical_structural_only","current_main_exact_reproduction":false},
+    "benchmarks/run2_recurrent_kv_endtoend.json": {"run":2,"status":"superseded","reason":"Q4 basis bytes were counted while FP32 bases executed","current_main_exact_reproduction":false},
+    "benchmarks/RUN2_FINAL_STATUS.json": {"run":2,"status":"superseded","current_main_exact_reproduction":false},
+
+    "benchmarks/run3_equal_compute_control.json": {"run":3,"status":"revoked","reason":"same-stream Run4 control shows continuation schedule itself degrades teacher","source_generation":"ca5918eebe6733d405719e2d31f21258113cc849","current_main_exact_reproduction":false},
+    "benchmarks/run3_kivi_memory_plan_rank16.json": {"run":3,"status":"superseded","reason":"omitted value inverse-Gram and Q4 basis row-scale bytes","current_main_exact_reproduction":false},
+    "benchmarks/run3_native_q4_kernel.json": {"run":3,"status":"historical_L1","current_main_exact_reproduction":false},
+    "benchmarks/run3_posttrain_corrected_100k.json": {"run":3,"status":"revoked","reason":"quality used FP32 weights while memory charged Q4 weights","current_main_exact_reproduction":false},
+    "benchmarks/run3_projection_quantized_lstsq.json": {"run":3,"status":"historical_L1_synthetic","current_main_exact_reproduction":false},
+    "benchmarks/run3_recurrent_kv_corrected.json": {"run":3,"status":"superseded","reason":"value basis pseudo-inverse missing","current_main_exact_reproduction":false},
+    "benchmarks/RUN3_FINAL_STATUS.json": {"run":3,"status":"superseded","current_main_exact_reproduction":false},
+
+    "benchmarks/run4_q4_consistency_failure.json": {"run":4,"status":"authoritative_diagnostic","source_ref":"larc-run4-audit-hardening","current_main_exact_reproduction":"heavy"},
+    "benchmarks/run4_q4_projected_recovery.json": {"run":4,"status":"authoritative_training","source_ref":"larc-run4-audit-hardening","current_main_exact_reproduction":"heavy"},
+    "benchmarks/run4_q4_recovered_l2c.json": {"run":4,"status":"authoritative_current_L2C","source_ref":"larc-run4-audit-hardening","current_main_exact_reproduction":"heavy"},
+    "benchmarks/run4_equal_compute_schedule_failure.json": {"run":4,"status":"authoritative_diagnostic","source_ref":"larc-run4-audit-hardening","current_main_exact_reproduction":"heavy"},
+    "benchmarks/run4_context_sweep.json": {"run":4,"status":"authoritative_structural","generator":"tools/check_quick_benchmark_artifacts.py","current_main_exact_reproduction":true},
+    "benchmarks/run4_smollm2_structural_rank16.json": {"run":4,"status":"authoritative_structural_unvalidated_quality","generator":"tools/check_quick_benchmark_artifacts.py","current_main_exact_reproduction":true}
+  }
+}
