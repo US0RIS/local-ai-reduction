@@ -1,0 +1,84 @@
+{
+  "run": 13,
+  "date": "2026-08-08",
+  "status": "completed_real_model_structural_diagnostic_substantive_failure",
+  "model": "HuggingFaceTB/SmolLM2-135M",
+  "source_model_commit": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "evidence_level": "L3 mechanism diagnostic; all 30 real decoder layers, held-out activations, not end-to-end model quality",
+  "hypothesis": "W_layer ~= full_rank_shared_base_group + low_rank_layer_specific_residual",
+  "representation": "Q4_GROUP64 shared full-rank bases + Q4_GROUP64 U/V layer adapters; no dense shadow weights",
+  "scope": {
+    "logical_layers": 30,
+    "projection_sites_per_layer": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+    "site_count": 210,
+    "calibration": "WikiText-2 raw train, 128 sampled activation rows/site",
+    "evaluation": "disjoint WikiText-2 raw test, 64 held-out activation rows/site",
+    "physical_base_counts": [2, 3, 6],
+    "logical_layers_per_base": [15, 10, 5],
+    "adapter_ranks": [8, 16, 32]
+  },
+  "formal_precommitted_component_gate": {
+    "pass_definition": "main-projection packed reduction >=5x AND raw-energy-summed global operator NMSE <=0.05",
+    "borderline_definition": "reduction >=4x AND raw-energy-summed global operator NMSE <=0.10",
+    "workflow_reported_decision": "pass_component_gate",
+    "formal_passing_config_count": 6,
+    "formal_borderline_config_count": 1,
+    "audit_disposition": "gate_metric_rejected_as_insufficient_after_result",
+    "reason": "The global numerator/denominator sum weights unlike operator sites by absolute output energy. Cross-operator output scales differ enough that this aggregate is dominated by a subset of high-energy sites and masks severe normalized errors in most matrices. The formal result is preserved rather than rewritten, but it is not accepted as evidence of component viability."
+  },
+  "all_configs_compact": [
+    {"bases":2,"layers_per_base":15,"rank":8,"packed_reduction_x":10.5825137793,"packed_global_raw_energy_nmse":0.02072287258,"packed_median_site_nmse":0.5042080379,"fraction_site_lt_0_05":0.0333333333,"fp_factor_ceiling_median_site_nmse":0.5021598997},
+    {"bases":2,"layers_per_base":15,"rank":16,"packed_reduction_x":8.5609372268,"packed_global_raw_energy_nmse":0.02019890355,"packed_median_site_nmse":0.4698036162,"fraction_site_lt_0_05":0.0333333333,"fp_factor_ceiling_median_site_nmse":0.4653385618},
+    {"bases":2,"layers_per_base":15,"rank":32,"packed_reduction_x":6.1943319838,"packed_global_raw_energy_nmse":0.02005017953,"packed_median_site_nmse":0.4003551539,"fraction_site_lt_0_05":0.0380952381,"fp_factor_ceiling_median_site_nmse":0.3933707720},
+    {"bases":3,"layers_per_base":10,"rank":8,"packed_reduction_x":7.8229607733,"packed_global_raw_energy_nmse":0.02005068764,"packed_median_site_nmse":0.4861850601,"fraction_site_lt_0_05":0.0333333333,"fp_factor_ceiling_median_site_nmse":0.4830556182},
+    {"bases":3,"layers_per_base":10,"rank":16,"packed_reduction_x":6.6603183240,"packed_global_raw_energy_nmse":0.01944168180,"packed_median_site_nmse":0.4561861221,"fraction_site_lt_0_05":0.0380952381,"fp_factor_ceiling_median_site_nmse":0.4521509004},
+    {"bases":3,"layers_per_base":10,"rank":32,"packed_reduction_x":5.1342281879,"packed_global_raw_energy_nmse":0.01895511580,"packed_median_site_nmse":0.3782571754,"fraction_site_lt_0_05":0.0380952381,"fp_factor_ceiling_median_site_nmse":0.3745439936},
+    {"bases":6,"layers_per_base":5,"rank":8,"packed_reduction_x":4.3892599399,"packed_global_raw_energy_nmse":0.01841377342,"packed_median_site_nmse":0.4368629920,"fraction_site_lt_0_05":0.0380952381,"fp_factor_ceiling_median_site_nmse":0.4328219379},
+    {"bases":6,"layers_per_base":5,"rank":16,"packed_reduction_x":3.9977137258,"packed_global_raw_energy_nmse":0.01778641185,"packed_median_site_nmse":0.4082326212,"fraction_site_lt_0_05":0.0380952381,"fp_factor_ceiling_median_site_nmse":0.4026699679},
+    {"bases":6,"layers_per_base":5,"rank":32,"packed_reduction_x":3.3924611973,"packed_global_raw_energy_nmse":0.01733960666,"packed_median_site_nmse":0.3401634539,"fraction_site_lt_0_05":0.0380952381,"fp_factor_ceiling_median_site_nmse":0.3330017168}
+  ],
+  "high_reduction_representative": {
+    "bases": 3,
+    "layers_per_base": 10,
+    "rank": 32,
+    "packed_projection_reduction_x": 5.1342281879,
+    "packed_median_site_nmse": 0.3782571754,
+    "unquantized_factor_ceiling_median_site_nmse": 0.3745439936,
+    "packed_operator_median_nmse": {
+      "q_proj": 0.1291278133,
+      "k_proj": 0.1085005592,
+      "v_proj": 0.5630329958,
+      "o_proj": 0.4010178950,
+      "gate_proj": 0.3015912830,
+      "up_proj": 0.5245118481,
+      "down_proj": 0.6529505333
+    }
+  },
+  "least_aggressive_tested": {
+    "bases": 6,
+    "layers_per_base": 5,
+    "rank": 32,
+    "packed_projection_reduction_x": 3.3924611973,
+    "packed_median_site_nmse": 0.3401634539,
+    "unquantized_factor_ceiling_median_site_nmse": 0.3330017168,
+    "fraction_site_nmse_lt_0_10": 0.1571428571
+  },
+  "substantive_decision": {
+    "promote_additive_low_rank_residual_sharing": false,
+    "classification": "fail_current_additive_residual_sharing_ranks_le_32",
+    "reason": "At every tested grouping/rank, normalized per-site errors remain very large. The FP32/unquantized residual-factor ceilings are already almost as poor as the Q4-packed results, proving that rank<=32 inter-layer residual structure—not factor quantization—is the dominant failure. Byte economics are strong but function preservation is not."
+  },
+  "methodological_correction_for_future_runs": {
+    "prohibit": "raw cross-operator energy-summed NMSE as a sole gate",
+    "require": "aggregate site-normalized errors first (median/mean/quantiles) and include operator-family constraints or worst-family guardrails",
+    "rationale": "Relative NMSE is dimensionless per site; summing raw numerator/denominator across heterogeneous sites reintroduces arbitrary output-scale weighting."
+  },
+  "workflow_artifact": {
+    "run_id": 31279213965,
+    "artifact_id": 9027937891,
+    "artifact_sha256": "465c0e157012c1d7d39d93d4baf6325a3dac72550ef211cebf8d6fa1dd6eb9e4",
+    "full_result_filename": "run13_additive_residual_sharing.json"
+  },
+  "generator": "tools/run13_additive_residual_sharing.py",
+  "claim_boundary": "Real pretrained operator/structural diagnostic only. The formal precommitted gate pass is retained for auditability but rejected as a validity signal because its aggregate metric was flawed. No end-to-end perplexity, task accuracy, native packed runtime, RSS or VRAM claim."
+}
