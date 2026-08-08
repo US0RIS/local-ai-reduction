@@ -1,0 +1,71 @@
+name: Run 13 additive residual sharing
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/run13_additive_residual_sharing.py'
+      - '.github/workflows/run13-additive-residual-sharing.yml'
+      - 'docs/RUN13_ADDITIVE_RESIDUAL_SHARING.md'
+      - 'benchmarks/RUN13_STATUS.json'
+  pull_request:
+    paths:
+      - 'tools/run13_additive_residual_sharing.py'
+      - '.github/workflows/run13-additive-residual-sharing.yml'
+      - 'docs/RUN13_ADDITIVE_RESIDUAL_SHARING.md'
+
+permissions:
+  contents: read
+
+jobs:
+  smollm2-additive-residual-sharing:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          path: external/llama.cpp
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install CPU analysis stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'transformers==4.57.6' accelerate 'huggingface-hub>=0.34,<1'
+
+      - name: Fetch disjoint WikiText-2 corpora
+        run: |
+          (cd external/llama.cpp && bash scripts/get-wikitext-2.sh)
+          test -f external/llama.cpp/wikitext-2-raw/wiki.train.raw
+          test -f external/llama.cpp/wikitext-2-raw/wiki.test.raw
+          sha256sum external/llama.cpp/wikitext-2-raw/wiki.train.raw external/llama.cpp/wikitext-2-raw/wiki.test.raw
+
+      - name: Run real-model additive residual sharing diagnostic
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+          OMP_NUM_THREADS: '4'
+          MKL_NUM_THREADS: '4'
+        run: |
+          mkdir -p benchmarks
+          python tools/run13_additive_residual_sharing.py \
+            --model HuggingFaceTB/SmolLM2-135M \
+            --calibration external/llama.cpp/wikitext-2-raw/wiki.train.raw \
+            --evaluation external/llama.cpp/wikitext-2-raw/wiki.test.raw \
+            --cal-rows 128 --eval-rows 64 --windows 2 --ctx 512 \
+            --n-bases 2,3,6 --ranks 8,16,32 \
+            --out benchmarks/run13_additive_residual_sharing.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run13-additive-residual-sharing
+          path: benchmarks/run13_additive_residual_sharing.json
+          if-no-files-found: error
+          retention-days: 90

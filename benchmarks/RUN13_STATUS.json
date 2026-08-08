@@ -1,0 +1,23 @@
+{
+  "run": 13,
+  "date": "2026-08-08",
+  "status": "implemented_pending_public_runner_execution",
+  "target_model": "HuggingFaceTB/SmolLM2-135M",
+  "kind": "real-model full-rank shared base plus low-rank layer residual diagnostic",
+  "logical_layers": 30,
+  "projection_sites_per_layer": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+  "physical_base_counts": [2, 3, 6],
+  "logical_layers_per_base": [15, 10, 5],
+  "adapter_ranks": [8, 16, 32],
+  "packed_representation": "Q4_GROUP64 shared bases + Q4_GROUP64 U/V residual factors",
+  "baseline": "independent Q4_GROUP64 copies of all 210 main decoder projection matrices",
+  "component_gate": {
+    "pass": "projection-pool reduction >=5x and held-out energy-weighted global operator NMSE <=0.05",
+    "borderline": "projection-pool reduction >=4x and held-out energy-weighted global operator NMSE <=0.10"
+  },
+  "workflow": ".github/workflows/run13-additive-residual-sharing.yml",
+  "protocol_doc": "docs/RUN13_ADDITIVE_RESIDUAL_SHARING.md",
+  "pull_request": 20,
+  "pending_artifact": "run13_additive_residual_sharing.json",
+  "claim_boundary": "Operator/component diagnostic only. No end-to-end perplexity, native packed runtime, RSS or VRAM claim."
+}
