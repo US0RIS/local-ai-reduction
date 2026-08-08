@@ -1,5 +1,5 @@
 {
-  "policy_version": 9,
+  "policy_version": 10,
   "rules": {
     "promoted_requires_committed_generator": true,
     "superseded_artifacts_may_remain_for_history": true,
@@ -13,7 +13,8 @@
     "negative_real_model_results_must_not_be_overridden_by_synthetic_success": true,
     "external_competitive_baseline_required_before_new_real_model_compression_claim": true,
     "operator_level_mechanism_success_must_not_be_promoted_as_end_to_end_model_quality": true,
-    "cross_operator_quality_gates_must_aggregate_site_normalized_errors_before_cross_site_aggregation": true
+    "cross_operator_quality_gates_must_aggregate_site_normalized_errors_before_cross_site_aggregation": true,
+    "packed_failure_must_not_be_attributed_to_quantization_when_the_unquantized_structural_ceiling_already_fails": true
   },
   "artifacts": [
     {"path":"benchmark_hrvq_run1.json","status":"historical","generator":"tools/benchmark_synthetic.py"},
@@ -60,6 +61,9 @@
     {"path":"RUN11_FINAL_STATUS.json","status":"current_L3_operator_mechanism_diagnostic","generator":"tools/run11_second_order_diagnostic.py","note":"Hadamard + block second-order error feedback is a positive operator-level mechanism only; no end-to-end quality or memory promotion. Full per-site JSON retained as recorded workflow artifact."},
     {"path":"RUN12_STATUS.json","status":"current_pending_bound","generator":"tools/run12_feasibility_bound.py","note":"calculator committed before the Run-9 result; no numeric Run-12 artifact exists until the external Q4_K_M baseline completes"},
     {"path":"RUN13_STATUS.json","status":"historical_pending_status","generator":null},
-    {"path":"RUN13_FINAL_STATUS.json","status":"current_L3_structural_mechanism_failure","generator":"tools/run13_additive_residual_sharing.py","note":"formal precommitted gate reported pass because raw cross-operator output-energy weighting masked severe normalized errors; site-normalized audit rejects viability at ranks <=32; formal output is preserved but no end-to-end promotion is made"}
+    {"path":"RUN13_FINAL_STATUS.json","status":"current_L3_structural_mechanism_failure","generator":"tools/run13_additive_residual_sharing.py","note":"formal precommitted gate reported pass because raw cross-operator output-energy weighting masked severe normalized errors; site-normalized audit rejects viability at ranks <=32; formal output is preserved but no end-to-end promotion is made"},
+    {"path":"RUN14_STATUS.json","status":"historical_pending_status","generator":null},
+    {"path":"RUN14_FINAL_STATUS.json","status":"current_L3_trained_shared_function_failure","generator":"tools/run14_trained_mlp_sharing.py","note":"post-hoc local nonlinear MLP function distillation fails for both 5- and 10-layer sharing spans; FP32 trained ceilings are already ~0.92-0.94 median normalized output NMSE, so packed Q4 quantization is not the bottleneck"},
+    {"path":"RUN15_STATUS.json","status":"current_pending_component_protocol","generator":"tools/run15_embedding_factorization.py","note":"tied embedding/head factorization protocol and gate were merged before measurement; no Run-15 numeric result is promoted yet"}
   ]
 }
