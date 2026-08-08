@@ -13,6 +13,8 @@ struct Cache{std::vector<std::uint8_t>p,mn,sc;std::size_t T,r;Q2RowsFP8 view()co
 static Cache encode(const std::vector<float>&x,std::size_t T,std::size_t r){Cache c;c.T=T;c.r=r;auto st=(r+3)/4;c.p.assign(T*st,0);c.mn.resize(T);c.sc.resize(T);for(std::size_t t=0;t<T;t++){float mn=x[t*r],mx=mn;for(std::size_t j=1;j<r;j++){mn=std::min(mn,x[t*r+j]);mx=std::max(mx,x[t*r+j]);}float s=std::max((mx-mn)/3.0f,0.001953125f);c.mn[t]=nearest_fp8(mn);c.sc[t]=nearest_fp8(s);for(std::size_t j=0;j<r;j++){int q=int(std::lrint((x[t*r+j]-mn)/s));q=std::max(0,std::min(3,q));c.p[t*st+(j>>2)]|=std::uint8_t(q<<((j&3)*2));}}return c;}
 
 int main(){
+    // PyTorch/IEEE-style E4M3-FN golden values used by the Python codec.
+    if(e4m3fn_to_float(0xBC)!=-1.5f || e4m3fn_to_float(0x38)!=1.0f || e4m3fn_to_float(0x7E)!=448.0f)return 2;
     constexpr std::size_t T=2048,R=16,D=32;std::mt19937 g(5);std::normal_distribution<float>n(0,0.2);std::vector<float>kb(R*D),vb(R*D),q(D),K(T*R),V(T*R);for(auto&z:kb)z=n(g);for(auto&z:vb)z=n(g);for(auto&z:q)z=n(g);for(auto&z:K)z=n(g);for(auto&z:V)z=n(g);
     auto kq=q4(kb,R,D);auto vq=q4(vb,R,D);auto ke=encode(K,T,R);auto ve=encode(V,T,R);std::vector<std::uint16_t>I(R*R,float_to_fp16_bits(0));for(std::size_t i=0;i<R;i++)I[i*R+i]=float_to_fp16_bits(1);
     std::vector<float>scratch(q2_attention_scratch_floats(T,R)),out(D),ref(D),ql(R),scores(T),vacc(R,0);latent_q2_fp8_attention_head(kq.view(),I.data(),vq.view(),I.data(),ke.view(),ve.view(),q.data(),1/std::sqrt(float(D)),scratch.data(),out.data());
