@@ -17,6 +17,7 @@
   },
   "workflow": ".github/workflows/run13-additive-residual-sharing.yml",
   "protocol_doc": "docs/RUN13_ADDITIVE_RESIDUAL_SHARING.md",
+  "pull_request": 20,
   "pending_artifact": "run13_additive_residual_sharing.json",
   "claim_boundary": "Operator/component diagnostic only. No end-to-end perplexity, native packed runtime, RSS or VRAM claim."
 }
