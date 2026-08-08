@@ -1,0 +1,24 @@
+{
+  "run": 11,
+  "status": "fail_depth_basis",
+  "best_under_gate": {
+    "group_size": 30,
+    "depth_rank": 24,
+    "nll": 13.27022933959961,
+    "delta_nats_vs_fp32": 9.671983480453491,
+    "ppl_ratio_vs_fp32": 15866.789299053728,
+    "whole_parameter_elements": 113286384,
+    "whole_parameter_reduction_x": 1.187389015788517,
+    "original_projection_elements": 106168320,
+    "compressed_projection_elements": 84939696,
+    "projection_element_reduction_x": 1.2499258297321902,
+    "mean_weight_residual_energy_fraction_weighted_by_elements": 0.16222157143056393
+  },
+  "precommitted_thresholds": {
+    "strong": "projection elements >=7x, whole parameters >=3x, PPL <=1.10x FP32",
+    "useful": "projection elements >=5x, whole parameters >=2.5x, PPL <=1.25x FP32",
+    "borderline": "projection elements >=3x, whole parameters >=2x, PPL <=1.50x FP32"
+  },
+  "note": "Thresholds committed before first SmolLM2 depth-basis result. This is structural FP32/BF16 parameter sharing, not a packed-memory claim.",
+  "next_step": "treat depth sharing as a training/distillation problem rather than post-training tensor decomposition"
+}

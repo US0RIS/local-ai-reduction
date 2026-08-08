@@ -1,0 +1,22 @@
+{
+  "run": 11,
+  "status": "failed_real_model_depth_basis_gate",
+  "workflow_run_id": 31277120698,
+  "artifact_id": 9027338000,
+  "artifact_sha256": "5764ddbc025e0c3f8919687a1f4848d9340eac993a0b8be17ad7ed7ac598e607",
+  "fp32_nll": 3.598245859146118,
+  "gate_status": "fail_depth_basis",
+  "group10_rank1": {
+    "projection_reduction_x": 9.999802204794895,
+    "whole_parameter_reduction_x": 3.4523134207120316,
+    "nll": 13.320297241210938,
+    "ppl_ratio_vs_fp32": 16681.429639880313
+  },
+  "group30_rank24": {
+    "projection_reduction_x": 1.2499258297321902,
+    "whole_parameter_reduction_x": 1.187389015788517,
+    "nll": 13.27022933959961,
+    "ppl_ratio_vs_fp32": 15866.789299053728
+  },
+  "conclusion": "Post-training depth-axis SVD does not preserve useful SmolLM2 quality at compressive ranks; depth sharing remains open only as a trained/distilled architecture."
+}

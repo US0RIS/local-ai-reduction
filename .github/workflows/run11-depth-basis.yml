@@ -1,0 +1,58 @@
+name: Run 11 depth-basis real-model test
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/run11_depth_basis_real_model.py'
+      - 'tools/run11_depth_basis_gate.py'
+      - '.github/workflows/run11-depth-basis.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smollm2-depth-basis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install CPU inference dependencies
+        run: |
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers safetensors huggingface_hub
+      - name: Run full-matrix depth-axis factorization
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          python tools/run11_depth_basis_real_model.py \
+            --model HuggingFaceTB/SmolLM2-135M \
+            --eval-tokens 512 \
+            --group-sizes 10,15,30 \
+            --ranks 1,2,3,4,6,8,12,16,24 \
+            --out benchmarks/run11_depth_basis_real_model.json
+      - name: Apply precommitted gate
+        run: |
+          python tools/run11_depth_basis_gate.py --result benchmarks/run11_depth_basis_real_model.json --out benchmarks/RUN11_GATE.json
+      - name: Show compact result
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('benchmarks/run11_depth_basis_real_model.json'));g=json.load(open('benchmarks/RUN11_GATE.json'))
+          print(json.dumps({'baseline':r['baseline'],'candidates':r['candidates'],'gate':g},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run11-depth-basis-results
+          path: |
+            benchmarks/run11_depth_basis_real_model.json
+            benchmarks/RUN11_GATE.json
+          if-no-files-found: error
