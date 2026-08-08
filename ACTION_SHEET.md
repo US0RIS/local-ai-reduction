@@ -1,20 +1,26 @@
 # LARC Action Sheet
 
-This file is the persistent technical project log. It should be updated on every substantive project run.
+This is the persistent technical project record for **LARC — Local Adaptive Representation & Compute**. Update it on every substantive research/implementation run. Compression claims are intentionally split by evidence level so synthetic/operator results cannot be confused with pretrained-model or hardware results.
 
 ## Project objective
 
-Create a new local-AI model storage/execution standard that makes capable models practical on materially weaker devices than ordinary GGUF deployment. Initial stretch target: **10–30× smaller stored/resident representation than a Q4-class GGUF baseline**, without pretending that raw compression ratio alone constitutes success.
+Create a local-AI storage/execution standard that makes capable language models practical on materially weaker hardware than ordinary GGUF deployment.
 
-### Success criteria
+Initial target: **10–30× lower model/storage and peak resident inference memory than a Q4-class GGUF baseline**, while retaining useful model capability and avoiding a runtime that reconstructs full dense weights.
 
-A result only counts as a breakthrough if it simultaneously improves:
+### Hard success criteria
 
-1. stored model bytes,
-2. resident RAM/VRAM,
-3. retained model capability,
-4. practical inference speed or at least acceptable slowdown,
-5. conversion practicality (prefer streaming source shards rather than requiring a second full local copy).
+A complete result must report:
+
+1. full file bytes,
+2. unique resident weight bytes,
+3. KV-cache bytes at a stated context length,
+4. bounded scratch/workspace,
+5. peak total resident inference bytes,
+6. retained model quality,
+7. inference speed/latency,
+8. baseline name/configuration,
+9. evidence class: synthetic, modeled, trained conformance model, independent pretrained model, or measured target hardware.
 
 ---
 
@@ -22,223 +28,391 @@ A result only counts as a breakthrough if it simultaneously improves:
 
 ## Status
 
-**Format architecture established; two codecs implemented; first synthetic experiments completed. Raw 10–30× storage regime is reachable, but intelligence retention at that ratio is not yet demonstrated.**
+Established the initial LARC direction and proved that structural representations can mechanically enter the requested storage range. **Run 1 did not prove real-LLM quality or VRAM reduction.**
 
-## Repository starting state
+## Starting repository state
 
-The repository contained only `# local-ai-reduction` in `README.md`. No implementation or prior benchmark artifacts existed.
+The repository contained only a one-line README. No implementation or benchmark artifacts existed.
 
-## Standard decision
+## v0.1 design decision
 
-Working standard name: **LARC — Local Adaptive Representation & Compute** (`.larc`).
-
-Decision: do **not** build a new container around the same dense Q2/Q4 tensors. The standard's logical operator representation is:
+LARC is an execution representation, not merely a smaller wrapper around dense Q2/Q4 tensors. Initial logical representation:
 
 `activation-subspace core + progressive residual refinements + sensitive-tensor fallbacks`.
 
-The format is designed as an execution representation. GGUF/SafeTensors remain import sources.
+GGUF/SafeTensors are import/interchange sources rather than the internal runtime contract.
 
-## Research review
+## HRVQ64 experiment
 
-Reviewed prior art relevant to the design:
-
-- AQLM: additive multi-codebook quantization; strong results around ~2 bits/parameter.
-- QuIP#: randomized Hadamard incoherence + lattice vector quantization.
-- SqueezeLLM: dense/sparse sensitivity-aware quantization.
-- SVD-LLM / ASVD: activation-aware and truncation-aware low-rank decomposition.
-- CALDERA: activation-weighted low-rank + low-precision decomposition.
-- BitStack: progressive residual blocks for variable-memory model sizing.
-- bitnet.cpp: evidence that storage representation and kernels must be co-designed.
-- llama.cpp GGUF quantization tables: practical baseline.
-
-**Implication:** ordinary weight-only quantization is already highly optimized around 2 bits/weight. A 10–30× improvement over Q4 implies roughly 0.15–0.45 effective bits/original-weight if achieved solely through weight payload compression, which is too aggressive to expect from scalar/vector quantization alone. LARC therefore has to exploit functional/activation structure and runtime selectivity.
-
-## Implemented prototype components
-
-### 1. Minimal LARC container
-
-`larc/container.py`
-
-- 8-byte magic/version,
-- uint64 manifest length,
-- JSON research manifest,
-- concatenated binary chunks,
-- manifest parser test.
-
-This is intentionally temporary; a binary manifest and aligned page table should wait until codec requirements stabilize.
-
-### 2. HRVQ64 progressive residual codec
-
-`larc/hrvq.py`
-
-Current layout:
-
-- vector width = 64 weights,
-- one FP16 RMS scale per 256 weights,
-- 256-entry learned residual codebooks,
-- one uint8 code index per 64 weights per stage,
-- additive refinement stages.
+Implemented 64-weight additive vector coding with shared RMS scales and progressive 256-entry codebooks.
 
 Nominal payload rates:
 
-| Stages | Nominal bpw | Ideal multiple vs 4.5 bpw Q4-class payload |
+| Stages | Nominal bpw | Ideal multiple vs 4.5 bpw |
 |---:|---:|---:|
 | 1 | 0.1875 | 24.0× |
 | 2 | 0.3125 | 14.4× |
 | 3 | 0.4375 | 10.29× |
 
-For a hypothetical 135M-weight model with one globally amortized codebook set, estimated weight payloads are:
+Synthetic quality was poor at these rates. Three-stage output NMSE was approximately 0.67 (Gaussian), 0.61 (heavy-tail), and 0.49 (low-rank-plus-noise). **Decision:** HRVQ is not the base representation; retain it only as a lower-importance residual/refinement candidate.
 
-| Stages | Estimated payload + codebooks | Ratio vs 105 MB SmolLM2-135M Q4_K_M file* |
-|---:|---:|---:|
-| 1 | 3.20 MB | 32.85× |
-| 2 | 5.34 MB | 19.67× |
-| 3 | 7.48 MB | 14.04× |
+Artifact: `benchmarks/benchmark_hrvq_run1.json`.
 
-\*Not apples-to-apples yet: the LARC estimate excludes tokenizer/manifest and non-matrix treatment, while the 105 MB value is the complete published GGUF. This table is a target-scale estimate, not a demonstrated model conversion.
+## Activation-subspace projection bundles
 
-### HRVQ synthetic quality result
+For multiple operators consuming a shared activation domain, store shared `U`/`B` plus projected operators rather than independent full matrices.
 
-Benchmark: 768×768 matrices; codebook overhead included in effective bpw for this small test. The raw codec had high distortion:
+Synthetic benchmark, five 384×384 operators:
 
-- Gaussian, 3 stages: weight NMSE ~0.672; output NMSE ~0.671.
-- Heavy-tail, 3 stages: weight NMSE ~0.615; output NMSE ~0.607.
-- Low-rank-plus-noise, 3 stages: weight NMSE ~0.479; output NMSE ~0.490.
+| Core | Factor | Reduction vs row-Q4 | held-out output NMSE (98% activation energy in core) |
+|---|---:|---:|---:|
+| rank 10 (2.60%) | Q4 | **23.10×** | 0.0260 |
+| rank 10 (2.60%) | Q8 | **13.47×** | 0.0200 |
+| rank 19 (4.95%) | Q4 | **13.47×** | 0.0280 |
 
-**Decision:** HRVQ is not a viable base representation at these bitrates. Keep it as a residual/refinement codec where the remaining signal is lower-importance and activation-weighted.
+Artifact: `benchmarks/benchmark_projection_run1.json`.
 
-Full artifact: `benchmarks/benchmark_hrvq_run1.json`.
+## Run 1 conclusion
 
-### 3. Activation-subspace projection bundles
+The requested byte range is structurally possible when activation energy is concentrated, but weight-only sub-0.5-bpw vector coding is too destructive. Primary direction became **activation-aware shared structure + progressive residuals**.
 
-`larc/projection.py`, `larc/q4.py`, `larc/q8.py`
+---
 
-For multiple operators `W_i` consuming the same input activation space, learn a calibration basis `U_k` and store:
+# Run 2 — 2026-08-08
 
-`A_i = W_i U_k`.
+## Goal
 
-Runtime:
+Stop counting small files alone. Attack the other original requirements directly:
 
-`z = U_k^T x` once, then `y_i = A_i z` for every operator in the bundle.
+- real execution from compressed structures,
+- weight residency,
+- KV residency,
+- total inference memory,
+- quality retention,
+- random-access/paged format semantics,
+- real/pretrained-model validation harness.
 
-This exploits a property GGUF cannot express: multiple logical tensors share one learned input representation.
+## Evidence levels introduced in LARC v0.2
 
-### Projection-bundle synthetic benchmark
+- **L0 Structural:** container/codec integrity and byte accounting.
+- **L1 Operator:** compressed-domain kernels and held-out operator error.
+- **L2 Conformance model:** a trained autoregressive language model exercises the storage/runtime mechanisms and passes memory/quality gates.
+- **L3 External pretrained model:** post-training conversion of an independently pretrained LLM, compared at equal context against a named GGUF baseline.
+- **L4 Hardware:** measured peak RAM/VRAM and throughput on target hardware.
 
-Setup:
+This distinction is mandatory in future reports.
 
-- five 384×384 linear operators,
-- shared calibration activation covariance,
-- top subspace holds 90%, 95%, or 98% of activation variance,
-- held-out activations sampled from the same covariance,
-- baseline = actual bytes from the prototype row-wise Q4 encoder.
+## A. Direct packed-Q4 CPU execution — ACHIEVED at L1
 
-Best storage-target cases:
+Implemented:
 
-| Core rank | Factor precision | Compression vs row-Q4 | Held-out output NMSE at 95% core energy | At 98% core energy |
-|---:|---:|---:|---:|---:|
-| 10 / 384 = 2.60% | Q4 | **23.10×** | 0.0557 | 0.0260 |
-| 10 / 384 = 2.60% | Q8 | **13.47×** | 0.0499 | 0.0200 |
-| 19 / 384 = 4.95% | Q4 | **13.47×** | 0.0578 | 0.0280 |
+- `runtime/larc_q4.h`
+- `runtime/larc_q4.cpp`
+- Python reference `larc/q4_runtime.py`
+- reproducibility tests `tests/native_q4_smoke.cpp` and `tests/native_q4_bench.cpp`
 
-Interpretation:
+Kernel contract:
 
-- The **10–30× storage band is mechanically reachable** for a projection core when activations are strongly concentrated.
-- Q8 factors substantially reduce quantization error while still landing above 10× at very low retained rank.
-- The dominant unanswered question is whether real LLM layer activations have enough compressible subspace, consistently enough across prompts/domains, to preserve actual language-model capability.
-- Synthetic covariance results must not be represented as model benchmark results.
+`z = Bx`, then `y = Az`
 
-Full artifact: `benchmarks/benchmark_projection_run1.json`.
+Both `B` and `A` remain packed INT4. Nibbles are decoded inside the dot product. No dense FP16/FP32 `W = AB` is constructed. Scratch is rank-sized.
 
-## Test status
+### Correctness smoke
 
-`pytest -q` → **3 passed**.
+Rank-19 projected GEMV:
 
-Tests currently cover:
+- maximum absolute error against separately dequantized reference: **~2.29e-5**
+- temporary rank scratch: **76 bytes**
 
-- HRVQ encode/decode shape and finite output,
-- container manifest write/read,
-- Q4 and projection-bundle execution path.
+### Transformer-like CPU microbenchmark
 
-## Known limitations / blockers
+Shape: 1536×576, rank 32, compiled with `g++ -O3 -march=native -std=c++17`.
 
-1. **No real-model quality benchmark yet.** The environment used for Run 1 could inspect Hugging Face metadata but could not retrieve the 269 MB SmolLM2-135M SafeTensors object into the execution sandbox. The published source size is 269 MB and an available Q4_K_M GGUF is ~105 MB, so SmolLM2-135M remains the first intended real target.
-2. Projection bundles assume calibration activations generalize. We need cross-domain held-out calibration tests, not just in-distribution covariance tests.
-3. Current factor quantizers are simple row-wise Q4/Q8 reference implementations, not optimized kernels.
-4. HRVQ codebooks are learned with MiniBatchKMeans and are not activation-aware yet.
-5. No sparse rescue path, Hadamard transform, or error-feedback optimization is implemented.
-6. No direct compressed-domain C/C++ kernel exists yet.
-7. Container chunks are not aligned/paged/checksummed in v0.1.
+| Metric | Direct row-Q4 | LARC factors |
+|---|---:|---:|
+| resident weight bytes | 448,512 | 40,064 |
+| resident reduction | — | **11.19×** |
+| GEMV time | 438.9 µs | 33.1 µs |
+| speed | 1× | **13.27×** |
+| rank scratch | — | **128 B** |
 
-## Next experiments — ordered
+Output NMSE versus the independently row-Q4 dense synthetic operator was ~0.0462; that number measures the synthetic factorization, not kernel arithmetic error.
 
-### P0 — Real model validation
+Artifact: `benchmarks/run2_native_q4_kernel.json`.
 
-- Build a streaming SafeTensors reader/converter that processes one source tensor/shard at a time.
-- Target SmolLM2-135M first, then 360M, before moving to 1B+.
-- Capture calibration activations for each bundle candidate.
-- Measure activation covariance spectra per layer and per tensor family.
-- Determine whether 2–5% retained dimensions plausibly capture 90–98% of task-relevant activation energy.
-- Evaluate perplexity and generation quality at 10×, 15×, 20×, and 30× storage targets.
+## B. GPU compressed-domain contract — IMPLEMENTED SOURCE, NOT L4 VALIDATED
 
-### P0 — Residual rescue
+Added `runtime/triton_q4.py`.
 
-Implement an activation-weighted residual objective:
+The Triton kernel reads packed nibbles directly and supports projected `A(Bx)` with rank-sized CUDA scratch. The current environment has no CUDA/Triton hardware path, therefore:
 
-`min ||(W - W_core - R) X||_F^2`
+- source/interface: implemented,
+- syntax/import boundary: implemented,
+- measured GPU correctness: **not achieved**, 
+- measured GPU VRAM: **not achieved**,
+- measured GPU speed: **not achieved**.
 
-rather than raw weight Frobenius error.
+Do not count this as an L4 result.
 
-Candidate residual stack:
+## C. Recursive/shared operator graph — ACHIEVED at L2 representation level
 
-1. sparse high-impact directions/entries,
-2. Hadamard/incoherence transform,
-3. HRVQ64 additive pages,
-4. optional low-rank error correction.
+The v0.2 manifest now permits multiple logical layers to reference one physical block bundle, with optional future depth-specific adapters. This follows the practical direction of modern recursive/shared-weight Transformer research rather than assuming every logical layer must own an independent dense tensor.
 
-Pages should be ordered by marginal validation gain per byte.
+### Exact-equivalence recurrent conformance test
 
-### P1 — Bundle discovery
+A trained 16-logical-layer language model using one physical Transformer block was compared against an explicitly duplicated 16-copy representation of the same logical function.
 
-Automatically group operators with common input spaces and determine whether a shared basis is cheaper/better than per-tensor bases. Attention Q/K/V and MLP gate/up are initial candidates.
+Results:
 
-### P1 — Runtime kernel
+- shared validation NLL: 0.6147951
+- duplicated validation NLL: 0.6147951
+- max logit difference: **0.0**
+- FP32 unique weight residency reduction: **13.552×**
+- Q4-style logical file reduction: **13.404×**
+- exact quality equivalence: **yes**
 
-Implement CPU reference kernels that compute `A(U^T x)` directly from Q4/Q8 factors. Do not materialize reconstructed dense weights.
+Artifact: `benchmarks/run2_recurrent_conformance.json`.
 
-Measure:
+This proves shared logical/physical graph semantics, not broad model intelligence.
 
-- memory bandwidth,
-- extra arithmetic from two-stage matvec,
-- cache behavior,
-- break-even rank at which LARC is faster/slower than Q4 GGUF.
+## D. Latent 2-bit KV cache
 
-### P1 — Format hardening
+Implemented `larc/latent_kv.py`.
 
-After real-model evidence:
+K/V are projected to learned latent bases. Historical full-dimensional K/V vectors do not need to remain resident. Attention projects the current query into latent-key space and reconstructs only the weighted value aggregate.
 
-- fixed binary manifest schema,
-- 4–256 KiB page/chunk alignment experiment,
-- checksums,
-- dependency graph,
-- quality-tier profile table,
-- deterministic codec identifiers,
-- architecture and tokenizer metadata mapping.
+### D1. Initial per-token/per-token Q2 codec
 
-## Current assessment
+Controlled low-rank attention simulation, head dimension 64, latent rank 16:
 
-**Most promising direction:** projection bundles plus activation-weighted progressive residual pages.
+- K NMSE: ~0.1245
+- V NMSE: ~0.1222
+- attention-output NMSE: **0.00280**
+- modeled SmolLM2 KV reduction at 2K: **15.52×**
+- modeled SmolLM2 KV reduction at 8K: **15.88×**
 
-**Deprioritized as a standalone solution:** sub-0.5-bpw vector-codebook coding of entire raw weight matrices. It meets the byte target but Run 1 distortion is too high.
+Artifact: `benchmarks/run2_latent_kv_synthetic.json`.
 
-**Confidence:** low-to-moderate that 10× over Q4 can be made useful on at least some models/layers; low that 20–30× will retain broadly comparable intelligence without either strong activation subspace concentration, calibration/fine-tuning, conditional paging, or architecture-aware transformations. The project should aggressively test this rather than assume it.
+### D2. KIVI-oriented latent Q2 codec
 
-## Run 1 repository artifacts
+Updated the representation to use the empirically motivated asymmetry:
 
-Machine-readable evidence committed with this run:
+- keys: per latent channel over token groups,
+- values: per token,
+- coefficients: 2-bit asymmetric,
+- bases: Q4/Q8 eligible.
 
-- `benchmarks/benchmark_hrvq_run1.json` — all nine HRVQ synthetic reconstruction/output-error cases.
-- `benchmarks/benchmark_projection_run1.json` — all eighteen projection-bundle compression/output-error cases.
-- `benchmarks/run1_model_scale_estimate.json` — explicitly labeled SmolLM2-135M payload extrapolation against the published ~105 MB Q4_K_M reference file.
+Controlled rank-16 result:
 
-Reproducibility boundary: the two synthetic benchmark JSON files are direct outputs from the checked-in Python benchmark programs. The SmolLM2 file is an arithmetic scale estimate only; it is **not** evidence that SmolLM2 has been converted or retains quality at those sizes. The next run must replace that estimate with real-model measurements before any model-level 10–30× claim is accepted.
+- attention-output NMSE: **0.00831**
+- modeled SmolLM2 KV reduction at 2K: **18.96×**
+- modeled SmolLM2 KV reduction at 8K: **19.50×**
+
+Artifact: `benchmarks/run2_kivi_latent_kv_synthetic.json`.
+
+The attention synthetic is not a real-LLM quality result.
+
+## E. End-to-end trained conformance model — FIRST COMBINED MEMORY + QUALITY PASS
+
+Implemented `tools/recurrent_kv_endtoend.py`.
+
+Configuration:
+
+- autoregressive character language model,
+- hidden width 128,
+- four heads,
+- 16 logical recursive depths,
+- context 64,
+- latent KV rank 12,
+- one physical Transformer block,
+- actual packed uint8 2-bit KV coefficient tensors with FP16 quantization metadata,
+- baseline token-by-token inference independently checked against full causal inference.
+
+### Runtime verification
+
+Maximum baseline incremental-vs-full logit error: **1.335e-5**.
+
+### Quality
+
+Held-out generated-story corpus:
+
+- baseline NLL: **2.01662**
+- LARC latent-Q2 NLL: **2.24911**
+- NLL increase: **11.53%**
+- predefined screening gate: ≤15%
+- gate result: **PASS**
+
+### Actual representation bytes
+
+| Pool | Baseline | LARC | Reduction |
+|---|---:|---:|---:|
+| Q4 logical/weight payload | 1,129,482 B | 77,322 B | **14.61×** |
+| KV payload | 524,288 B FP16 | 57,344 B packed Q2 + 1,728 B shared basis | **8.88×** |
+| bounded scratch | 7,680 B | 7,680 B | 1× |
+| **total** | **1,661,450 B** | **144,074 B** | **11.53×** |
+
+Hard minimum total-memory target: ≥10×. Result: **PASS at L2**.
+
+Artifact: `benchmarks/run2_recurrent_kv_endtoend.json`.
+
+### Interpretation
+
+This is the first executable trained language-model test where LARC simultaneously passes:
+
+- >10× weight storage/residency,
+- >10× total inference-tensor memory,
+- bounded context held constant,
+- predefined quality-degradation gate.
+
+It is intentionally a small LARC-native conformance model trained on a controlled story corpus. It **does not establish that an arbitrary pretrained 135M/1B/7B model retains comparable intelligence after 10× conversion**.
+
+## F. SmolLM2-135M full-size memory plan — MODELED, NOT L3/L4
+
+Target baseline: published SmolLM2-135M Q4_K_M reference size ~105 MB. LARC profile sizes account for Q4 projection factors, norms, latent KV and bounded workspace.
+
+With KIVI-style latent-Q2 rank 16:
+
+| Profile | Context | LARC weight bytes | Weight reduction vs 105 MB | KV reduction | Modeled total-memory reduction |
+|---|---:|---:|---:|---:|---:|
+| 10x | 2K | 8.06 MB | 13.02× | 18.96× | **14.00×** |
+| 10x | 8K | 8.06 MB | 13.02× | 19.50× | **16.26×** |
+| 15x | 2K | 5.31 MB | 19.78× | 18.96× | **18.73×** |
+| 20x | 2K | 3.43 MB | 30.60× | 18.96× | **24.34×** |
+| 30x | 2K | 2.43 MB | 43.23× | 18.96× | **28.98×** |
+
+Artifacts:
+
+- `benchmarks/run2_kivi_memory_plan_rank16.json`
+- `tools/memory_plan.py`
+
+These numbers demonstrate that the designed structures fit the 10–30× total-memory envelope mathematically. They are **not measured SmolLM2 VRAM and contain no SmolLM2 quality evidence**.
+
+## G. Real external pretrained-model harness — IMPLEMENTED, L3 BLOCKED
+
+Added `tools/real_model_benchmark.py` targeting `HuggingFaceTB/SmolLM2-135M`, with profiles for 10× / 15× / 20× / 30×.
+
+The harness is designed to:
+
+- download the independent pretrained model,
+- measure baseline held-out NLL/perplexity,
+- capture calibration activations,
+- replace compatible operators with shared projection factors,
+- factor the tied vocabulary matrix,
+- execute through packed low-bit runtime modules,
+- report complete encoded weight bytes,
+- measure post-conversion NLL/perplexity and generation samples.
+
+A GitHub Actions matrix was also added to use a hosted runner because the local environment cannot fetch Hugging Face/Xet model weights.
+
+### Infrastructure failure, not codec failure
+
+The hosted workflow jobs failed **before any workflow step began**, including after replacing reusable `uses:` actions with a pure `run:` workflow. No checkpoint was downloaded, no conversion ran, and no scientific result was produced.
+
+Direct raw GitHub/Hugging Face model-binary retrieval is also blocked by the current execution network boundary.
+
+Therefore L3 remains **unpassed**, not failed experimentally.
+
+## H. v0.2 paged container — ACHIEVED at L0
+
+Implemented `larc/paged_container.py` and `tests/test_paged_container.py`.
+
+Properties:
+
+- fixed 64-byte header,
+- fixed 64-byte page records,
+- 4 KiB default payload alignment,
+- stable numeric research codec IDs,
+- per-page CRC32,
+- dependency groups,
+- `REQUIRED`, `SHARED`, `REFINEMENT`, `STREAMABLE`, `KV_BASIS` flags,
+- mmap random-access page views,
+- unique residency accounting for shared references.
+
+Local round-trip test passed: page offsets were 4 KiB aligned, CRC verified, mmap views matched original payload, and duplicate page references were counted once.
+
+## I. Research-direction changes from Run 2
+
+### Promoted
+
+1. **Recursive/shared physical bundles** — real modern prior art shows parameter-sharing models can retain substantial capability and may be converted from pretrained Transformers with adaptation/uptraining.
+2. **Projection factors** — remain useful both within and across shared bundles.
+3. **Latent low-bit KV** — necessary because KV becomes dominant after weight storage falls by an order of magnitude.
+4. **Direct packed kernels** — mandatory, not optional optimization.
+5. **Paged/resident-budget runtime** — required to distinguish file size from actual device memory.
+
+### Deprioritized
+
+- whole-model sub-0.5-bpw raw-weight vector coding as the primary representation,
+- any workflow that decompresses a `.larc` model to a conventional dense model before execution.
+
+## J. Original goal status after Run 2
+
+| Original requirement | L2 status | L3/L4 status |
+|---|---|---|
+| 10–30× smaller model representation | **PASS: 14.61× on trained recurrent conformance model** | **Not yet proven on independent pretrained LLM** |
+| 10–30× less resident weight memory | **PASS: 14.61× conformance; 11.19× native operator microbenchmark** | Not measured on external pretrained GPU runtime |
+| 10–30× less total inference memory | **PASS: 11.53× conformance model** | SmolLM2 only modeled 14–29×; GPU VRAM not measured |
+| comparable/reasonable quality | **Screening PASS: +11.53% NLL on controlled trained model** | Broad/pretrained intelligence not established |
+| compressed-domain CPU kernels | **PASS, measured** | — |
+| compressed-domain GPU kernels | source contract implemented | **Hardware validation not achieved** |
+| random-access standard/runtime format | **PASS at research v0.2/L0** | production ABI not frozen |
+
+## K. What still must happen before claiming the full user-level goal
+
+The project MUST NOT be described as having made arbitrary local LLMs use 10–30× less VRAM yet. The remaining decisive milestones are:
+
+### P0 — L3 independent pretrained model
+
+1. Obtain an accessible independent pretrained checkpoint (SmolLM2-135M remains preferred first target).
+2. Run baseline Q4_K_M at the same context and record quality/memory.
+3. Convert tensor-by-tensor without requiring a second full dense local copy.
+4. Sweep projection/shared/adaptor/residual profiles at 10×, 15×, 20×, 30×.
+5. Evaluate perplexity plus external tasks/generation, not only calibration-domain NLL.
+6. Reject profiles that cross the agreed quality threshold.
+
+### P0 — Real latent-KV LLM validation
+
+- capture per-layer/head K/V distributions from the target pretrained model,
+- fit latent bases on calibration data,
+- evaluate KIVI-style latent Q2 at long context,
+- implement packed latent attention kernels so full historical K/V are never reconstructed.
+
+### P0 — L4 target hardware
+
+- run CPU baseline vs LARC with peak RSS and tokens/s,
+- run CUDA/Triton on an NVIDIA GPU and record peak allocated/reserved VRAM,
+- run Metal on Apple Silicon or add a native Metal packed kernel,
+- compare at identical context and generation settings.
+
+### P1 — pretrained recursive conversion
+
+Use modern relaxed-recursive / cross-layer-sharing methods as the conversion route when independent layers do not factor sufficiently. Candidate path:
+
+`pretrained full stack → shared physical block groups → depth-wise low-rank adapters → short calibration/uptraining/distillation → low-bit factors`.
+
+This is likely more realistic for 10×+ quality retention than forcing every unrelated pretrained matrix into an ultra-low-rank approximation.
+
+## Run 2 repository artifacts
+
+Key new artifacts:
+
+- `docs/SPEC.md` — LARC v0.2 specification.
+- `larc/paged_container.py` — mmap paged format.
+- `larc/q4_runtime.py` — Python packed-Q4 execution reference.
+- `runtime/larc_q4.{h,cpp}` — native packed-domain CPU kernel.
+- `runtime/triton_q4.py` — CUDA/Triton packed-domain reference kernel.
+- `larc/latent_kv.py` — latent Q2 and KIVI-oriented latent KV codecs.
+- `tools/recurrent_kv_endtoend.py` — combined L2 memory/quality test.
+- `tools/real_model_benchmark.py` — L3 SmolLM2 harness.
+- `tools/memory_plan.py` — complete memory-pool accounting.
+- `benchmarks/run2_recurrent_kv_endtoend.json` — first combined >10× memory + quality pass.
+- `benchmarks/run2_native_q4_kernel.json` — CPU kernel measurements.
+- `benchmarks/run2_kivi_latent_kv_synthetic.json` — asymmetric latent KV study.
+- `benchmarks/run2_kivi_memory_plan_rank16.json` — SmolLM2-shaped memory accounting.
+- `benchmarks/run2_recurrent_conformance.json` — exact shared-graph equivalence test.
+
+## Run 2 conclusion
+
+**A LARC-native trained language model has now crossed the 10× total-memory gate while staying inside the predefined quality screening gate, and the direct packed CPU execution path is measured and working.** This resolves the earlier question of whether the standard/runtime architecture can in principle satisfy the complete memory objective.
+
+**The project has not yet crossed the independent-pretrained-model or measured-GPU gates.** Those are now the controlling milestones. Any statement that LARC already provides 10–30× lower VRAM for arbitrary GGUF models would be unsupported by the current evidence.
