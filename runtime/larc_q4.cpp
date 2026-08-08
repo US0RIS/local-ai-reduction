@@ -66,6 +66,24 @@ void q4_gemv(const Q4Rows& w,const float* x,float* y) {
     }
 }
 
+void q4_grouped_gemv(const Q4GroupRows& w,const float* x,float* y) {
+    assert(w.group_size>0);
+    const std::size_t stride=(w.cols+1)>>1;
+    const std::size_t groups=(w.cols+w.group_size-1)/w.group_size;
+    for(std::size_t i=0;i<w.rows;++i) {
+        const std::uint8_t* row=w.packed+i*stride;
+        float total=0.0f;
+        for(std::size_t g=0;g<groups;++g) {
+            const std::size_t begin=g*w.group_size;
+            const std::size_t end=std::min(w.cols,begin+w.group_size);
+            float acc=0.0f;
+            for(std::size_t j=begin;j<end;++j) acc+=float(q4_at(row,j))*x[j];
+            total+=acc*fp16_bits_to_float(w.scales_fp16[i*groups+g]);
+        }
+        y[i]=total;
+    }
+}
+
 void q4_transposed_gemv(const Q4Rows& w,const float* x,float* y) {
     std::fill(y,y+w.cols,0.0f);
     const std::size_t stride=(w.cols+1)>>1;

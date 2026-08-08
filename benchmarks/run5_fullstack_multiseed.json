@@ -1,0 +1,21 @@
+{
+  "evidence_level":"L2C controlled multi-seed",
+  "training_corpus_seed":3,
+  "evaluation_stream_seed":999,
+  "calibration_stream_seed":777,
+  "evaluation_chars_per_seed":100032,
+  "model":{"d":128,"heads":4,"head_dim":32,"ff":256,"logical_depth":16,"physical_blocks":1,"context_quality_eval":64,"latent_rank":16},
+  "baseline":{"representation":"project canonical row-Q4 teacher + FP16 KV","weight_bytes":1129482,"warning":"not llama.cpp Q4_K_M"},
+  "larc":{"weight_representation":"group-64 signed Q4 with FP16 scale per 64-weight sub-row group","weight_bytes":79828,"conversion":"80-step teacher-layer function prefit, then 200-step hard-projected group-64 QAT recovery at lr=1.5e-3","kv":"rank-16 latent Q2; one scalar FP16 min/scale pair per 3-token K group and V group; one shared Q4 K/V basis set; FP16 ridge-stabilized inverse-Gram for K/V; FP16 current residual group"},
+  "seeds":[
+    {"seed":3,"baseline_row_q4_nll":1.9104986965694415,"larc_full_nll":2.1226425122085932,"delta_nats_per_char_vs_row_q4":0.21214381563915174,"perplexity_ratio_vs_row_q4":1.23632567526088,"fp32_teacher_nll":1.7361557948917283,"delta_nats_per_char_vs_fp32":0.3864867173168649,"perplexity_ratio_vs_fp32":1.4718008474722557},
+    {"seed":7,"baseline_row_q4_nll":2.2774606437463447,"larc_full_nll":2.1810181410893827,"delta_nats_per_char_vs_row_q4":-0.09644250265696197,"perplexity_ratio_vs_row_q4":0.908062107257258,"fp32_teacher_nll":1.8664139682332903,"delta_nats_per_char_vs_fp32":0.31460417285609243,"perplexity_ratio_vs_fp32":1.3697170324588825},
+    {"seed":11,"baseline_row_q4_nll":2.1419989768313203,"larc_full_nll":2.1068718117624234,"delta_nats_per_char_vs_row_q4":-0.035127165068896904,"perplexity_ratio_vs_row_q4":0.9654826327853306,"fp32_teacher_nll":1.8267394155549912,"delta_nats_per_char_vs_fp32":0.28013239620743224,"perplexity_ratio_vs_fp32":1.3233050013034524},
+    {"seed":19,"baseline_row_q4_nll":2.1578440406882295,"larc_full_nll":2.0490597989112236,"delta_nats_per_char_vs_row_q4":-0.10878424177700596,"perplexity_ratio_vs_row_q4":0.8969239153332434,"fp32_teacher_nll":1.7230983741452734,"delta_nats_per_char_vs_fp32":0.32596142476595014,"perplexity_ratio_vs_fp32":1.3853619271814435},
+    {"seed":23,"baseline_row_q4_nll":2.0254354617264663,"larc_full_nll":2.231186662357889,"delta_nats_per_char_vs_row_q4":0.20575120063142283,"perplexity_ratio_vs_row_q4":1.2284475290014703,"fp32_teacher_nll":1.9414837032423062,"delta_nats_per_char_vs_fp32":0.28970295911558286,"perplexity_ratio_vs_fp32":1.3360305733753275}
+  ],
+  "statistics":{"delta_nats_per_char_vs_row_q4_mean":0.035508221353541945,"delta_nats_per_char_vs_row_q4_sample_std":0.16078205081745248,"perplexity_ratio_vs_row_q4_mean":1.0470483719276364,"perplexity_ratio_vs_row_q4_sample_std":0.17120094609903524,"delta_nats_per_char_vs_fp32_mean":0.3193775340523845,"perplexity_ratio_vs_fp32_mean":1.3772430763582724,"perplexity_ratio_vs_fp32_sample_std":0.05846262801193498},
+  "quality_execution_note":"Representation-faithful Python/reference quality simulation for group-64 weights and grouped-Q2 KV. Unlike the upstream E4M3 path, this grouped codec does not yet have a native direct-packed attention kernel.",
+  "memory_artifact":"benchmarks/run5_memory_context.json",
+  "claim_boundary":"Five-seed controlled evidence only. Mean PPL is 1.047x the project row-Q4 reference while the selected grouped path models >10x total tensor reduction across 64..8192. This does not supersede upstream direct-packed runtime evidence and is not Q4_K_M, external-model, RSS, or VRAM evidence."
+}
