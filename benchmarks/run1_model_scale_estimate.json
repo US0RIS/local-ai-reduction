@@ -1,0 +1,29 @@
+{
+  "reference_model": "HuggingFaceTB/SmolLM2-135M",
+  "reference_parameter_count": 135000000,
+  "reference_q4_k_m_gguf_size_MB_decimal": 105.0,
+  "note": "HRVQ estimate covers weight payload + one global codebook set only; tokenizer/manifest/non-matrix tensors are not included.",
+  "hrvq_model_scale_estimates": [
+    {
+      "stages": 1,
+      "nominal_bpw": 0.1875,
+      "estimated_weight_bytes": 3196830,
+      "estimated_weight_MB_decimal": 3.1968305,
+      "ratio_vs_105MB_GGUF": 32.84503197776673
+    },
+    {
+      "stages": 2,
+      "nominal_bpw": 0.3125,
+      "estimated_weight_bytes": 5338974,
+      "estimated_weight_MB_decimal": 5.3389735,
+      "ratio_vs_105MB_GGUF": 19.666701848211083
+    },
+    {
+      "stages": 3,
+      "nominal_bpw": 0.4375,
+      "estimated_weight_bytes": 7481116,
+      "estimated_weight_MB_decimal": 7.4811165,
+      "ratio_vs_105MB_GGUF": 14.035338174455644
+    }
+  ]
+}
