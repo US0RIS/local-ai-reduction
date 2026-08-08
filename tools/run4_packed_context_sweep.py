@@ -13,5 +13,10 @@ def row(T):
     larc=SHARED_W+larc_kv+BASIS+larc_scratch
     return {"context":T,"baseline_fp16_kv_bytes":baseline_kv,"larc_q2_fp8meta_kv_bytes":larc_kv,"baseline_scratch_bytes":baseline_scratch,"larc_packed_scratch_bytes":larc_scratch,"baseline_total_bytes":baseline,"larc_total_bytes":larc,"modeled_total_reduction_x":baseline/larc,"quality_validated_equivalent_codec_at_this_context":T==64}
 def main():
-    rows=[row(T) for T in CONTEXTS];Path('benchmarks/run4_packed_attention_context_sweep.json').write_text(json.dumps(rows,indent=2)+'\n');print(json.dumps(rows,indent=2))
+    rows=[row(T) for T in CONTEXTS]
+    # Historical artifact is intentionally compact one-object-per-line. Emit that
+    # exact canonical form so provenance CI checks semantics rather than whitespace.
+    text='[\n'+',\n'.join('  '+json.dumps(r,separators=(',',':')) for r in rows)+'\n]\n'
+    Path('benchmarks/run4_packed_attention_context_sweep.json').write_text(text)
+    print(json.dumps(rows,indent=2))
 if __name__=='__main__':main()

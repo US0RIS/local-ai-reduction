@@ -1,0 +1,2352 @@
+{
+  "run": 6,
+  "evidence_level": "L3-precheck activation-aware reduced-rank real operator test",
+  "model": "HuggingFaceTB/SmolLM2-135M",
+  "model_commit": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "protocol": {
+    "selected_layers": [
+      0,
+      5,
+      10,
+      15,
+      20,
+      25,
+      29
+    ],
+    "ranks": [
+      8,
+      16,
+      32,
+      64,
+      128
+    ],
+    "calibration_tokens": 256,
+    "evaluation_tokens": 256,
+    "fit": "output-SVD basis + dual ridge reduced-rank regression",
+    "ridge_relative_to_mean_dual_gram_diagonal": 0.0001
+  },
+  "projection_summary": {
+    "32": {
+      "sites": 49,
+      "median_output_nmse": 0.28661930561065674,
+      "mean_output_nmse": 0.2992380690969983,
+      "fraction_below_0.01": 0.061224489795918366,
+      "fraction_below_0.03": 0.061224489795918366,
+      "fraction_below_0.05": 0.08163265306122448
+    },
+    "64": {
+      "sites": 49,
+      "median_output_nmse": 0.24243009090423584,
+      "mean_output_nmse": 0.24475255967545495,
+      "fraction_below_0.01": 0.061224489795918366,
+      "fraction_below_0.03": 0.08163265306122448,
+      "fraction_below_0.05": 0.20408163265306123
+    }
+  },
+  "projection_sites": {
+    "layer.0.q_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.984695553779602,
+        "heldout_operator_output_nmse": 0.019264964386820793
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.9923295378684998,
+        "heldout_operator_output_nmse": 0.011151093058288097
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9967600703239441,
+        "heldout_operator_output_nmse": 0.0076847197487950325
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9990490674972534,
+        "heldout_operator_output_nmse": 0.006052421871572733
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.999915361404419,
+        "heldout_operator_output_nmse": 0.0053085810504853725
+      }
+    ],
+    "layer.0.k_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.9788332581520081,
+        "heldout_operator_output_nmse": 0.026030944660305977
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.991744875907898,
+        "heldout_operator_output_nmse": 0.013687186874449253
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9976527094841003,
+        "heldout_operator_output_nmse": 0.008638974279165268
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9996393322944641,
+        "heldout_operator_output_nmse": 0.007109475322067738
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9999911785125732,
+        "heldout_operator_output_nmse": 0.006800858303904533
+      }
+    ],
+    "layer.0.v_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.7694490551948547,
+        "heldout_operator_output_nmse": 0.24381548166275024
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.8257648944854736,
+        "heldout_operator_output_nmse": 0.19915464520454407
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.8912616968154907,
+        "heldout_operator_output_nmse": 0.1682346761226654
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9572542905807495,
+        "heldout_operator_output_nmse": 0.1396293193101883
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9966092705726624,
+        "heldout_operator_output_nmse": 0.11561381816864014
+      }
+    ],
+    "layer.0.o_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.9959513545036316,
+        "heldout_operator_output_nmse": 0.006005053408443928
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.9985935688018799,
+        "heldout_operator_output_nmse": 0.002613950287923217
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9995043873786926,
+        "heldout_operator_output_nmse": 0.0015701977536082268
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9998621940612793,
+        "heldout_operator_output_nmse": 0.0011241132160648704
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.999984622001648,
+        "heldout_operator_output_nmse": 0.0007733227103017271
+      }
+    ],
+    "layer.0.gate_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.6832088828086853,
+        "heldout_operator_output_nmse": 0.3387936055660248
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.7311906814575195,
+        "heldout_operator_output_nmse": 0.3145936131477356
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.7992549538612366,
+        "heldout_operator_output_nmse": 0.28661930561065674
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.887786328792572,
+        "heldout_operator_output_nmse": 0.24841608107089996
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9756305813789368,
+        "heldout_operator_output_nmse": 0.1961025595664978
+      }
+    ],
+    "layer.0.up_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.26991790533065796,
+        "heldout_operator_output_nmse": 0.7793506383895874
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.3744511306285858,
+        "heldout_operator_output_nmse": 0.7401462197303772
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.528255820274353,
+        "heldout_operator_output_nmse": 0.6796976327896118
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.7335816025733948,
+        "heldout_operator_output_nmse": 0.5988867282867432
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.94264817237854,
+        "heldout_operator_output_nmse": 0.4791080951690674
+      }
+    ],
+    "layer.0.down_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.005208333333333333,
+        "calibration_output_energy_fraction": 0.49763479828834534,
+        "heldout_operator_output_nmse": 0.5596600770950317
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.010416666666666666,
+        "calibration_output_energy_fraction": 0.5975179076194763,
+        "heldout_operator_output_nmse": 0.5088239908218384
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.020833333333333332,
+        "calibration_output_energy_fraction": 0.729602575302124,
+        "heldout_operator_output_nmse": 0.4438556134700775
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.041666666666666664,
+        "calibration_output_energy_fraction": 0.8764427304267883,
+        "heldout_operator_output_nmse": 0.35939839482307434
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.08333333333333333,
+        "calibration_output_energy_fraction": 0.9806528687477112,
+        "heldout_operator_output_nmse": 0.28777480125427246
+      }
+    ],
+    "layer.5.q_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.8626255989074707,
+        "heldout_operator_output_nmse": 0.15711097419261932
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.8938893675804138,
+        "heldout_operator_output_nmse": 0.13742081820964813
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9315391182899475,
+        "heldout_operator_output_nmse": 0.11292041093111038
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9681403040885925,
+        "heldout_operator_output_nmse": 0.08703312277793884
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9935081005096436,
+        "heldout_operator_output_nmse": 0.06490346044301987
+      }
+    ],
+    "layer.5.k_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.8774197101593018,
+        "heldout_operator_output_nmse": 0.1426265984773636
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.9125686883926392,
+        "heldout_operator_output_nmse": 0.1164284273982048
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9524810314178467,
+        "heldout_operator_output_nmse": 0.08530816435813904
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9849570989608765,
+        "heldout_operator_output_nmse": 0.056970275938510895
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.998928964138031,
+        "heldout_operator_output_nmse": 0.041053466498851776
+      }
+    ],
+    "layer.5.v_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.4081741273403168,
+        "heldout_operator_output_nmse": 0.7137342095375061
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.5441387891769409,
+        "heldout_operator_output_nmse": 0.633644700050354
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.7125500440597534,
+        "heldout_operator_output_nmse": 0.5428425073623657
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.8834567666053772,
+        "heldout_operator_output_nmse": 0.4297622740268707
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9873285889625549,
+        "heldout_operator_output_nmse": 0.32320672273635864
+      }
+    ],
+    "layer.5.o_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.6207419037818909,
+        "heldout_operator_output_nmse": 0.6148895621299744
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.73366379737854,
+        "heldout_operator_output_nmse": 0.5445748567581177
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.8453234434127808,
+        "heldout_operator_output_nmse": 0.47087475657463074
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.937583863735199,
+        "heldout_operator_output_nmse": 0.36444905400276184
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9891441464424133,
+        "heldout_operator_output_nmse": 0.2667578458786011
+      }
+    ],
+    "layer.5.gate_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.7129789590835571,
+        "heldout_operator_output_nmse": 0.36579811573028564
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.7633261680603027,
+        "heldout_operator_output_nmse": 0.33988189697265625
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.8281816840171814,
+        "heldout_operator_output_nmse": 0.3089466691017151
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9045711159706116,
+        "heldout_operator_output_nmse": 0.2667073607444763
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9739804267883301,
+        "heldout_operator_output_nmse": 0.21344950795173645
+      }
+    ],
+    "layer.5.up_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.3314271569252014,
+        "heldout_operator_output_nmse": 0.7890832424163818
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.43804794549942017,
+        "heldout_operator_output_nmse": 0.7438183426856995
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.586008608341217,
+        "heldout_operator_output_nmse": 0.6827648282051086
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.7671240568161011,
+        "heldout_operator_output_nmse": 0.5933285355567932
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9359316825866699,
+        "heldout_operator_output_nmse": 0.47560200095176697
+      }
+    ],
+    "layer.5.down_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.005208333333333333,
+        "calibration_output_energy_fraction": 0.2749970257282257,
+        "heldout_operator_output_nmse": 0.8756026029586792
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.010416666666666666,
+        "calibration_output_energy_fraction": 0.3861696720123291,
+        "heldout_operator_output_nmse": 0.8454850912094116
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.020833333333333332,
+        "calibration_output_energy_fraction": 0.5439411401748657,
+        "heldout_operator_output_nmse": 0.7988330721855164
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.041666666666666664,
+        "calibration_output_energy_fraction": 0.7423497438430786,
+        "heldout_operator_output_nmse": 0.7274655699729919
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.08333333333333333,
+        "calibration_output_energy_fraction": 0.9289936423301697,
+        "heldout_operator_output_nmse": 0.6448104381561279
+      }
+    ],
+    "layer.10.q_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.9051945805549622,
+        "heldout_operator_output_nmse": 0.10692829638719559
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.9340857863426208,
+        "heldout_operator_output_nmse": 0.08667628467082977
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.959908664226532,
+        "heldout_operator_output_nmse": 0.06810835748910904
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9822314381599426,
+        "heldout_operator_output_nmse": 0.05203159525990486
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9963517189025879,
+        "heldout_operator_output_nmse": 0.03915897756814957
+      }
+    ],
+    "layer.10.k_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.9459380507469177,
+        "heldout_operator_output_nmse": 0.05960312858223915
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.9631185531616211,
+        "heldout_operator_output_nmse": 0.04769783467054367
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.980241060256958,
+        "heldout_operator_output_nmse": 0.035044942051172256
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9935452342033386,
+        "heldout_operator_output_nmse": 0.024385040625929832
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9994919896125793,
+        "heldout_operator_output_nmse": 0.016994839534163475
+      }
+    ],
+    "layer.10.v_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.43895554542541504,
+        "heldout_operator_output_nmse": 0.6429004073143005
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.5816177129745483,
+        "heldout_operator_output_nmse": 0.552541971206665
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.7453973889350891,
+        "heldout_operator_output_nmse": 0.44369781017303467
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9045559167861938,
+        "heldout_operator_output_nmse": 0.31671836972236633
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9911398887634277,
+        "heldout_operator_output_nmse": 0.20712342858314514
+      }
+    ],
+    "layer.10.o_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.5476112365722656,
+        "heldout_operator_output_nmse": 0.5632142424583435
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.6738280653953552,
+        "heldout_operator_output_nmse": 0.49577072262763977
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.8077937960624695,
+        "heldout_operator_output_nmse": 0.4091893434524536
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9202889800071716,
+        "heldout_operator_output_nmse": 0.32500332593917847
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9843462705612183,
+        "heldout_operator_output_nmse": 0.24448718130588531
+      }
+    ],
+    "layer.10.gate_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.6981511116027832,
+        "heldout_operator_output_nmse": 0.33040210604667664
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.7644506692886353,
+        "heldout_operator_output_nmse": 0.29391056299209595
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.8390010595321655,
+        "heldout_operator_output_nmse": 0.25108107924461365
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9158128499984741,
+        "heldout_operator_output_nmse": 0.20716774463653564
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9774532914161682,
+        "heldout_operator_output_nmse": 0.16072721779346466
+      }
+    ],
+    "layer.10.up_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.436464786529541,
+        "heldout_operator_output_nmse": 0.6137183904647827
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.5440714359283447,
+        "heldout_operator_output_nmse": 0.5588388442993164
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.6778851747512817,
+        "heldout_operator_output_nmse": 0.48908087611198425
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.8275754451751709,
+        "heldout_operator_output_nmse": 0.40794432163238525
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9528306722640991,
+        "heldout_operator_output_nmse": 0.31647396087646484
+      }
+    ],
+    "layer.10.down_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.005208333333333333,
+        "calibration_output_energy_fraction": 0.595005989074707,
+        "heldout_operator_output_nmse": 0.45456063747406006
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.010416666666666666,
+        "calibration_output_energy_fraction": 0.6629105806350708,
+        "heldout_operator_output_nmse": 0.4285282790660858
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.020833333333333332,
+        "calibration_output_energy_fraction": 0.7540789842605591,
+        "heldout_operator_output_nmse": 0.3972112536430359
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.041666666666666664,
+        "calibration_output_energy_fraction": 0.8619709014892578,
+        "heldout_operator_output_nmse": 0.35695773363113403
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.08333333333333333,
+        "calibration_output_energy_fraction": 0.9597934484481812,
+        "heldout_operator_output_nmse": 0.3102595806121826
+      }
+    ],
+    "layer.15.q_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.8876240849494934,
+        "heldout_operator_output_nmse": 0.1443941593170166
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.9230722784996033,
+        "heldout_operator_output_nmse": 0.1180415228009224
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9578044414520264,
+        "heldout_operator_output_nmse": 0.0916847512125969
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9837185740470886,
+        "heldout_operator_output_nmse": 0.06683597713708878
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9968089461326599,
+        "heldout_operator_output_nmse": 0.051504891365766525
+      }
+    ],
+    "layer.15.k_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.9054003357887268,
+        "heldout_operator_output_nmse": 0.12829911708831787
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.9410361051559448,
+        "heldout_operator_output_nmse": 0.09710376709699631
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.971412181854248,
+        "heldout_operator_output_nmse": 0.0695907399058342
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9923827052116394,
+        "heldout_operator_output_nmse": 0.04588728025555611
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9995531439781189,
+        "heldout_operator_output_nmse": 0.03653542324900627
+      }
+    ],
+    "layer.15.v_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.4580722451210022,
+        "heldout_operator_output_nmse": 0.6758615970611572
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.6028521656990051,
+        "heldout_operator_output_nmse": 0.5823442935943604
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.7631292939186096,
+        "heldout_operator_output_nmse": 0.48283851146698
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9065260291099548,
+        "heldout_operator_output_nmse": 0.3708432912826538
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9888764023780823,
+        "heldout_operator_output_nmse": 0.2698502540588379
+      }
+    ],
+    "layer.15.o_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.8067478537559509,
+        "heldout_operator_output_nmse": 0.36443161964416504
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.8812689185142517,
+        "heldout_operator_output_nmse": 0.31404003500938416
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9428621530532837,
+        "heldout_operator_output_nmse": 0.2670386731624603
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9821725487709045,
+        "heldout_operator_output_nmse": 0.20866082608699799
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9974897503852844,
+        "heldout_operator_output_nmse": 0.14666791260242462
+      }
+    ],
+    "layer.15.gate_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.7766658067703247,
+        "heldout_operator_output_nmse": 0.28769421577453613
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.8370081782341003,
+        "heldout_operator_output_nmse": 0.2504085302352905
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.8946477174758911,
+        "heldout_operator_output_nmse": 0.2162371128797531
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.946183443069458,
+        "heldout_operator_output_nmse": 0.17926450073719025
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9844080805778503,
+        "heldout_operator_output_nmse": 0.14156359434127808
+      }
+    ],
+    "layer.15.up_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.583283007144928,
+        "heldout_operator_output_nmse": 0.5184935331344604
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.6797944903373718,
+        "heldout_operator_output_nmse": 0.4664996266365051
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.7846090197563171,
+        "heldout_operator_output_nmse": 0.41064655780792236
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.887374758720398,
+        "heldout_operator_output_nmse": 0.34590259194374084
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.966553270816803,
+        "heldout_operator_output_nmse": 0.2742370069026947
+      }
+    ],
+    "layer.15.down_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.005208333333333333,
+        "calibration_output_energy_fraction": 0.3971986472606659,
+        "heldout_operator_output_nmse": 0.7098479866981506
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.010416666666666666,
+        "calibration_output_energy_fraction": 0.5081983804702759,
+        "heldout_operator_output_nmse": 0.6671562194824219
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.020833333333333332,
+        "calibration_output_energy_fraction": 0.6501283645629883,
+        "heldout_operator_output_nmse": 0.6150617599487305
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.041666666666666664,
+        "calibration_output_energy_fraction": 0.8071234226226807,
+        "heldout_operator_output_nmse": 0.5446316003799438
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.08333333333333333,
+        "calibration_output_energy_fraction": 0.9405736327171326,
+        "heldout_operator_output_nmse": 0.47249144315719604
+      }
+    ],
+    "layer.20.q_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.8645656108856201,
+        "heldout_operator_output_nmse": 0.1685517430305481
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.9180192351341248,
+        "heldout_operator_output_nmse": 0.12317422777414322
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9595538377761841,
+        "heldout_operator_output_nmse": 0.08686348050832748
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9846304059028625,
+        "heldout_operator_output_nmse": 0.06609891355037689
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.996991753578186,
+        "heldout_operator_output_nmse": 0.053348686546087265
+      }
+    ],
+    "layer.20.k_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.9010911583900452,
+        "heldout_operator_output_nmse": 0.12376449257135391
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.9449667930603027,
+        "heldout_operator_output_nmse": 0.0868283361196518
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9771638512611389,
+        "heldout_operator_output_nmse": 0.058791596442461014
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9942615032196045,
+        "heldout_operator_output_nmse": 0.041991498321294785
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9996199011802673,
+        "heldout_operator_output_nmse": 0.03564050421118736
+      }
+    ],
+    "layer.20.v_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.3699865937232971,
+        "heldout_operator_output_nmse": 0.7026588320732117
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.5273500084877014,
+        "heldout_operator_output_nmse": 0.6083783507347107
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.7137042880058289,
+        "heldout_operator_output_nmse": 0.4939180016517639
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.8891668915748596,
+        "heldout_operator_output_nmse": 0.37359488010406494
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9876907467842102,
+        "heldout_operator_output_nmse": 0.27108699083328247
+      }
+    ],
+    "layer.20.o_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.7024096846580505,
+        "heldout_operator_output_nmse": 0.5234706997871399
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.8326799869537354,
+        "heldout_operator_output_nmse": 0.45773565769195557
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9282147288322449,
+        "heldout_operator_output_nmse": 0.3597053587436676
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9815930128097534,
+        "heldout_operator_output_nmse": 0.2682925760746002
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9981355667114258,
+        "heldout_operator_output_nmse": 0.17830683290958405
+      }
+    ],
+    "layer.20.gate_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.8042920231819153,
+        "heldout_operator_output_nmse": 0.22593842446804047
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.8567769527435303,
+        "heldout_operator_output_nmse": 0.19088317453861237
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9088315367698669,
+        "heldout_operator_output_nmse": 0.15796315670013428
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.954441487789154,
+        "heldout_operator_output_nmse": 0.12756045162677765
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.98757004737854,
+        "heldout_operator_output_nmse": 0.09707222133874893
+      }
+    ],
+    "layer.20.up_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.5667954683303833,
+        "heldout_operator_output_nmse": 0.49971485137939453
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.6721693873405457,
+        "heldout_operator_output_nmse": 0.4389818608760834
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.7830542922019958,
+        "heldout_operator_output_nmse": 0.37645775079727173
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.888888955116272,
+        "heldout_operator_output_nmse": 0.3086901009082794
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9681227207183838,
+        "heldout_operator_output_nmse": 0.23786985874176025
+      }
+    ],
+    "layer.20.down_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.005208333333333333,
+        "calibration_output_energy_fraction": 0.3283882141113281,
+        "heldout_operator_output_nmse": 0.7514600157737732
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.010416666666666666,
+        "calibration_output_energy_fraction": 0.46053484082221985,
+        "heldout_operator_output_nmse": 0.6912468075752258
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.020833333333333332,
+        "calibration_output_energy_fraction": 0.6233877539634705,
+        "heldout_operator_output_nmse": 0.6168484091758728
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.041666666666666664,
+        "calibration_output_energy_fraction": 0.7991437315940857,
+        "heldout_operator_output_nmse": 0.525023341178894
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.08333333333333333,
+        "calibration_output_energy_fraction": 0.9412659406661987,
+        "heldout_operator_output_nmse": 0.4371229112148285
+      }
+    ],
+    "layer.25.q_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.9070614576339722,
+        "heldout_operator_output_nmse": 0.11038985103368759
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.934738039970398,
+        "heldout_operator_output_nmse": 0.09258954972028732
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9614197611808777,
+        "heldout_operator_output_nmse": 0.07491017878055573
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9835897088050842,
+        "heldout_operator_output_nmse": 0.05931690335273743
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9966482520103455,
+        "heldout_operator_output_nmse": 0.04542309418320656
+      }
+    ],
+    "layer.25.k_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.9143892526626587,
+        "heldout_operator_output_nmse": 0.0992674008011818
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.9463213086128235,
+        "heldout_operator_output_nmse": 0.07696236670017242
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9730569124221802,
+        "heldout_operator_output_nmse": 0.05685688182711601
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.991766631603241,
+        "heldout_operator_output_nmse": 0.03933217376470566
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9993373155593872,
+        "heldout_operator_output_nmse": 0.02866409532725811
+      }
+    ],
+    "layer.25.v_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.4128008782863617,
+        "heldout_operator_output_nmse": 0.7110703587532043
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.5633192658424377,
+        "heldout_operator_output_nmse": 0.6361600160598755
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.7445572018623352,
+        "heldout_operator_output_nmse": 0.529541015625
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9060156941413879,
+        "heldout_operator_output_nmse": 0.3952862322330475
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.990088164806366,
+        "heldout_operator_output_nmse": 0.2818313539028168
+      }
+    ],
+    "layer.25.o_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.642493486404419,
+        "heldout_operator_output_nmse": 0.46877017617225647
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.7547177076339722,
+        "heldout_operator_output_nmse": 0.41357725858688354
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.8678118586540222,
+        "heldout_operator_output_nmse": 0.3408455550670624
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.949371874332428,
+        "heldout_operator_output_nmse": 0.270756334066391
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.991264283657074,
+        "heldout_operator_output_nmse": 0.20089805126190186
+      }
+    ],
+    "layer.25.gate_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.6835664510726929,
+        "heldout_operator_output_nmse": 0.40597331523895264
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.7714188694953918,
+        "heldout_operator_output_nmse": 0.3493327796459198
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.8559167981147766,
+        "heldout_operator_output_nmse": 0.29623138904571533
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9316766858100891,
+        "heldout_operator_output_nmse": 0.24243009090423584
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9827958941459656,
+        "heldout_operator_output_nmse": 0.18337881565093994
+      }
+    ],
+    "layer.25.up_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.5593045949935913,
+        "heldout_operator_output_nmse": 0.5612594485282898
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.6695383787155151,
+        "heldout_operator_output_nmse": 0.5016613006591797
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.7875903844833374,
+        "heldout_operator_output_nmse": 0.43201354146003723
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.8972629904747009,
+        "heldout_operator_output_nmse": 0.3547462522983551
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9735417366027832,
+        "heldout_operator_output_nmse": 0.27234217524528503
+      }
+    ],
+    "layer.25.down_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.005208333333333333,
+        "calibration_output_energy_fraction": 0.35542047023773193,
+        "heldout_operator_output_nmse": 0.7773529887199402
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.010416666666666666,
+        "calibration_output_energy_fraction": 0.48099076747894287,
+        "heldout_operator_output_nmse": 0.725793182849884
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.020833333333333332,
+        "calibration_output_energy_fraction": 0.6444838643074036,
+        "heldout_operator_output_nmse": 0.6581583619117737
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.041666666666666664,
+        "calibration_output_energy_fraction": 0.8173691034317017,
+        "heldout_operator_output_nmse": 0.588911771774292
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.08333333333333333,
+        "calibration_output_energy_fraction": 0.95116126537323,
+        "heldout_operator_output_nmse": 0.512302577495575
+      }
+    ],
+    "layer.29.q_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.9102407097816467,
+        "heldout_operator_output_nmse": 0.11435850709676743
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.9425508975982666,
+        "heldout_operator_output_nmse": 0.09032177180051804
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9663729071617126,
+        "heldout_operator_output_nmse": 0.07376234233379364
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9858642220497131,
+        "heldout_operator_output_nmse": 0.05982714146375656
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9970682263374329,
+        "heldout_operator_output_nmse": 0.0476519912481308
+      }
+    ],
+    "layer.29.k_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.9253407716751099,
+        "heldout_operator_output_nmse": 0.09717520326375961
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.9538032412528992,
+        "heldout_operator_output_nmse": 0.07372009754180908
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9762234091758728,
+        "heldout_operator_output_nmse": 0.056590691208839417
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9921821355819702,
+        "heldout_operator_output_nmse": 0.04356180503964424
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9993001818656921,
+        "heldout_operator_output_nmse": 0.03486931696534157
+      }
+    ],
+    "layer.29.v_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.42930999398231506,
+        "heldout_operator_output_nmse": 0.7493775486946106
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.5718031525611877,
+        "heldout_operator_output_nmse": 0.6853795647621155
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.7367783188819885,
+        "heldout_operator_output_nmse": 0.618540346622467
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.8934075832366943,
+        "heldout_operator_output_nmse": 0.5238382816314697
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 192,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9870246648788452,
+        "heldout_operator_output_nmse": 0.4167436361312866
+      }
+    ],
+    "layer.29.o_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.788244903087616,
+        "heldout_operator_output_nmse": 0.3918028473854065
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.8544060587882996,
+        "heldout_operator_output_nmse": 0.35169774293899536
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9246864318847656,
+        "heldout_operator_output_nmse": 0.28425872325897217
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9773708581924438,
+        "heldout_operator_output_nmse": 0.1724722534418106
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 576,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9973846077919006,
+        "heldout_operator_output_nmse": 0.09530401974916458
+      }
+    ],
+    "layer.29.gate_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.941236674785614,
+        "heldout_operator_output_nmse": 0.07876028120517731
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.9620983004570007,
+        "heldout_operator_output_nmse": 0.06265779584646225
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9768206477165222,
+        "heldout_operator_output_nmse": 0.0519537478685379
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9891559481620789,
+        "heldout_operator_output_nmse": 0.042496927082538605
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9971839785575867,
+        "heldout_operator_output_nmse": 0.033458683639764786
+      }
+    ],
+    "layer.29.up_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.013888888888888888,
+        "calibration_output_energy_fraction": 0.8560295104980469,
+        "heldout_operator_output_nmse": 0.19136205315589905
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.027777777777777776,
+        "calibration_output_energy_fraction": 0.9020848870277405,
+        "heldout_operator_output_nmse": 0.15960991382598877
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.05555555555555555,
+        "calibration_output_energy_fraction": 0.9384395480155945,
+        "heldout_operator_output_nmse": 0.13776950538158417
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.1111111111111111,
+        "calibration_output_energy_fraction": 0.9708057641983032,
+        "heldout_operator_output_nmse": 0.11398256570100784
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 576,
+        "output_dim": 1536,
+        "rank_fraction_input": 0.2222222222222222,
+        "calibration_output_energy_fraction": 0.9923341274261475,
+        "heldout_operator_output_nmse": 0.0882582813501358
+      }
+    ],
+    "layer.29.down_proj": [
+      {
+        "requested_rank": 8,
+        "effective_rank": 8,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.005208333333333333,
+        "calibration_output_energy_fraction": 0.8941146731376648,
+        "heldout_operator_output_nmse": 0.143692284822464
+      },
+      {
+        "requested_rank": 16,
+        "effective_rank": 16,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.010416666666666666,
+        "calibration_output_energy_fraction": 0.9442400932312012,
+        "heldout_operator_output_nmse": 0.09002608060836792
+      },
+      {
+        "requested_rank": 32,
+        "effective_rank": 32,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.020833333333333332,
+        "calibration_output_energy_fraction": 0.9739303588867188,
+        "heldout_operator_output_nmse": 0.055382054299116135
+      },
+      {
+        "requested_rank": 64,
+        "effective_rank": 64,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.041666666666666664,
+        "calibration_output_energy_fraction": 0.9904659390449524,
+        "heldout_operator_output_nmse": 0.03609800338745117
+      },
+      {
+        "requested_rank": 128,
+        "effective_rank": 128,
+        "input_dim": 1536,
+        "output_dim": 576,
+        "rank_fraction_input": 0.08333333333333333,
+        "calibration_output_energy_fraction": 0.9978790283203125,
+        "heldout_operator_output_nmse": 0.026795243844389915
+      }
+    ]
+  },
+  "claim_boundary": "Held-out real-activation operator test only; no model replacement or end-to-end quality claim."
+}

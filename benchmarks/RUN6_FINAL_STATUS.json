@@ -1,0 +1,40 @@
+{
+  "run": 6,
+  "date": "2026-08-08",
+  "status": "completed_real_model_falsification",
+  "model": "HuggingFaceTB/SmolLM2-135M",
+  "model_commit": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "workflow_provenance": {
+    "run_id": 31274396594,
+    "job_id": 93147812070,
+    "artifact_id": 9026837256,
+    "artifact_name": "run6-real-model-results",
+    "artifact_sha256": "cdd2da3b28cd6ab224f9605c4f5532aab556618fc0a9b5c190677b23479ed827"
+  },
+  "activation_aware_projection_gate": {
+    "status": "fail_low_rank_projection",
+    "rank32_median_output_nmse": 0.28661930561065674,
+    "rank32_fraction_below_0_05": 0.08163265306122448,
+    "rank64_median_output_nmse": 0.24243009090423584,
+    "rank64_fraction_below_0_05": 0.20408163265306123,
+    "sites": 49
+  },
+  "raw_sharing": {
+    "single_layer_median_perplexity_ratio": 1.261169182313549,
+    "contiguous_group_perplexity_ratios": [29.5648580415041, 5.420048279001226, 5.821096674699285]
+  },
+  "partial_4_to_1_conversion": {
+    "group": [14, 15, 16, 17],
+    "group_weight_reduction_x": 3.7870257037943698,
+    "whole_model_weight_reduction_x": 1.0839751430626157,
+    "fp32_teacher_nll": 3.620823860168457,
+    "row_q4_teacher_nll": 4.96356201171875,
+    "shared_pre_recovery_nll": 5.659692764282227,
+    "shared_post_recovery_nll": 5.63537073135376,
+    "post_delta_nats_per_token_vs_row_q4": 0.6718087196350098,
+    "post_perplexity_ratio_vs_row_q4": 1.957775186588549,
+    "gate_status": "fail_current_sharing_recipe"
+  },
+  "conclusion": "Run 6 falsifies uniform low-rank activation projection and the current whole-block cross-depth sharing recipe on SmolLM2-135M. Continue with operator/layer-segmented representations that preserve layer-specific coefficients.",
+  "claim_boundary": "This is L3-precheck real-pretrained-model evidence on a custom calibration/evaluation text, not a standard benchmark suite, measured RSS/VRAM result, Q4_K_M comparison, or complete LARC conversion."
+}

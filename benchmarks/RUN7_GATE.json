@@ -1,0 +1,42 @@
+{
+  "run": 7,
+  "status": "fail_current_shared_basis_recipe",
+  "candidates": {
+    "strict": {
+      "name": "strict",
+      "selected_group_count": 0,
+      "ppl_ratio_vs_fp32": 1.0,
+      "ppl_ratio_vs_row_q4": 1.0,
+      "whole_model_weight_reduction_x": 1.0
+    },
+    "balanced": {
+      "name": "balanced",
+      "selected_group_count": 6,
+      "ppl_ratio_vs_fp32": 1.3664241367842618,
+      "ppl_ratio_vs_row_q4": 2.256098016642127,
+      "whole_model_weight_reduction_x": 1.0271773634579204
+    },
+    "aggressive": {
+      "name": "aggressive",
+      "selected_group_count": 8,
+      "ppl_ratio_vs_fp32": 2.312148558452982,
+      "ppl_ratio_vs_row_q4": 3.748367956882997,
+      "whole_model_weight_reduction_x": 1.087162637010369
+    }
+  },
+  "best_under_gate": {
+    "name": "balanced",
+    "selected_group_count": 6,
+    "ppl_ratio_vs_fp32": 1.3664241367842618,
+    "ppl_ratio_vs_row_q4": 2.256098016642127,
+    "whole_model_weight_reduction_x": 1.0271773634579204
+  },
+  "precommitted_thresholds": {
+    "strong": "Q4-factor PPL <=1.10x row-Q4 and whole-model modeled weight reduction >=1.50x",
+    "useful": "Q4-factor PPL <=1.15x row-Q4 and whole-model modeled weight reduction >=1.25x",
+    "structural_survival": "FP32-factor PPL <=1.10x FP32 with at least one selected group",
+    "quantization_failure": "structural survival plus Q4-factor PPL >1.25x row-Q4"
+  },
+  "next_step": "do not force cross-layer basis sharing broadly; move to per-operator structured pruning/sparsity or learned residual dictionaries",
+  "gate_note": "Thresholds committed before the first Run-7 SmolLM2 result. Modeled bytes are not RSS/VRAM."
+}

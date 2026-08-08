@@ -1,0 +1,48 @@
+{
+  "run": 7,
+  "date": "2026-08-08",
+  "status": "completed_real_model_shared_basis_falsification",
+  "model": "HuggingFaceTB/SmolLM2-135M",
+  "model_commit": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "workflow_provenance": {
+    "run_id": 31275777993,
+    "job_id": 93148949333,
+    "artifact_id": 9026961307,
+    "artifact_name": "run7-shared-basis-results",
+    "artifact_sha256": "2d1728ffd749e1c9484d32ad1a40c7e91bf6b60e1cf4a4c99daa07e0dfef0a00"
+  },
+  "baselines": {
+    "fp32_nll": 3.8879518508911133,
+    "row_q4_nll": 5.095966815948486,
+    "row_q4_perplexity_ratio_vs_fp32": 3.3468344709392635,
+    "modeled_row_q4_weight_bytes": 67719552
+  },
+  "strict": {
+    "selected_group_count": 0,
+    "perplexity_ratio_vs_row_q4": 1.0,
+    "whole_model_weight_reduction_x": 1.0
+  },
+  "balanced": {
+    "selected_group_count": 6,
+    "selected_families": ["q_proj", "k_proj"],
+    "perplexity_ratio_vs_fp32": 1.3664241367842618,
+    "perplexity_ratio_vs_row_q4": 2.256098016642127,
+    "whole_model_weight_reduction_x": 1.0271773634579204
+  },
+  "aggressive": {
+    "selected_group_count": 8,
+    "selected_families": ["q_proj", "k_proj", "o_proj"],
+    "perplexity_ratio_vs_fp32": 2.312148558452982,
+    "perplexity_ratio_vs_row_q4": 3.748367956882997,
+    "whole_model_weight_reduction_x": 1.087162637010369
+  },
+  "gate_status": "fail_current_shared_basis_recipe",
+  "mechanistic_findings": {
+    "q_and_k_have_the_strongest_shared_basis_structure": true,
+    "mlp_gate_and_up_do_not_meet_useful_low_error_shared_basis_gates": true,
+    "down_projection_was_left_uncompressed_after_run6_identified_it_as_the_weakest_low_rank_family": true,
+    "compressible_qk_byte_share_is_too_small_for_large_whole_model_savings": true
+  },
+  "next_direction": "Move away from low-rank cross-layer sharing as the main weight codec. Test activation-aware residual vector quantization / learned dictionaries that preserve layer-specific weights and can reach sub-bit-per-weight index rates on the dominant MLP matrices.",
+  "claim_boundary": "Run 7 is a real-pretrained-model structural experiment on custom calibration/evaluation text with a simple row-Q4 reference. Modeled bytes are not measured RSS/VRAM; row-Q4 is not Q4_K_M; no full LARC model or native shared-basis runtime is claimed."
+}
