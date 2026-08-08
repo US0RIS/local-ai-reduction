@@ -17,13 +17,14 @@
     }
   },
   "mistral7b_planning": {
-    "baseline": "TheBloke Mistral-7B-v0.1 Q4_K_M, public rounded size 4.37 GB",
-    "baseline_is_exact_bytes": false,
+    "baseline": "TheBloke Mistral-7B-v0.1 Q4_K_M",
+    "baseline_exact_bytes": 4368438912,
+    "baseline_sha256": "ce6253d2e91adea0c35924b38411b0434fa18fcb90c52980ce68187dbcbbe40c",
     "recommended_weight_rank": 96,
     "recommended_kv_rank": 64,
-    "estimated_weight_reduction_x": 11.82695172308673,
-    "estimated_weights_plus_4096_kv_reduction_x": 11.863785784846511,
-    "equal_common_scratch_headroom_bytes_before_10x": 85651470.22222222,
+    "weight_reduction_x": 11.822726800338105,
+    "weights_plus_4096_kv_reduction_x": 11.86001140113937,
+    "equal_common_scratch_headroom_bytes_before_10x": 85478016,
     "quality_validated": false
   },
   "runtime": {
@@ -36,8 +37,7 @@
     "CI/synthetic end-to-end streaming converter validation",
     "real Mistral tensor access and L3 conversion",
     "real-model quality and adaptive rank allocation",
-    "exact Q4_K_M baseline byte count",
     "measured integrated RSS/device memory L4"
   ],
-  "claim_boundary": "Run 5 changes the preferred architecture and improves the controlled quality/capacity frontier. It does not yet prove 10x on a real pretrained model. Mistral ratios are structural planning estimates against a rounded 4.37 GB public baseline."
+  "claim_boundary": "Run 5 changes the preferred architecture and improves the controlled quality/capacity frontier. It does not yet prove 10x on a real pretrained model. Mistral ratios are exact structural byte calculations against the 4,368,438,912-byte Q4_K_M file, but Mistral quality is unvalidated."
 }
