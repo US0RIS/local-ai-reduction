@@ -1,0 +1,74 @@
+{
+  "run": 14,
+  "date": "2026-08-08",
+  "status": "completed_real_model_trained_shared_mlp_component_failure",
+  "model": "HuggingFaceTB/SmolLM2-135M",
+  "source_model_commit": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "evidence_level": "L3 real-pretrained nonlinear MLP component diagnostic; not end-to-end model quality",
+  "hypothesis": "one trained full-rank nonlinear MLP can serve several logical depths with only tiny depth-specific FiLM scale vectors",
+  "targeted_pool": {
+    "operators": ["gate_proj", "up_proj", "down_proj"],
+    "logical_layers": 30,
+    "fraction_of_seven_main_decoder_projection_parameters": 0.75
+  },
+  "protocol": {
+    "calibration": "WikiText-2 raw train; 128 teacher MLP input/output rows per logical layer",
+    "evaluation": "disjoint WikiText-2 raw test; 64 held-out rows per logical layer",
+    "shared_matrix_initialization": "arithmetic mean of teacher MLP matrices in each depth group",
+    "training_steps_per_physical_group": 120,
+    "balanced_rows_per_layer_per_step": 4,
+    "loss": "mean of per-logical-layer normalized MLP-output MSE",
+    "depth_conditioning": "FP16 scale_in[576] + scale_mid[1536] + scale_out[576] per logical layer",
+    "packed_representation": "Q4_GROUP64 shared gate/up/down + FP16 FiLM scales; no independent dense logical MLP shadows"
+  },
+  "arms": {
+    "five_logical_layers_per_physical_mlp": {
+      "physical_mlp_count": 6,
+      "baseline_independent_mlp_q4_bytes": 42301440,
+      "candidate_total_bytes": 8621568,
+      "mlp_pool_reduction_x": 4.906467129877071,
+      "untrained_mean_median_nmse": 0.9830053150653839,
+      "trained_fp32_median_nmse": 0.9247876703739166,
+      "trained_fp32_p90_nmse": 0.9587355315685272,
+      "packed_median_nmse": 0.9252780079841614,
+      "packed_p90_nmse": 0.9599463880062103,
+      "worst_group_packed_median_nmse": 0.9423302412033081,
+      "fraction_packed_sites_below_0_10": 0.0,
+      "decision": "fail_component_gate",
+      "workflow_artifact_id": 9028140833,
+      "workflow_artifact_sha256": "669fba45f03117e5c280ca59f635c912c27ff6e10c91239e53a9deb2cd72ff30"
+    },
+    "ten_logical_layers_per_physical_mlp": {
+      "physical_mlp_count": 3,
+      "baseline_independent_mlp_q4_bytes": 42301440,
+      "candidate_total_bytes": 4391424,
+      "mlp_pool_reduction_x": 9.632738719832108,
+      "untrained_mean_median_nmse": 0.9968186020851135,
+      "trained_fp32_median_nmse": 0.9418548047542572,
+      "trained_fp32_p90_nmse": 0.982219523191452,
+      "packed_median_nmse": 0.9419316649436951,
+      "packed_p90_nmse": 0.9825734078884125,
+      "worst_group_packed_median_nmse": 0.9492926597595215,
+      "fraction_packed_sites_below_0_10": 0.0,
+      "decision": "fail_component_gate",
+      "workflow_artifact_id": 9028153864,
+      "workflow_artifact_sha256": "ebbb792e52e924bd088869b93e3f69aec1927c42bb3741b114ed56fa1d6681bd"
+    }
+  },
+  "substantive_decision": {
+    "classification": "fail_posthoc_local_shared_mlp_function_distillation",
+    "promote_component": false,
+    "reason": "Both sharing spans retain approximately 92-94% normalized held-out MLP-output error after function-space training. The FP32 trained ceilings and Q4-packed results are nearly identical, so quantization is not the bottleneck. Even sharing only five neighboring logical MLPs fails badly, while the ten-layer arm's 9.63x byte economics do not translate into function fidelity."
+  },
+  "interpretation": {
+    "ruled_out": "the tested post-hoc local function-distillation recipe using one shared full-rank MLP plus only diagonal FiLM depth conditioning",
+    "not_ruled_out": "architectures jointly pretrained or globally distilled with shared/recurrent MLPs, or materially richer layer-specific conditioning learned during full-model training",
+    "next_structural_implication": "If structural reuse is required by the Run-12 Q4-relative information bound, it should be introduced during joint model training/distillation rather than by local post-hoc MLP fitting."
+  },
+  "workflow": {
+    "run_id": 31279797171,
+    "head_sha": "f012d3b0f92e408062f1961f70174254ceef788b"
+  },
+  "generator": "tools/run14_trained_mlp_sharing.py",
+  "claim_boundary": "Real-pretrained isolated MLP function diagnostic only. The 9.63x figure is MLP-pool Q4_GROUP64 byte reduction, not total-model or Q4_K_M reduction. No end-to-end PPL, task accuracy, native runtime, RSS, or VRAM claim."
+}

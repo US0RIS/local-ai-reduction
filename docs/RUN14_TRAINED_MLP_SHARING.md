@@ -100,3 +100,5 @@ A good FP32 ceiling but poor packed result would instead direct effort back towa
 ## Evidence boundary
 
 This is an L3 real-pretrained **component** diagnostic, not a full model. It replaces only MLP functions in isolation. It makes no claim about attention, full-model perplexity, generation quality, runtime execution, process RSS, VRAM, or total-model compression.
+
+Execution provenance: the complete harness, packed representation, data split, training hyperparameters, and site-normalized pass/borderline gate above were merged to `main` at `234eb325804d56a1c724103cfb7fcf7f6f4f9bf0` before this execution-only documentation change was opened.
