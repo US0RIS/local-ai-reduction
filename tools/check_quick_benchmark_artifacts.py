@@ -8,16 +8,19 @@ from larc.latent_kv import fp16_cache_bytes,kivi_latent_cache_bytes
 from tools.memory_plan import CONFIG,PROFILES,GGUF_Q4,weight_bytes,workspace_bound
 
 
-def controlled_context_sweep():
+def controlled_context_sweep(metadata_bytes_per_vector:int=4):
     D,H,HD,L,R=128,4,32,16,16
     teacher_w,shared_w,basis=1129482,77322,6400
     out=[]
+    fp8=metadata_bytes_per_vector==2
     for T in [64,256,512,1024,2048,4096,8192]:
         basekv=L*T*H*HD*4
-        q2=L*T*H*2*(math.ceil(R*2/8)+4)
+        q2=L*T*H*2*(math.ceil(R*2/8)+metadata_bytes_per_vector)
         scratch=(D+D+3*D+H*T+256+T*R)*4
         base=teacher_w+basekv+scratch;larc=shared_w+q2+basis+scratch
-        out.append({'context':T,'baseline_total_bytes':base,'larc_total_bytes':larc,'modeled_total_reduction_x':base/larc,'baseline_fp16_kv_bytes':basekv,'larc_row_q2_kv_bytes':q2,'kv_reduction_x':basekv/q2,'basis_bytes':basis,'scratch_bytes':scratch,'quality_validated_at_this_context':T==64})
+        row={'context':T,'baseline_total_bytes':base,'larc_total_bytes':larc,'modeled_total_reduction_x':base/larc,'baseline_fp16_kv_bytes':basekv,'kv_reduction_x':basekv/q2,'basis_bytes':basis,'scratch_bytes':scratch,'quality_validated_at_this_context':T==64}
+        row['larc_q2_fp8meta_kv_bytes' if fp8 else 'larc_row_q2_kv_bytes']=q2
+        out.append(row)
     return out
 
 
@@ -29,7 +32,7 @@ def smollm2_rank16():
             basekv=fp16_cache_bytes(layers=CONFIG['layers'],seq=seq,kv_heads=CONFIG['kv_heads'],head_dim=CONFIG['head_dim'])
             kv=kivi_latent_cache_bytes(layers=CONFIG['layers'],seq=seq,kv_heads=CONFIG['kv_heads'],head_dim=CONFIG['head_dim'],rank=16)
             ws=workspace_bound(p);base=GGUF_Q4+basekv+ws;larc=wb+kv+ws
-            out.append({'profile':name,'context':seq,'kv_rank':16,'larc_weight_bytes':wb,'weight_reduction_vs_105MB_q4km':GGUF_Q4/wb,'baseline_fp16_kv_bytes':basekv,'larc_kivi_q2_kv_bytes':kv,'kv_reduction_x':basekv/kv,'workspace_bound_bytes':ws,'baseline_modeled_total_bytes':base,'larc_modeled_total_bytes':larc,'modeled_total_reduction_x':base/larc,'quality_validated':False})
+            out.append({'profile':name,'context':seq,'kv_rank':16,'larc_weight_bytes':wb,'weight_reduction_vs_105MB_q4km':GGUF_Q4/wb,'baseline_fp16_kv_bytes':basekv,'larc_kivi_q2_kv_bytes':kv,'kv_reduction_x':basekv/kv,'workspace_bound_bytes':ws,'baseline_modeled_total_bytes':base,'larc_modeled_total_bytes':larc,'modeled_total_memory_reduction':base/larc,'quality_validated':False})
     return out
 
 
@@ -47,7 +50,10 @@ def close(a,b,path='root'):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--rewrite',action='store_true');args=ap.parse_args()
-    items=[('benchmarks/run4_context_sweep.json',controlled_context_sweep()),('benchmarks/run4_smollm2_structural_rank16.json',smollm2_rank16())]
+    items=[
+      ('benchmarks/run4_context_sweep.json',controlled_context_sweep(4)),
+      ('benchmarks/run4_fp8meta_context_sweep.json',controlled_context_sweep(2)),
+      ('benchmarks/run4_smollm2_structural_rank16.json',smollm2_rank16())]
     for rel,obj in items:
         p=ROOT/rel
         if args.rewrite:p.write_text(json.dumps(obj,indent=2)+'\n')
