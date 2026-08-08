@@ -5,8 +5,12 @@
   "target": "10x",
   "strategy_decision": "Hard recursive sharing is no longer the primary architecture. Spend the full 10x budget on shared Q4 bases plus depth-specific low-rank residuals and a higher-rank latent KV cache.",
   "controlled_evidence": {
-    "scale_normalized_rank3_over_128": {"whole_model_reduction_x":9.105641637509876,"perplexity_ratio_vs_q4_teacher":1.0776027010785967,"note":"quality-favorable mechanism point; not whole-model 10x on tiny geometry"},
-    "adaptive_exact_toy_10x": {"whole_model_reduction_x":10.046448330457368,"perplexity_ratio_vs_q4_teacher":1.4005905384106918,"note":"exact 10x tiny-model stress point; quality not acceptable as target success"}
+    "factor_codec": "canonical Q4_ROW, matching converter/runtime",
+    "teacher_q4_nll": 1.9054734408855438,
+    "rank3": {"complete_toy_tensor_reduction_x":7.098570836004375,"q4_nll":1.8527510538697243,"perplexity_ratio_vs_q4_teacher":0.9486433316364175},
+    "rank2": {"complete_toy_tensor_reduction_x":8.094904321651258,"q4_nll":1.985925205051899,"perplexity_ratio_vs_q4_teacher":1.0837765685151544},
+    "rank1": {"complete_toy_tensor_reduction_x":8.411268822329129,"q4_nll":1.9106607660651207,"perplexity_ratio_vs_q4_teacher":1.0052008026447572},
+    "revocation": "Earlier Run-5 toy exact-10x profiles used 128-value grouped Q4 for residual factors while the converter/runtime used Q4_ROW. Those ratios/quality pairings are revoked."
   },
   "mistral7b_planning": {
     "baseline": "TheBloke Mistral-7B-v0.1 Q4_K_M",
@@ -30,14 +34,16 @@
     "native_softshare_operator_max_abs_error": 9.53674316e-07,
     "native_softshare_operator_L1_pass": true,
     "streaming_safetensors_converter_implemented": true,
-    "streaming_converter_ci_validation": "pending"
+    "synthetic_two_shard_streaming_conversion_local_pass": true,
+    "synthetic_streaming_conversion_pages": 42,
+    "github_ci_validation": "no workflow run allocated"
   },
   "open": [
-    "CI/synthetic end-to-end streaming converter validation",
-    "real Mistral tensor access and L3 conversion",
-    "real-model quality and adaptive rank allocation",
+    "real Mistral tensor-range access and L3 conversion",
+    "real-model quality and validation-guided rank allocation",
     "actual tokenizer/config embedding and final complete-file measurement",
+    "long-context KV quality",
     "measured integrated RSS/device memory L4"
   ],
-  "claim_boundary": "Run 5 changes the preferred architecture and improves the controlled quality/capacity frontier. It does not yet prove 10x on a real pretrained model. The rank96 Mistral plan remains 11.6338x after modeled LARC container overhead and a 4 MiB auxiliary-resource reserve, but Mistral quality and actual final serialized bytes remain unvalidated."
+  "claim_boundary": "SoftShare with the actual Q4_ROW factor codec preserves controlled-model quality well, but the tiny d=128 geometry cannot reach complete-model 10x because per-row scale/fixed overhead dominates. The Mistral rank96 plan remains 11.6338x after modeled LARC container overhead and a 4 MiB auxiliary-resource reserve; Mistral quality and actual final serialized bytes remain unvalidated."
 }
