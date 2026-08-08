@@ -55,7 +55,7 @@
     {"path":"run8_residual_pq_real_model.json","status":"current_L3_precheck_failed_residual_pq","generator":"tools/run8_residual_pq_real_model.py"},
     {"path":"RUN8_RPQ_GATE.json","status":"current_real_model_gate","generator":"tools/run8_rpq_decision_gate.py","note":"precommitted gate rejected naive per-layer residual product quantization"},
     {"path":"RUN8_FINAL_STATUS.json","status":"summary","generator":null},
-    {"path":"RUN11_STATUS.json","status":"superseded_pending_status","generator":null},
+    {"path":"RUN11_STATUS.json","status":"historical_pending_status","generator":null},
     {"path":"RUN11_FINAL_STATUS.json","status":"current_L3_operator_mechanism_diagnostic","generator":"tools/run11_second_order_diagnostic.py","note":"Hadamard + block second-order error feedback is a positive operator-level mechanism only; no end-to-end quality or memory promotion. Full per-site JSON retained as recorded workflow artifact."}
   ]
 }
