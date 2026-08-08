@@ -1,0 +1,11 @@
+#include "../runtime/larc_q4.h"
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <random>
+#include <vector>
+struct O{std::vector<std::uint8_t>p;std::vector<std::uint16_t>s;std::size_t r,c;larc::Q4Rows v()const{return{p.data(),s.data(),r,c};}};
+static O q4(const std::vector<float>&w,std::size_t r,std::size_t c){O o;o.r=r;o.c=c;o.s.resize(r);o.p.assign(r*((c+1)/2),0x88);auto st=(c+1)/2;for(std::size_t i=0;i<r;i++){float pos=0,neg=0;for(std::size_t j=0;j<c;j++){pos=std::max(pos,w[i*c+j]);neg=std::max(neg,-w[i*c+j]);}float sf=std::max(1e-12f,std::max(pos/7.0f,neg/8.0f));o.s[i]=larc::float_to_fp16_bits(sf);float s=larc::fp16_bits_to_float(o.s[i]);for(std::size_t j=0;j<c;j++){int qv=int(std::lrint(w[i*c+j]/s));qv=std::max(-8,std::min(7,qv));auto code=std::uint8_t(qv+8);auto&b=o.p[i*st+(j>>1)];if(j&1)b=(b&15)|(code<<4);else b=(b&240)|code;}}return o;}
+static std::vector<float> dq(const O&o){std::vector<float>w(o.r*o.c);auto st=(o.c+1)/2;for(std::size_t i=0;i<o.r;i++){float s=larc::fp16_bits_to_float(o.s[i]);for(std::size_t j=0;j<o.c;j++){auto b=o.p[i*st+(j>>1)];int code=(j&1)?((b>>4)&15):(b&15);w[i*o.c+j]=(code-8)*s;}}return w;}
+int main(){constexpr std::size_t M=173,K=211,R=23;std::mt19937 g(17);std::normal_distribution<float>n(0,.2f);std::vector<float>S(M*K),U(M*R),Vt(R*K),C(R*R),x(K);for(auto&z:S)z=n(g);for(auto&z:U)z=n(g);for(auto&z:Vt)z=n(g);for(auto&z:C)z=n(g);for(auto&z:x)z=n(g);auto qs=q4(S,M,K),qu=q4(U,M,R),qv=q4(Vt,R,K),qc=q4(C,R,R);std::vector<float>a(R),b(R),y(M),ref(M),z1(R),z2(R);larc::q4_shared_core_gemv(qs.v(),qv.v(),qc.v(),qu.v(),x.data(),a.data(),b.data(),y.data());auto sd=dq(qs),ud=dq(qu),vd=dq(qv),cd=dq(qc);for(std::size_t r=0;r<R;r++){float v=0;for(std::size_t j=0;j<K;j++)v+=vd[r*K+j]*x[j];z1[r]=v;}for(std::size_t i=0;i<R;i++){float v=0;for(std::size_t j=0;j<R;j++)v+=cd[i*R+j]*z1[j];z2[i]=v;}for(std::size_t i=0;i<M;i++){float v=0;for(std::size_t j=0;j<K;j++)v+=sd[i*K+j]*x[j];for(std::size_t r=0;r<R;r++)v+=ud[i*R+r]*z2[r];ref[i]=v;}float e=0;for(std::size_t i=0;i<M;i++)e=std::max(e,std::fabs(y[i]-ref[i]));std::printf("max_abs_error=%.9g scratch_bytes=%zu shared_bytes=%zu coreshare_residual_bytes=%zu\n",e,2*R*sizeof(float),larc::q4_storage_bytes(qs.v()),larc::q4_storage_bytes(qu.v())+larc::q4_storage_bytes(qv.v())+larc::q4_storage_bytes(qc.v()));return e<1e-3f?0:1;}
