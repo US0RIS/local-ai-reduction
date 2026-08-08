@@ -183,16 +183,21 @@ Embeddings, output heads, normalization tensors, very small operators, or empiri
 
 Preferred source formats are SafeTensors and GGUF. Converters SHOULD operate shard-by-shard or tensor-by-tensor so a user does not need two full dense model copies locally. Calibration data and converter settings MUST be recorded in provenance metadata when a representation depends on activations.
 
+For aggressive cross-layer sharing, conversion MAY use post-conversion recovery training or distillation. A converter that changes the logical parameter-sharing graph MUST record the original architecture, sharing map, recovery objective, recovery data provenance, step count, and resulting quality measurements.
+
 ## 12. Validation levels
 
 - **L0 Structural:** container/codec round trips and byte accounting.
 - **L1 Operator:** held-out operator error plus compressed-domain kernel correctness.
-- **L2 Conformance model:** trained autoregressive model; file/weight/KV/total-memory and NLL gates measured from executable representations.
-- **L3 External pretrained model:** independent pretrained LLM converted after training; same-context quality and total-memory comparison against named GGUF baseline.
+- **L2 Conformance model:** trained autoregressive model designed to exercise LARC representations; file/weight/KV/total-memory and quality gates measured from executable structures.
+- **L2C Post-training conversion conformance:** conventionally parameterized independent-layer language model is trained first, then converted to a structurally shared LARC representation and recovered after conversion; quality and same-context memory are compared against the pre-conversion teacher.
+- **L3 External pretrained model:** independently hosted pretrained LLM converted after training; same-context quality and total-memory comparison against a named GGUF baseline.
 - **L4 Hardware:** measured CPU/GPU/accelerator peak memory and throughput on target hardware.
 
-A project MUST NOT promote L0/L1 modeled results as L3/L4 evidence.
+A project MUST NOT promote L0/L1/L2/L2C results as L3/L4 evidence.
 
 ## 13. Current implementation boundary
 
-v0.2 has implemented L0, L1, and an L2 recurrent conformance path. The repository contains an L3 SmolLM2-135M harness, but external checkpoint retrieval / hosted runner availability has prevented completion of that benchmark in the current execution environment. CPU packed-domain kernels are measured locally; the Triton GPU kernel is source-complete but not hardware-validated here.
+v0.2 has implemented L0, L1, L2, and L2C paths. The strongest current L2C conformance result converted a 16-independent-block teacher after pretraining into a one-physical-block LARC model, then applied short recovery uptraining and packed latent-Q2 KV. It achieved 14.61× lower Q4-style weight payload, 10.80× lower same-context total inference-tensor memory, and a 13.83% NLL increase versus the original teacher, inside the current 15% screening gate.
+
+The repository contains an L3 SmolLM2-135M harness, but external checkpoint retrieval / hosted runner availability has prevented completion of that benchmark in the current execution environment. CPU packed-domain kernels are measured locally; the Triton GPU kernel is source-complete but not hardware-validated here.
