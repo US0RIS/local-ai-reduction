@@ -1,20 +1,17 @@
 #!/usr/bin/env python3
 """Assemble Run-9 llama.cpp competitive baseline artifacts.
 
-Input directory contains:
-- metadata.json
-- ppl_{F16,Q4_K_M,Q2_K}.txt
-- bench_{Q4_K_M,Q2_K}_{pp,tg}.json
-- rss_{Q4_K_M,Q2_K}_ctx{64,2048,8192}_{mmap,nommap}_repN.txt
+The report keeps three memory concepts separate:
+1. GGUF file bytes;
+2. llama.cpp-reported model/KV/compute buffer allocations parsed from stderr;
+3. whole-process MaxRSS from GNU time.
 
-The output is intentionally explicit about measured vs modeled quantities. RSS is
-process MaxRSS from GNU /usr/bin/time on a GitHub-hosted Ubuntu CPU runner; it is
-not consumer-device VRAM and it is not a LARC result.
+MaxRSS is measured on a GitHub-hosted Ubuntu CPU runner. It is not VRAM and is
+not a consumer-device L4 result.
 """
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import re
@@ -24,14 +21,7 @@ from typing import Any
 
 PPL_RE = re.compile(r"Final estimate:\s*PPL\s*=\s*([0-9.eE+\-]+)\s*\+/-\s*([0-9.eE+\-]+)")
 RSS_RE = re.compile(r"Maximum resident set size \(kbytes\):\s*(\d+)")
-
-
-def sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        for block in iter(lambda: f.read(1 << 20), b""):
-            h.update(block)
-    return h.hexdigest()
+BUFFER_RE = re.compile(r"(?P<label>[A-Za-z0-9_+ ./-]*buffer size)\s*=\s*(?P<mib>[0-9.]+)\s*MiB", re.IGNORECASE)
 
 
 def parse_ppl(path: Path) -> dict[str, float]:
@@ -49,6 +39,24 @@ def parse_rss(path: Path) -> int:
     if not m:
         raise RuntimeError(f"No GNU time MaxRSS in {path}")
     return int(m.group(1)) * 1024
+
+
+def parse_reported_buffers(path: Path) -> list[dict[str, Any]]:
+    text = path.read_text(errors="replace")
+    rows = []
+    for line in text.splitlines():
+        m = BUFFER_RE.search(line)
+        if not m:
+            continue
+        label = " ".join(m.group("label").split()).strip(" :-")
+        mib = float(m.group("mib"))
+        rows.append({
+            "label": label,
+            "mib": mib,
+            "bytes": int(round(mib * 1024 * 1024)),
+            "source_line": line.strip(),
+        })
+    return rows
 
 
 def compact_bench(path: Path, kind: str) -> list[dict[str, Any]]:
@@ -83,17 +91,21 @@ def rss_summary(root: Path, quant: str) -> dict[str, Any]:
     for ctx in (64, 2048, 8192):
         ctx_rows = {}
         for mode in ("mmap", "nommap"):
-            vals = []
-            for p in sorted(root.glob(f"rss_{quant}_ctx{ctx}_{mode}_rep*.txt")):
-                vals.append(parse_rss(p))
+            files = sorted(root.glob(f"rss_{quant}_ctx{ctx}_{mode}_rep*.txt"))
+            vals = [parse_rss(p) for p in files]
             if not vals:
                 raise RuntimeError(f"Missing RSS files for {quant} ctx={ctx} {mode}")
+            err_sample = root / f"cli_{quant}_ctx{ctx}_{mode}_rep1.err"
+            buffers = parse_reported_buffers(err_sample) if err_sample.exists() else []
             ctx_rows[mode] = {
                 "repetitions": len(vals),
                 "maxrss_bytes_each": vals,
                 "median_maxrss_bytes": int(statistics.median(vals)),
                 "min_maxrss_bytes": min(vals),
                 "max_maxrss_bytes": max(vals),
+                "llamacpp_reported_buffers_rep1": buffers,
+                "reported_buffer_bytes_naive_sum": sum(x["bytes"] for x in buffers),
+                "reported_buffer_sum_note": "Diagnostic sum only; labels are preserved because upstream may report multiple pools and a naive sum is not asserted to equal peak RSS.",
             }
         out[str(ctx)] = ctx_rows
     return out
@@ -111,14 +123,14 @@ def main() -> None:
 
     raw = args.raw
     meta = json.loads((raw / "metadata.json").read_text())
-
     ppls = {q: parse_ppl(raw / f"ppl_{q}.txt") for q in ("F16", "Q4_K_M", "Q2_K")}
+
     results: dict[str, Any] = {}
     for q in ("Q4_K_M", "Q2_K"):
         results[q] = {
             "file": meta["models"][q],
             "perplexity": ppls[q],
-            "maxrss": rss_summary(raw, q),
+            "maxrss_and_reported_buffers": rss_summary(raw, q),
             "throughput": {
                 "prompt_processing": compact_bench(raw / f"bench_{q}_pp.json", "pp"),
                 "generation": compact_bench(raw / f"bench_{q}_tg.json", "tg"),
@@ -139,8 +151,8 @@ def main() -> None:
     for ctx in (64, 2048, 8192):
         comparisons["rss_q4_to_q2_reduction_x"][str(ctx)] = {}
         for mode in ("mmap", "nommap"):
-            a = results["Q4_K_M"]["maxrss"][str(ctx)][mode]["median_maxrss_bytes"]
-            b = results["Q2_K"]["maxrss"][str(ctx)][mode]["median_maxrss_bytes"]
+            a = results["Q4_K_M"]["maxrss_and_reported_buffers"][str(ctx)][mode]["median_maxrss_bytes"]
+            b = results["Q2_K"]["maxrss_and_reported_buffers"][str(ctx)][mode]["median_maxrss_bytes"]
             comparisons["rss_q4_to_q2_reduction_x"][str(ctx)][mode] = ratio(a, b)
 
     out = {
@@ -154,25 +166,24 @@ def main() -> None:
         "runner": meta["runner"],
         "wikitext2": meta["wikitext2"],
         "measurement_contract": meta["measurement_contract"],
-        "f16_reference": {
-            "file": meta["models"]["F16"],
-            "perplexity": ppls["F16"],
+        "memory_semantics": {
+            "file_bytes": "exact serialized GGUF bytes",
+            "llamacpp_reported_buffers": "diagnostic allocations printed by llama.cpp during the measured process",
+            "maxrss": "GNU time whole-process peak resident set size",
         },
+        "f16_reference": {"file": meta["models"]["F16"], "perplexity": ppls["F16"]},
         "quantized": results,
         "comparisons": comparisons,
         "claim_boundary": (
             "Measured GGUF/llama.cpp baseline only. MaxRSS is process resident memory on an ephemeral "
-            "GitHub-hosted CPU runner, not VRAM and not a consumer-device L4 result. No LARC quality or "
-            "memory claim is established by this artifact."
+            "GitHub-hosted CPU runner, not VRAM and not a consumer-device L4 result. Reported allocator "
+            "buffers and MaxRSS are kept separate. No LARC quality or memory claim is established."
         ),
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(out, indent=2) + "\n")
     print(json.dumps({
-        "F16_PPL": ppls["F16"],
-        "Q4_K_M_PPL": ppls["Q4_K_M"],
-        "Q2_K_PPL": ppls["Q2_K"],
-        "comparisons": comparisons,
+        "F16_PPL": ppls["F16"], "Q4_K_M_PPL": ppls["Q4_K_M"], "Q2_K_PPL": ppls["Q2_K"], "comparisons": comparisons
     }, indent=2))
 
 
