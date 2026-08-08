@@ -1,0 +1,13 @@
+{
+  "run": 5,
+  "evidence_level": "L1 native operator",
+  "operator": "canonical packed Q4 y = Sx + U(C(V^T x))",
+  "shape": {"out":173,"in":211,"rank":23},
+  "max_abs_error_vs_separately_dequantized_reference": 9.53674316e-07,
+  "rank_scratch_bytes": 184,
+  "shared_q4_bytes": 18512,
+  "coreshare_residual_q4_bytes": 4985,
+  "dense_reconstruction_materialized": false,
+  "throughput_claim": false,
+  "generator": "tests/native_q4_coreshare.cpp"
+}
