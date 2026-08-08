@@ -5,12 +5,13 @@ on:
   pull_request:
     paths:
       - 'tools/run6_real_model_falsification.py'
+      - 'tools/run6_partial_real_conversion.py'
       - '.github/workflows/run6-real-model.yml'
 
 jobs:
-  smollm2-real-activation-test:
+  smollm2-real-model-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -37,23 +38,41 @@ jobs:
             --ranks 8,16,32,64,128 \
             --out benchmarks/run6_real_model_falsification.json
 
+      - name: Run partial real-model sharing + QAT recovery
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          python tools/run6_partial_real_conversion.py \
+            --model HuggingFaceTB/SmolLM2-135M \
+            --group 14,15,16,17 \
+            --donor 15 \
+            --steps 24 \
+            --window 64 \
+            --train-windows 8 \
+            --out benchmarks/run6_partial_real_conversion.json
+
       - name: Show compact result
         run: |
           python - <<'PY'
           import json
-          p='benchmarks/run6_real_model_falsification.json'
-          d=json.load(open(p))
-          print('model:',d['model'])
-          print('commit:',d['model_commit'])
-          print('architecture:',d['architecture'])
-          print('baseline_nll:',d['baseline_nll'])
-          print('projection_summary:',json.dumps(d['projection_summary'],indent=2))
-          print('single_layer_alias:',json.dumps(d['single_layer_alias'],indent=2))
-          print('contiguous_group_alias:',json.dumps(d['contiguous_group_alias'],indent=2))
+          for p in ('benchmarks/run6_real_model_falsification.json','benchmarks/run6_partial_real_conversion.json'):
+              d=json.load(open(p))
+              print('\n===',p,'===')
+              if 'projection_summary' in d:
+                  print('baseline_nll:',d['baseline_nll'])
+                  print('projection_summary:',json.dumps(d['projection_summary'],indent=2))
+                  print('single_layer_alias:',json.dumps(d['single_layer_alias'],indent=2))
+                  print('contiguous_group_alias:',json.dumps(d['contiguous_group_alias'],indent=2))
+              else:
+                  print('quality:',json.dumps(d['quality'],indent=2))
+                  print('weight_accounting:',json.dumps(d['weight_accounting'],indent=2))
           PY
 
       - uses: actions/upload-artifact@v4
         with:
-          name: run6-real-model-falsification
-          path: benchmarks/run6_real_model_falsification.json
+          name: run6-real-model-results
+          path: |
+            benchmarks/run6_real_model_falsification.json
+            benchmarks/run6_partial_real_conversion.json
           if-no-files-found: error
