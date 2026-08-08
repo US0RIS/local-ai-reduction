@@ -107,3 +107,5 @@ For large SmolLM2 MLP matrices, group10–15 with rank8–16 can theoretically r
 ## Evidence boundary
 
 Run 13 is a real-pretrained operator diagnostic over the decoder projection pool. It does **not** include embeddings, normalization weights, the LM head, full-model perplexity, generation quality, a native fused residual-sharing kernel, process RSS, or VRAM. A component-gate pass is not a usable LARC model.
+
+Execution note: the harness and gate above were merged to `main` before this execution-only documentation change was opened, so the measurement cannot alter its precommitted thresholds.
