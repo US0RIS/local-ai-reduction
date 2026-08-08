@@ -1,10 +1,12 @@
 {
-  "policy_version": 1,
+  "policy_version": 2,
   "rules": {
     "promoted_requires_committed_generator": true,
     "superseded_artifacts_may_remain_for_history": true,
     "long_training_artifacts_require_seed_and_evaluation_provenance": true,
-    "current_claims_must_name_context_and_baseline": true
+    "current_claims_must_name_context_and_baseline": true,
+    "quality_must_execute_representation_whose_bytes_are_counted": true,
+    "controlled_multi_seed_claims_require_distribution_not_best_seed": true
   },
   "artifacts": [
     {"path":"benchmark_hrvq_run1.json","status":"historical","generator":"tools/benchmark_synthetic.py"},
@@ -22,10 +24,13 @@
     {"path":"run3_recurrent_kv_corrected.json","status":"historical_missing_canonical_generator","generator":null},
     {"path":"run3_posttrain_corrected_100k.json","status":"historical_missing_canonical_generator","generator":null},
     {"path":"run3_kivi_memory_plan_rank16.json","status":"superseded_by_run4_metric_accounting","generator":"tools/memory_plan.py"},
-    {"path":"run4_native_q4_fidelity.json","status":"current","generator":"tests/native_q4_fidelity.cpp"},
-    {"path":"run4_context_sweep.json","status":"current_arithmetic","generator":"tools/run4_context_sweep.py"},
-    {"path":"run4_control_reproduction.json","status":"current_reproduction","generator":"tools/run4_control_reproduction.py"},
-    {"path":"run4_q4_weight_quality.json","status":"current_reproduction","generator":"tools/run4_control_reproduction.py"},
-    {"path":"run4_kivi_memory_plan_rank16.json","status":"current_arithmetic","generator":"tools/run4_kivi_memory_plan.py"}
+    {"path":"run4_native_q4_fidelity.json","status":"current_l1","generator":"tests/native_q4_fidelity.cpp"},
+    {"path":"run4_context_sweep.json","status":"superseded_by_run5_grouped_kv","generator":"tools/run4_context_sweep.py"},
+    {"path":"run4_control_reproduction.json","status":"historical_reproduction","generator":"tools/run4_control_reproduction.py"},
+    {"path":"run4_q4_weight_quality.json","status":"historical_reproduction","generator":"tools/run4_control_reproduction.py"},
+    {"path":"run4_kivi_memory_plan_rank16.json","status":"current_structural_smollm2_arithmetic","generator":"tools/run4_kivi_memory_plan.py"},
+    {"path":"run5_memory_context.json","status":"current_l2c_arithmetic","generator":"tools/run5_memory_sweep.py","generator_replay":"formula_cross_checked"},
+    {"path":"run5_fullstack_multiseed.json","status":"current_l2c_controlled","generator":"tools/run5_fullstack_protocol_fp16tail.py","generator_replay":"protocol committed; complete five-seed one-process replay not independently completed after commit due execution ceiling; final quality phase was rerun from retained trained models"},
+    {"path":"run5_weight_diagnostics.json","status":"current_diagnostic","generator":null,"note":"derived from the same controlled Run-5 model family; dither is counterfactual mechanism evidence, not deployable same-byte evidence"}
   ]
 }
