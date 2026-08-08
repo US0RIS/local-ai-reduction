@@ -1,0 +1,78 @@
+name: Run 16 global recursive distillation pilot
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/run16_global_recursive_pilot.py'
+      - '.github/workflows/run16-global-recursive-pilot.yml'
+      - 'docs/RUN16_GLOBAL_RECURSIVE_PILOT.md'
+      - 'benchmarks/RUN16_STATUS.json'
+  pull_request:
+    paths:
+      - 'tools/run16_global_recursive_pilot.py'
+      - '.github/workflows/run16-global-recursive-pilot.yml'
+      - 'docs/RUN16_GLOBAL_RECURSIVE_PILOT.md'
+
+permissions:
+  contents: read
+
+jobs:
+  recursive-pilot:
+    strategy:
+      fail-fast: false
+      matrix:
+        physical_blocks: [2, 3]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          path: external/llama.cpp
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install CPU training stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'transformers==4.57.6' accelerate 'huggingface-hub>=0.34,<1'
+
+      - name: Fetch disjoint WikiText-2 train/test corpora
+        run: |
+          (cd external/llama.cpp && bash scripts/get-wikitext-2.sh)
+          test -f external/llama.cpp/wikitext-2-raw/wiki.train.raw
+          test -f external/llama.cpp/wikitext-2-raw/wiki.test.raw
+          sha256sum external/llama.cpp/wikitext-2-raw/wiki.train.raw external/llama.cpp/wikitext-2-raw/wiki.test.raw
+
+      - name: Run globally distilled recursive decoder pilot
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+          OMP_NUM_THREADS: '4'
+          MKL_NUM_THREADS: '4'
+        run: |
+          mkdir -p benchmarks
+          python tools/run16_global_recursive_pilot.py \
+            --model HuggingFaceTB/SmolLM2-135M \
+            --train-corpus external/llama.cpp/wikitext-2-raw/wiki.train.raw \
+            --eval-corpus external/llama.cpp/wikitext-2-raw/wiki.test.raw \
+            --physical-blocks ${{ matrix.physical_blocks }} \
+            --rank 8 --steps 160 --seq-len 64 \
+            --temperature 2.0 \
+            --base-lr 1e-4 --adapter-lr 5e-4 --norm-lr 1e-4 \
+            --eval-predictions 4096 \
+            --out benchmarks/run16_recursive_p${{ matrix.physical_blocks }}_r8.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run16-recursive-p${{ matrix.physical_blocks }}-r8
+          path: benchmarks/run16_recursive_p${{ matrix.physical_blocks }}_r8.json
+          if-no-files-found: error
+          retention-days: 90
