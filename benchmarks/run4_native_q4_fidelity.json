@@ -1,0 +1,4 @@
+[
+  {"noise_sigma":0.02,"theoretical_rank_residual_fraction":0.187256173,"output_nmse_vs_dense_q4":0.287793997,"output_nmse_vs_fp32":0.268433327,"interpretation":"stress case: structural residual is a major share of error"},
+  {"noise_sigma":0.002,"theoretical_rank_residual_fraction":0.002298704,"output_nmse_vs_dense_q4":0.056634342,"output_nmse_vs_fp32":0.033298663,"interpretation":"low-structural-noise case isolates factor quantization much more cleanly"}
+]
