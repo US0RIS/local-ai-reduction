@@ -6,6 +6,7 @@ on:
     paths:
       - 'tools/run6_real_model_falsification.py'
       - 'tools/run6_partial_real_conversion.py'
+      - 'tools/run6_decision_gate.py'
       - '.github/workflows/run6-real-model.yml'
 
 jobs:
@@ -52,13 +53,22 @@ jobs:
             --train-windows 8 \
             --out benchmarks/run6_partial_real_conversion.json
 
+      - name: Apply precommitted decision gate
+        run: |
+          python tools/run6_decision_gate.py \
+            --falsification benchmarks/run6_real_model_falsification.json \
+            --partial benchmarks/run6_partial_real_conversion.json \
+            --out benchmarks/RUN6_GATE.json
+
       - name: Show compact result
         run: |
           python - <<'PY'
           import json
-          for p in ('benchmarks/run6_real_model_falsification.json','benchmarks/run6_partial_real_conversion.json'):
+          for p in ('benchmarks/run6_real_model_falsification.json','benchmarks/run6_partial_real_conversion.json','benchmarks/RUN6_GATE.json'):
               d=json.load(open(p))
               print('\n===',p,'===')
+              if p.endswith('RUN6_GATE.json'):
+                  print(json.dumps(d,indent=2)); continue
               if 'projection_summary' in d:
                   print('baseline_nll:',d['baseline_nll'])
                   print('projection_summary:',json.dumps(d['projection_summary'],indent=2))
@@ -75,4 +85,5 @@ jobs:
           path: |
             benchmarks/run6_real_model_falsification.json
             benchmarks/run6_partial_real_conversion.json
+            benchmarks/RUN6_GATE.json
           if-no-files-found: error
