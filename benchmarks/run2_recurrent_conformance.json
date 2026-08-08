@@ -1,0 +1,21 @@
+{
+  "logical_depth": 16,
+  "physical_block_bundles_larc": 1,
+  "physical_block_bundles_naive": 16,
+  "vocab": 36,
+  "train_seconds": 20.46761679649353,
+  "shared_val_nll": 0.6147951073944569,
+  "duplicated_val_nll": 0.6147951073944569,
+  "max_logit_abs_diff": 0.0,
+  "shared_fp32_unique_bytes": 160000,
+  "duplicated_fp32_unique_bytes": 2168320,
+  "resident_weight_reduction": 13.552,
+  "naive_q4_logical_file_bytes": 302920,
+  "larc_q4_reference_file_bytes": 22600,
+  "q4_file_reduction": 13.403539823008849,
+  "bounded_shared_scratch_bytes": 196608,
+  "naive_modeled_peak_bytes": 2364928,
+  "larc_modeled_peak_bytes": 356608,
+  "modeled_total_memory_reduction": 6.631730078966259,
+  "quality_retention_exact": true
+}
