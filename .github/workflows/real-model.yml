@@ -9,19 +9,17 @@ permissions:
 
 jobs:
   smollm2:
-    name: SmolLM2 ${{ matrix.profile }}
+    name: SmolLM2 10x runner probe
     runs-on: ubuntu-latest
     timeout-minutes: 55
-    strategy:
-      fail-fast: false
-      matrix:
-        profile: [10x, 15x, 20x, 30x]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: pip
+      - name: Clone experimental branch without reusable actions
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          rm -rf ./* ./.??* 2>/dev/null || true
+          git clone --depth=1 --branch larc-run2-real-model "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" .
+          python --version
       - name: Install benchmark dependencies
         run: |
           python -m pip install --upgrade pip
@@ -38,16 +36,12 @@ jobs:
           assert y.shape==(11,97) and torch.isfinite(y).all()
           print('packed q4 primitive OK', p.numel()+s.numel()*s.element_size(), 'resident bytes')
           PY
-      - name: Run real-model benchmark
+      - name: Run real-model 10x benchmark
         env:
           HF_HUB_DISABLE_TELEMETRY: '1'
           TOKENIZERS_PARALLELISM: 'false'
         run: |
-          PYTHONPATH=. python tools/real_model_benchmark.py --profile '${{ matrix.profile }}' --out 'benchmarks/run2_smollm2_${{ matrix.profile }}.json'
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: larc-run2-${{ matrix.profile }}
-          path: benchmarks/run2_smollm2_${{ matrix.profile }}.json
-          if-no-files-found: warn
-          retention-days: 30
+          PYTHONPATH=. python tools/real_model_benchmark.py --profile 10x --out benchmarks/run2_smollm2_10x.json
+          echo 'LARC_RESULT_BEGIN'
+          cat benchmarks/run2_smollm2_10x.json
+          echo 'LARC_RESULT_END'
