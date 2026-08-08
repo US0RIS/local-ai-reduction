@@ -1,0 +1,44 @@
+{
+  "run": 8,
+  "date": "2026-08-08",
+  "status": "completed_real_model_vq_falsification",
+  "model": "HuggingFaceTB/SmolLM2-135M",
+  "model_commit": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "run8a": {
+    "workflow_run_id": 31276317649,
+    "job_id": 93150317624,
+    "artifact_id": 9027108607,
+    "artifact_sha256": "a0d9e796edd88fa9980d3edbbb15fad46c75078a971f1177590453e397002da2",
+    "gate": "fail_naive_additive_vq",
+    "baseline_fp32_nll": 3.5894739627838135,
+    "baseline_row_q4_nll": 4.875250816345215,
+    "best_quality_point": {
+      "stages": 8,
+      "nominal_target_bpw": 1.5,
+      "nll": 17.627399444580078,
+      "ppl_ratio_vs_fp32": 1249089.5473779067,
+      "whole_model_weight_reduction_x": 1.9514335350942227
+    },
+    "highest_compression_point": {
+      "stages": 2,
+      "nominal_target_bpw": 0.75,
+      "nll": 18.067638397216797,
+      "ppl_ratio_vs_fp32": 1939933.853711025,
+      "whole_model_weight_reduction_x": 2.7505731888013725
+    },
+    "diagnosis": "Greedy 32-D residual codebooks reduce calibration residual monotonically but leave roughly one-third activation-weighted vector energy unexplained even after eight stages; end-to-end quality is unusable."
+  },
+  "run8b": {
+    "workflow_run_id": 31276483365,
+    "job_id": 93150733076,
+    "artifact_id": 9027156972,
+    "artifact_sha256": "7337d1ac34d66248789ecb3250bd8b9ebfa1abc0919e9fc4ba7359a1448675f9",
+    "gate": "fail_naive_rpq",
+    "stage1": {"nominal_target_bpw": 1.0, "nll": 16.670482635498047, "ppl_ratio_vs_fp32": 479748.7136721775, "whole_model_weight_reduction_x": 2.409095255658921},
+    "stage2": {"nominal_target_bpw": 1.5, "nll": 19.897659301757812, "ppl_ratio_vs_fp32": 12093690.14437801, "whole_model_weight_reduction_x": 1.9370297551706337},
+    "stage3": {"nominal_target_bpw": 2.0, "nll": 14.648526191711426, "ppl_ratio_vs_fp32": 63516.899849463676, "whole_model_weight_reduction_x": 1.6196559609856451},
+    "diagnosis": "Four independent 8-D subspaces and per-layer/per-operator codebooks improve vector fit capacity but still produce catastrophic end-to-end perplexity. Naive Euclidean/diagonal-RMS VQ is rejected as the primary extreme-weight codec."
+  },
+  "conclusion": "Runs 6-8 jointly falsify uniform low-rank projection, post-hoc whole-block sharing, shared output bases, naive residual VQ, and naive residual product VQ on SmolLM2-135M. Next work must establish competitive Q4_K_M/Q2_K measured baselines and use second-order/rotation/outlier-aware extreme quantization or learned/distilled representations rather than ad-hoc PTQ geometry.",
+  "claim_boundary": "No usable compressed SmolLM2 LARC candidate exists yet. Run 8 reports exact compressed-representation quality and modeled weight bytes on a custom evaluation slice; no Q4_K_M parity, standard benchmark, packed VQ kernel, or measured LARC RSS/VRAM is claimed."
+}
