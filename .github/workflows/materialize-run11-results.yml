@@ -1,0 +1,36 @@
+name: Materialize Run 11 results
+
+on:
+  push:
+    branches:
+      - larc-run11-depth-basis
+    paths:
+      - '.github/workflows/materialize-run11-results.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: larc-run11-depth-basis
+      - name: Download exact Run 11 artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/run11
+          gh api repos/${GITHUB_REPOSITORY}/actions/artifacts/9027338000/zip > /tmp/run11.zip
+          unzip -o -j /tmp/run11.zip -d /tmp/run11
+          cp /tmp/run11/run11_depth_basis_real_model.json benchmarks/
+          cp /tmp/run11/RUN11_GATE.json benchmarks/
+      - name: Commit exact outputs
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add benchmarks/run11_depth_basis_real_model.json benchmarks/RUN11_GATE.json benchmarks/RUN11_FINAL_STATUS.json
+          git commit -m 'Record Run 11 real-model depth-basis evidence'
+          git push origin HEAD:larc-run11-depth-basis
