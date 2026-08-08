@@ -1,12 +1,14 @@
 {
-  "policy_version": 2,
+  "policy_version": 3,
   "rules": {
     "promoted_requires_committed_generator": true,
     "superseded_artifacts_may_remain_for_history": true,
     "long_training_artifacts_require_seed_and_evaluation_provenance": true,
     "current_claims_must_name_context_and_baseline": true,
     "quality_representation_must_match_memory_representation": true,
-    "compression_calibration_must_be_disjoint_from_final_evaluation": true
+    "compression_calibration_must_be_disjoint_from_final_evaluation": true,
+    "ten_x_claims_must_use_complete_model_or_explicitly_label_partial_tensor_budget": true,
+    "planning_estimates_must_identify_rounded_external_baselines": true
   },
   "artifacts": [
     {"path":"benchmark_hrvq_run1.json","status":"historical","generator":"tools/benchmark_synthetic.py"},
@@ -29,8 +31,11 @@
     {"path":"run4_control_reproduction.json","status":"historical_run4_reconstruction","generator":"tools/run4_control_reproduction.py"},
     {"path":"run4_q4_weight_quality.json","status":"historical_pre_q4_recovery_diagnostic","generator":"tools/run4_control_reproduction.py"},
     {"path":"run4_kivi_memory_plan_rank16.json","status":"current_structural_unvalidated_quality","generator":"tools/run4_kivi_memory_plan.py"},
-    {"path":"run4_fp8meta_l2c.json","status":"current_L2C_promoted","generator":"tools/run4_l2c_repro.py"},
+    {"path":"run4_fp8meta_l2c.json","status":"current_L2C_hard_recursive_reference","generator":"tools/run4_l2c_repro.py"},
     {"path":"run4_native_q2_attention.json","status":"current_L1","generator":"tests/native_q2_attention.cpp"},
-    {"path":"run4_packed_attention_context_sweep.json","status":"current_preferred_arithmetic","generator":"tools/run4_packed_context_sweep.py"}
+    {"path":"run4_packed_attention_context_sweep.json","status":"current_reference_arithmetic","generator":"tools/run4_packed_context_sweep.py"},
+    {"path":"run5_softshare_control.json","status":"current_L2C_strategy_selection","generator":"tools/run5_softshare_control.py"},
+    {"path":"run5_mistral7b_budget.json","status":"current_structural_planning_rounded_baseline","generator":"tools/run5_budget_planner.py"},
+    {"path":"run5_native_q4_softshare.json","status":"current_L1","generator":"tests/native_q4_softshare.cpp"}
   ]
 }
