@@ -20,41 +20,45 @@
   },
   "profiles": [
     {
-      "name": "scale_normalized_rank3",
+      "name": "row_q4_rank3",
+      "factor_codec": "canonical Q4_ROW, identical to converter/runtime",
       "ranks": {"qkv":3,"o":3,"fc1":3,"fc2":3},
       "raw_svd_nll": 3.0188744515180588,
       "recovered_fp_nll": 1.7795282527804375,
-      "q4_before_constrained_recovery_nll": 2.1637772768735886,
-      "q4_after_50_constrained_steps_nll": 1.9802122935652733,
-      "delta_vs_q4_teacher_nats_per_char": 0.07473885267972946,
-      "perplexity_ratio_vs_q4_teacher": 1.0776027010785967,
-      "serialized_bytes": 124042,
-      "whole_model_reduction_x": 9.105641637509876
+      "q4_before_constrained_recovery_nll": 2.1239865571260452,
+      "q4_after_50_constrained_steps_nll": 1.8527510538697243,
+      "delta_vs_q4_teacher_nats_per_char": -0.05272238701581955,
+      "perplexity_ratio_vs_q4_teacher": 0.9486433316364175,
+      "serialized_tensor_bytes": 159114,
+      "complete_toy_tensor_reduction_x": 7.098570836004375
     },
     {
-      "name": "uniform_rank2_exact_toy_10x",
+      "name": "row_q4_rank2",
+      "factor_codec": "canonical Q4_ROW, identical to converter/runtime",
       "ranks": {"qkv":2,"o":2,"fc1":2,"fc2":2},
       "raw_svd_nll": 3.578197702765465,
       "recovered_fp_nll": 1.9231205582618713,
-      "q4_before_constrained_recovery_nll": 2.441279023885727,
-      "q4_after_50_constrained_steps_nll": 2.30032941699028,
-      "delta_vs_q4_teacher_nats_per_char": 0.39485597610473633,
-      "perplexity_ratio_vs_q4_teacher": 1.4841704195221341,
-      "serialized_bytes": 111370,
-      "whole_model_reduction_x": 10.141707820777588
+      "q4_before_constrained_recovery_nll": 2.3333591669797897,
+      "q4_after_50_constrained_steps_nll": 1.985925205051899,
+      "delta_vs_q4_teacher_nats_per_char": 0.08045176416635513,
+      "perplexity_ratio_vs_q4_teacher": 1.0837765685151544,
+      "serialized_tensor_bytes": 139530,
+      "complete_toy_tensor_reduction_x": 8.094904321651258
     },
     {
-      "name": "adaptive_exact_toy_10x",
-      "ranks": {"qkv":2,"o":1,"fc1":3,"fc2":2},
-      "raw_svd_nll": 3.1479554623365402,
-      "recovered_fp_nll": 1.88074491918087,
-      "q4_before_constrained_recovery_nll": 2.3843688368797302,
-      "q4_after_50_constrained_steps_nll": 2.2423674017190933,
-      "delta_vs_q4_teacher_nats_per_char": 0.3368939608335495,
-      "perplexity_ratio_vs_q4_teacher": 1.4005905384106918,
-      "serialized_bytes": 112426,
-      "whole_model_reduction_x": 10.046448330457368
+      "name": "row_q4_rank1",
+      "factor_codec": "canonical Q4_ROW, identical to converter/runtime",
+      "ranks": {"qkv":1,"o":1,"fc1":1,"fc2":1},
+      "raw_svd_nll": 4.264028757810593,
+      "recovered_fp_nll": 1.8920006826519966,
+      "q4_before_constrained_recovery_nll": 2.2950104475021362,
+      "q4_after_50_constrained_steps_nll": 1.9106607660651207,
+      "delta_vs_q4_teacher_nats_per_char": 0.005187325179576874,
+      "perplexity_ratio_vs_q4_teacher": 1.0052008026447572,
+      "serialized_tensor_bytes": 134282,
+      "complete_toy_tensor_reduction_x": 8.411268822329129
     }
   ],
-  "claim_boundary": "Controlled mechanism evidence only; not a real-model 10x result."
+  "revoked_prior_run5_control": "Prior Run-5 A/B factors used 128-value grouped Q4 while converter/runtime used Q4_ROW; prior toy exact-10x ratios are revoked.",
+  "claim_boundary": "Controlled mechanism evidence only. Q4_ROW scale overhead makes this tiny d=128 geometry a poor complete-model 10x proxy; real Mistral rank96 quality remains unvalidated."
 }
