@@ -1,139 +1,228 @@
 # LARC Action Sheet
 
-Canonical technical record for **LARC — Local Adaptive Representation & Compute**. Historical Run 1–3 details remain in `docs/RUN3_AUDIT_CORRECTIONS.md` and historical benchmark artifacts. Current artifact authority is `benchmarks/INDEX.json`; current machine-readable status is `benchmarks/RUN4_FINAL_STATUS.json`.
+Canonical technical record for **LARC — Local Adaptive Representation & Compute**. Historical Run 1–3 detail remains in `docs/RUN3_AUDIT_CORRECTIONS.md`; Run-4 hard-recursion evidence remains reproducible but is now a reference/ablation. Artifact authority is `benchmarks/INDEX.json`. Current machine-readable status is `benchmarks/RUN5_STATUS.json`.
 
 ## Objective
 
-Reduce local-LLM **peak resident inference memory by roughly 10–30× versus a named Q4-class baseline at the same context length**, while retaining useful capability. Every claim must name baseline, context, quality delta, byte pools, and evidence type.
+The project goal in this line of work is **10×**, not 20–50× and not “as small as possible.”
 
-Evidence levels: **L0** format, **L1** operator/runtime, **L2** controlled trained model, **L2C** controlled post-training conversion, **L3** independent pretrained LLM, **L4** measured target hardware.
+The acceptance target is:
+
+> A real pretrained model represented and executed with **no more than 10% of the named Q4-class baseline's relevant deployment bytes at the same context**, while retaining reasonable capability.
+
+Claims must separately identify serialized bytes, resident weights, KV cache, scratch/workspace, measured process/device memory, context length, quality, throughput, and evidence level.
+
+Evidence levels: **L0** format, **L1** operator/runtime, **L2** controlled trained model, **L2C** controlled post-training conversion, **L3** independent pretrained model, **L4** measured hardware.
 
 ---
 
-# Run 4 — audited representation-consistent closure
+# Strategic reassessment after Run 4
 
-## Audit corrections that survive
+## What Run 4 proved
 
-1. **Both latent K and V need inverse-Gram correction after Q4 basis quantization.** Current value reconstruction is `v_lat G_V^-1 B_V_hat`; scores use `G_K^-1`. Basis row scales and both FP16 metrics are charged.
-2. **Canonical Q4_ROW** remains `q in [-8,7]`, low nibble first, FP16 row scale, `scale=max(max_positive/7, abs(min_negative)/8, eps)`.
-3. **Quality and memory representations must match.** Run-3's FP32-weight quality / Q4-weight memory headline is revoked.
-4. **Compression calibration must be disjoint from final evaluation.** Current streams are training seed 3, Q4 checkpoint-selection 444, latent-basis calibration 555, final evaluation 333.
-5. **Context length is mandatory in every total-memory claim.**
-6. **Artifact provenance is systemic.** `benchmarks/INDEX.json` plus `tools/check_benchmark_provenance.py` governs promoted evidence; new current artifacts name committed generators.
+Run 4 closed several important methodological problems:
 
-## Negative result: naive Q4 sharing fails
+- quality paths must execute the same Q4 representation charged by memory accounting;
+- both quantized K and V latent bases require inverse-Gram correction;
+- calibration/selection/evaluation streams must be disjoint;
+- context length must be attached to every total-memory claim;
+- direct packed KV execution must avoid a decoded `T×rank` history;
+- benchmark artifacts need committed generators.
 
-When the independent teacher and recursively shared model were both evaluated using the Q4 representation charged by the memory model, the unrecovered shared model degraded severely (approximately perplexity ×2.19 versus the Q4 teacher). This confirms that quantization error in one physical block reused across depth is highly correlated.
+The best hard-recursive controlled result remains:
 
-**Decision:** aggressive recursive sharing requires representation-aware recovery; FP32 recovery alone is insufficient.
+- context 64 synthetic character LM;
+- Q4 teacher NLL 1.88548;
+- hard-shared + latent-Q2/E4M3 NLL 1.97525;
+- perplexity ratio **1.09392×**;
+- composed L2C+L1 modeled tensor ratio 12.04× at context 64.
 
-## Projected-Q4 recovery
+But the same program also exposed the central weakness of hard recursion: one Q4 block reused through depth accumulates highly correlated error. Before Q4-aware recovery the shared model's perplexity was about 2.19× the Q4 teacher.
 
-After structural conversion/recovery, matrices are projected to canonical Q4 and 1-D parameters to FP16. Optimization continues at low LR, and after every optimizer step parameters are immediately reprojected onto the exact storage grid. Checkpoint selection uses a disjoint stream.
+## Strategy decision
 
-Recovery provenance for the current controlled result:
+**Hard recursive sharing is no longer the primary architecture.**
 
-- teacher pretraining: 120 steps,
-- structural recovery: 200 steps,
-- projected-Q4 recovery: up to 200 steps,
-- selected projected-Q4 checkpoint: step 150.
+It optimizes for a more extreme compression regime than the actual 10× goal and throws away layer specialization that the byte budget can afford to retain.
 
-Extra recovery compute is part of the method and must be disclosed.
+Run 5 therefore uses **SoftShare-10X**:
 
-## Current controlled quality result — L2C
+`W_(layer,type) = S_type + A_(layer,type) B_(layer,type)`
 
-Synthetic character LM, **context 64**, final evaluation **100,032 characters**:
+- one full-rank canonical-Q4 shared base `S_type` per matrix type;
+- explicit depth-specific low-rank Q4 residual factors;
+- layer-specific small state retained;
+- direct packed execution computes `Sx + A(Bx)`;
+- ranks/rescue pages consume the available byte budget until, but not beyond, the 10× boundary.
 
-| path | NLL |
-|---|---:|
-| independent canonical-Q4 teacher | **1.88548** |
-| Q4-recovered shared model, normal KV | **1.94078** |
-| shared + rank-16 latent Q2 + E4M3-FN metadata + Q4 bases + both metrics | **1.97525** |
+Latent-Q2 KV remains part of the design, but its rank is increased as far as the 10× budget permits rather than minimized.
 
-Quality decomposition:
+---
 
-- structural/Q4-recovery penalty: **+0.05529 nats/char**,
-- latent-KV penalty: **+0.03447 nats/char**,
-- total: **+0.08977 nats/char**,
-- perplexity ratio: **1.09392×**.
+# Run 5 — SoftShare-10X
 
-Artifact: `benchmarks/run4_fp8meta_l2c.json`. Generator: `tools/run4_l2c_repro.py`.
+## Controlled strategy-selection evidence — L2C
 
-This is the strongest current **quality** result. It is a narrow synthetic controlled model, not broad-intelligence or external-pretrained evidence.
+Controlled model: d=128, H=4, FF=256, 16 independent teacher layers, context 64, vocabulary 37. Teacher and compressed paths are evaluated after canonical Q4 projection.
 
-## E4M3-FN latent-Q2 metadata
+Teacher canonical-Q4 NLL: **1.90547**.
 
-Rank-16/head-dim-32 row-Q2 stores 4 coefficient bytes plus one E4M3-FN min and one scale byte per vector. K+V therefore cost **12 B/token** versus **128 B/token FP16**, a raw **10.6667× KV reduction** without lowering latent rank.
+| profile | complete-model reduction | final Q4 NLL | ppl ratio vs Q4 teacher | interpretation |
+|---|---:|---:|---:|---|
+| uniform residual rank 3 | **9.106×** | **1.98021** | **1.07760×** | quality-favorable scale-normalized mechanism point; not complete-model 10× |
+| uniform residual rank 2 | **10.142×** | **2.30033** | **1.48417×** | exact tiny-model 10× stress point; quality inadequate |
+| adaptive `qkv2/o1/fc1=3/fc2=2` | **10.046×** | **2.24237** | **1.40059×** | better exact-budget frontier, still inadequate |
 
-## Direct packed latent-Q2 attention — L1
+Artifact: `benchmarks/run5_softshare_control.json`; generator: `tools/run5_softshare_control.py`.
 
-Implemented `runtime/larc_q2_attention.{h,cpp}` and `q4_transposed_gemv`.
+### Interpretation
 
-The CPU reference consumes packed Q2 K/V, E4M3 metadata, Q4 bases, and both inverse-Gram metrics without materializing FP32 historical `T×rank` K/V arrays.
+The tiny model is a deliberately adverse complete-model 10× test: embeddings, positional weights, small state, and factor metadata consume a disproportionate fraction of its bytes. The exact 10× points do **not** meet the intended quality standard.
 
-At **T=2048, rank=16, head_dim=32**:
+The important architecture-selection signal is the rank-3 point:
 
-- max absolute error vs separately decoded reference: **2.50e-9**,
-- packed cache/head: **24,576 B**,
-- direct scratch/head: **8,448 B**,
-- FP32 decoded latent K+V history/head: **262,144 B**.
+`3 / 128 = 2.34375%` relative rank.
 
-Artifact: `benchmarks/run4_native_q2_attention.json`; generator: `tests/native_q2_attention.cpp`.
+It retains far more pretrained information than hard sharing and reaches perplexity ×1.0776 after Q4-constrained recovery. On a d=4096 model, the same relative rank is rank 96, where fixed overhead is much better amortized.
 
-This is correctness/memory-contract evidence, not optimized throughput.
+This scale argument is a hypothesis to test on the real model, not evidence that Mistral quality will match the toy model.
 
-## Packed-runtime structural context sweep
+## Direct packed SoftShare operator — L1
 
-Combining current Q4/shared weight bytes, E4M3 latent-Q2 cache bytes, and the direct-packed scratch contract gives:
+Implemented in `runtime/larc_q4.{h,cpp}`:
 
-| context | modeled total tensor reduction |
-|---:|---:|
-| 64 | **12.04×** |
-| 256 | **11.22×** |
-| 512 | **10.91×** |
-| 1K | **10.71×** |
-| 2K | **10.60×** |
-| 4K | **10.53×** |
-| 8K | **10.50×** |
+`y = Sx + A(Bx)`
 
-Artifact: `benchmarks/run4_packed_attention_context_sweep.json`; generator: `tools/run4_packed_context_sweep.py`.
+where S, A, and B remain canonical packed Q4. Scratch is rank-sized and no full `W=S+AB` matrix is reconstructed.
 
-**Quality is validated only at context 64.** The 2K/8K rows are structural/runtime byte models, not long-context quality and not measured RSS/VRAM.
+Native test (`tests/native_q4_softshare.cpp`):
 
-## Existing mainline Run-4 evidence preserved
+- shape: 173×211, residual rank 23;
+- max absolute error vs separately dequantized reference: **9.53674316e-7**;
+- rank scratch: **92 B**;
+- dense reconstruction: none.
 
-Current `main` already contained:
+Artifact: `benchmarks/run5_native_q4_softshare.json`.
 
-- exact Q4 endpoint/scale semantics,
-- both K/V inverse-Gram accounting,
-- low-noise native factor-fidelity benchmark,
-- context-sweep and SmolLM2 structural generators,
-- `benchmarks/INDEX.json` provenance policy and CI gate,
-- same-stream reconstruction diagnostics.
+## Named real target and exact baseline
 
-Those files remain in place; the promoted packed-runtime/L2C artifacts above are layered on top rather than replacing historical evidence.
+Initial L3 target: **Mistral-7B-v0.1**.
 
-## SmolLM2 status
+Planner architecture:
 
-The structural planner uses SmolLM2's GQA geometry (`kv_heads=3`, `head_dim=64`). Current structural arithmetic remains promising (>10× modeled total for aggressive profiles), but **no SmolLM2 quality benchmark has run**. External checkpoint payload access remains the L3 blocker in this environment.
+- 32 layers;
+- hidden 4096;
+- intermediate 14336;
+- 32 attention heads;
+- 8 KV heads;
+- head dimension 128;
+- vocabulary 32000;
+- sliding window 4096.
+
+Named baseline:
+
+- `mistral-7b-v0.1.Q4_K_M.gguf`;
+- exact bytes: **4,368,438,912**;
+- SHA-256: `ce6253d2e91adea0c35924b38411b0434fa18fcb90c52980ce68187dbcbbe40c`.
+
+## Mistral structural budget
+
+### Recommended core: weight rank 96, KV rank 64
+
+- weights: **369,495,040 B** = **11.82273×** smaller than exact Q4_K_M;
+- compressed 4096-token KV: **44,105,728 B** vs **536,870,912 B** FP16 = **12.17236×**;
+- weights + 4K KV ratio: **11.86001×**;
+- if both baseline and LARC incur the same additional common scratch, **85,478,016 B** can be added to each before the structural ratio reaches 10×.
+
+Weight breakdown:
+
+- embedding + LM head: 131,200,000 B;
+- seven shared Q4 matrix bases: 109,137,920 B;
+- all rank-96 layer residual factors: 128,624,640 B;
+- FP16 norms: 532,480 B.
+
+### Higher-capacity candidate: weight rank 128, KV rank 72
+
+- weights: **10.61712×** vs exact Q4_K_M;
+- weights + 4K KV: **10.63743×**;
+- equal-common-scratch headroom: **32,660,096 B**.
+
+Artifact: `benchmarks/run5_mistral7b_budget.json`; generator: `tools/run5_budget_planner.py`.
+
+**These are exact byte calculations for the stated representations and exact baseline, but Mistral quality is unvalidated.**
+
+## 10× budget policy
+
+The design no longer rewards compression beyond the goal.
+
+1. Start from a core safely below the 10× ceiling.
+2. Measure validation loss sensitivity by layer and matrix.
+3. Spend remaining bytes on rank increments/residual rescue pages with the highest validation gain per byte.
+4. Recompute the complete serialized/resident budget after every allocation.
+5. Stop spending only when the 10× boundary is reached or no additional capacity improves quality.
+
+The rank-96 core is therefore a **starting point**, not an intended final compression ratio. Its extra ~1.86× margin beyond the goal is quality budget.
+
+---
+
+# Bounded-source-residency conversion
+
+The original requirement remains: conversion must not require the complete multi-gigabyte source checkpoint to exist locally at once.
+
+## Streaming `.larc` writer
+
+`LARCv2StreamWriter` now:
+
+- reserves the manifest/page table;
+- writes each compressed payload immediately;
+- retains only fixed-size page records;
+- patches page table/header at finalize.
+
+Writer memory is O(page metadata + current payload), not O(output file size).
+
+## SafeTensors tensor-range source
+
+`larc/safetensors_range.py`:
+
+- parses local or remote SafeTensors headers;
+- addresses tensors by exact byte range;
+- supports sharded `model.safetensors.index.json`;
+- remote sources must return HTTP 206 plus `Content-Range`;
+- a server that ignores Range is rejected rather than silently downloading a complete shard.
+
+## Two-pass SoftShare converter
+
+`tools/stream_softshare_convert.py` works one matrix family at a time:
+
+1. stream one layer tensor at a time and accumulate the shared mean;
+2. quantize the mean to canonical Q4;
+3. discard the float precursor;
+4. dequantize the **stored** shared base;
+5. stream layers again;
+6. fit each low-rank residual against the stored/dequantized shared base;
+7. quantize/write residual factors immediately;
+8. release source tensor and SVD workspace.
+
+This preserves the representation-consistency rule learned in Runs 3–4.
+
+Synthetic end-to-end test `tests/test_stream_softshare_convert.py` creates two actual SafeTensors shards, converts a two-layer Mistral-shaped model, verifies the expected 42 `.larc` pages and all CRCs, and checks the bounded-source-residency report. CI execution remains pending until a GitHub runner is allocated.
 
 ---
 
 # Current claim boundary
 
-The strongest defensible statement is:
+The strongest defensible statement after the Run-5 strategy reassessment is:
 
-> In a controlled synthetic post-training language-model conversion at **context 64**, with teacher and LARC quality paths executing the same canonical Q4 weight representation and with disjoint training/selection/calibration/evaluation streams, LARC's rank-16 latent-Q2/E4M3 representation produces **+0.08977 nats/char** degradation (perplexity ×**1.09392**). Combining that L2C result with the separately L1-validated direct-packed attention scratch contract yields a **12.04× modeled same-context inference-tensor reduction**. The corresponding structural model remains ~10.60× at 2K and ~10.50× at 8K, but long-context quality is unvalidated.
+> Hard recursive sharing is not the preferred approach for a 10× target. Controlled post-training experiments show that retaining explicit depth-specific low-rank residuals materially improves the quality/capacity frontier. A scale-normalized 2.34375%-rank SoftShare representation reaches perplexity ×1.0776 versus a Q4 teacher in the controlled model, though it is only 9.106× for that complete tiny model. Exact tiny-model 10× points remain substantially worse. For the exact 4,368,438,912-byte Mistral-7B Q4_K_M baseline, the rank-96/KV64 SoftShare design is structurally 11.860× on weights+4K KV, leaving 85,478,016 B of equal-common-scratch headroom before 10×. Real-model quality is not yet measured.
 
-Do **not** claim that LARC has demonstrated 10–30× lower measured RAM/VRAM for real pretrained GGUF models.
+Do **not** state that LARC has demonstrated 10× measured RAM/VRAM or retained real-model intelligence yet.
 
 ## Open hard gates
 
-1. **Converged equal-compute, multi-seed control.** The earlier control is not convergence evidence; stable tuned schedules and teacher-at-budget ceiling are required.
-2. **Real activation geometry.** Measure real Transformer activation spectra at candidate ranks.
-3. **Long-context quality.** Validate the packed codec at 256→8K, not just byte accounting.
-4. **Integrated packed full-model runtime.** Execute packed Q4 weights and packed latent KV together and measure actual RSS.
-5. **L3 external pretrained model.** SmolLM2-135M or larger, standard perplexity/tasks/generation and rare-token checks.
-6. **L4 hardware.** CUDA/Metal/CPU peak memory and optimized throughput against named baselines.
-7. **Competitive iso-byte baselines.** GGUF IQ/K quants, AQLM/QuIP# where runnable, and smaller dense models.
-8. **20–30× real-model quality.** Completely open.
+1. **Run the synthetic streaming-converter CI test** and resolve any implementation failures.
+2. **L3 real Mistral conversion.** Obtain tensor-range access to the independent pretrained checkpoint and generate a real `.larc` artifact.
+3. **Real-model quality.** Same-token perplexity/tasks/generation vs the named Q4_K_M deployment; use validation-gain/byte to allocate rescue ranks.
+4. **Complete real file gate.** Final `.larc` must be ≤10% of the exact named baseline unless the claim is explicitly resident-memory-only.
+5. **Long-context quality.** Validate the chosen KV rank at realistic context, not just byte arithmetic.
+6. **L4 measured memory.** CPU RSS and/or CUDA/Metal peak device memory at the same context, plus throughput.
+7. **Competitive 10× alternatives.** Compare SoftShare to a 10× smaller dense/distilled model and other feasible iso-byte representations; do not optimize beyond 10× unless needed for overhead headroom.
