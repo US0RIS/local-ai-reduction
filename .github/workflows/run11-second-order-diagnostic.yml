@@ -1,0 +1,62 @@
+name: Run 11 second-order W2 diagnostic
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tools/run11_second_order_diagnostic.py'
+      - '.github/workflows/run11-second-order-diagnostic.yml'
+      - 'docs/RUN11_SECOND_ORDER_DIAGNOSTIC.md'
+
+permissions:
+  contents: read
+
+jobs:
+  smollm2-second-order-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          path: external/llama.cpp
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install CPU analysis stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'transformers==4.57.6' accelerate 'huggingface-hub>=0.34,<1'
+
+      - name: Fetch disjoint WikiText-2 calibration/evaluation corpora
+        run: |
+          (cd external/llama.cpp && bash scripts/get-wikitext-2.sh)
+          test -f external/llama.cpp/wikitext-2-raw/wiki.train.raw
+          test -f external/llama.cpp/wikitext-2-raw/wiki.test.raw
+          sha256sum external/llama.cpp/wikitext-2-raw/wiki.train.raw external/llama.cpp/wikitext-2-raw/wiki.test.raw
+
+      - name: Run real-model operator diagnostic
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          mkdir -p benchmarks
+          python tools/run11_second_order_diagnostic.py \
+            --model HuggingFaceTB/SmolLM2-135M \
+            --calibration external/llama.cpp/wikitext-2-raw/wiki.train.raw \
+            --evaluation external/llama.cpp/wikitext-2-raw/wiki.test.raw \
+            --rows 256 --eval-rows 64 --windows 4 --ctx 512 \
+            --layers 0,5,10,15,20,25,29 \
+            --out benchmarks/run11_second_order_diagnostic.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run11-second-order-diagnostic
+          path: benchmarks/run11_second_order_diagnostic.json
+          if-no-files-found: error
+          retention-days: 90
