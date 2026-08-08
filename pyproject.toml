@@ -1,0 +1,9 @@
+[project]
+name = "larc-local-ai"
+version = "0.1.0"
+description = "Research prototype for the LARC local AI model representation"
+requires-python = ">=3.11"
+dependencies = ["numpy>=2.0", "scikit-learn>=1.5"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
