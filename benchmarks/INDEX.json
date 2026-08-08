@@ -32,7 +32,7 @@
     {"path":"run4_fp8meta_l2c.json","status":"current_L2C_single_seed_packed_codec_quality","generator":"tools/run4_l2c_repro.py"},
     {"path":"run4_native_q2_attention.json","status":"current_L1_native_packed_kv","generator":"tests/native_q2_attention.cpp"},
     {"path":"run4_packed_attention_context_sweep.json","status":"historical_pre_run5_weight_recovery_arithmetic","generator":"tools/run4_packed_context_sweep.py"},
-    {"path":"run5_weight_diagnostics.json","status":"current_controlled_diagnostic","generator":null},
+    {"path":"run5_weight_diagnostics.json","status":"historical_diagnostic","generator":null},
     {"path":"run5_memory_context.json","status":"current_alternate_grouped_metadata_arithmetic","generator":"tools/run5_memory_sweep.py"},
     {"path":"run5_fullstack_multiseed.json","status":"current_alternate_grouped_metadata_multiseed","generator":"tools/run5_fullstack_protocol_fp16tail.py","note":"grouped FP16 metadata reference path; not native packed"},
     {"path":"run5_e4m3_multiseed.json","status":"current_controlled_L2C_multiseed_codec_quality","generator":"tools/run5_e4m3_multiseed.py","note":"strongest controlled result; real-model transfer assumptions were later falsified in Run 6/7"},
@@ -44,9 +44,9 @@
     {"path":"run6_activation_aware_projection.json","status":"current_L3_precheck_real_operator_falsification","generator":"tools/run6_activation_aware_projection.py"},
     {"path":"run6_partial_real_conversion.json","status":"current_L3_precheck_failed_partial_conversion","generator":"tools/run6_partial_real_conversion.py"},
     {"path":"RUN6_GATE.json","status":"current_real_model_gate","generator":"tools/run6_decision_gate.py","note":"precommitted gate rejected uniform low-rank projection and current whole-block sharing"},
-    {"path":"RUN6_FINAL_STATUS.json","status":"current_run6_summary","generator":null},
+    {"path":"RUN6_FINAL_STATUS.json","status":"summary","generator":null},
     {"path":"run7_shared_basis_real_model.json","status":"current_L3_precheck_failed_segmented_shared_basis","generator":"tools/run7_shared_basis_real_model.py"},
     {"path":"RUN7_GATE.json","status":"current_real_model_gate","generator":"tools/run7_decision_gate.py","note":"precommitted gate rejected current shared-output-basis recipe"},
-    {"path":"RUN7_FINAL_STATUS.json","status":"current_summary","generator":null}
+    {"path":"RUN7_FINAL_STATUS.json","status":"summary","generator":null}
   ]
 }
