@@ -32,7 +32,11 @@ def unpack_q2_key_channels(p,mn,scale,rank,tokens,group_tokens):
     q=_unpack_codes_q2(p,rank).float();x=q*scale.float()[:,None,:]+mn.float()[:,None,:];return x.reshape(-1,rank)[:tokens]
 
 def fit_basis(x:torch.Tensor,rank:int):
-    x=x.detach().float().reshape(-1,x.shape[-1]);rank=min(rank,*x.shape);_,_,v=torch.pca_lowrank(x,q=min(rank+4,min(x.shape)),center=False,niter=3);return v[:,:rank].t().contiguous()
+    """Deterministic uncentered principal row basis via eig(X^T X)."""
+    x=x.detach().float().reshape(-1,x.shape[-1]);rank=min(rank,*x.shape)
+    cov=x.t()@x
+    _,v=torch.linalg.eigh(cov)
+    return v[:,-rank:].t().flip(0).contiguous()
 
 @dataclass
 class QuantizedHeadBasisQ4:
@@ -56,7 +60,7 @@ def quantize_head_basis_q4(basis:torch.Tensor,*,store_metric:bool=True)->Quantiz
     """Quantize [heads,rank,head_dim] bases exactly as stored.
 
     For any quantized row basis B_hat, store an FP16 inverse Gram matrix
-    (B_hat B_hat^T + lambda I)^-1.  The metric is required both for key-space
+    (B_hat B_hat^T + lambda I)^-1. The metric is required both for key-space
     inner products and for value reconstruction through the Moore-Penrose
     left inverse B_hat^+ = B_hat^T (B_hat B_hat^T)^-1.
     """
