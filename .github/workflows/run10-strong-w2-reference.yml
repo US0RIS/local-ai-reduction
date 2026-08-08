@@ -1,0 +1,108 @@
+name: Run 10 strong W2A16G64 reference
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tools/run10_*.py'
+      - '.github/workflows/run10-strong-w2-reference.yml'
+      - 'docs/RUN10_STRONG_W2_REFERENCE.md'
+
+permissions:
+  contents: read
+
+jobs:
+  smollm2-w2-reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          path: external/llama.cpp
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pinned AutoRound CPU stack
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y time
+          python -m pip install --upgrade pip
+          python -m pip install 'auto-round==0.14.2' auto-round-lib
+          python - <<'PY'
+          import auto_round,torch,transformers
+          print('auto_round',getattr(auto_round,'__version__','unknown'))
+          print('torch',torch.__version__)
+          print('transformers',transformers.__version__)
+          PY
+          auto-round list format
+
+      - name: Fetch canonical WikiText-2 test corpus
+        run: |
+          (cd external/llama.cpp && bash scripts/get-wikitext-2.sh)
+          cp external/llama.cpp/wikitext-2-raw/wiki.test.raw wiki.test.raw
+          sha256sum wiki.test.raw
+
+      - name: Evaluate source checkpoint under HF reference path
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          mkdir -p raw models benchmarks
+          python tools/run10_hf_wikitext_ppl.py \
+            --model HuggingFaceTB/SmolLM2-135M \
+            --corpus wiki.test.raw --context 512 --out raw/ppl_fp.json
+
+      - name: Quantize pure RTN W2A16G64 floor
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          /usr/bin/time -v -o raw/quant_rtn_time.txt \
+            python tools/run10_autoround_w2.py \
+              --mode rtn --out models/w2-rtn --metadata raw/meta_rtn.json
+
+      - name: Evaluate pure RTN W2
+        env:
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          python tools/run10_hf_wikitext_ppl.py \
+            --model models/w2-rtn --tokenizer HuggingFaceTB/SmolLM2-135M \
+            --corpus wiki.test.raw --context 512 --out raw/ppl_rtn.json
+
+      - name: Quantize tuned AutoRound W2A16G64
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          /usr/bin/time -v -o raw/quant_tuned_time.txt \
+            python tools/run10_autoround_w2.py \
+              --mode tuned --out models/w2-tuned --metadata raw/meta_tuned.json
+
+      - name: Evaluate tuned W2
+        env:
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          python tools/run10_hf_wikitext_ppl.py \
+            --model models/w2-tuned --tokenizer HuggingFaceTB/SmolLM2-135M \
+            --corpus wiki.test.raw --context 512 --out raw/ppl_tuned.json
+
+      - name: Assemble W2 frontier report
+        run: |
+          python tools/run10_w2_report.py --raw raw --out benchmarks/run10_w2_reference.json
+          cat benchmarks/run10_w2_reference.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run10-strong-w2-reference
+          path: |
+            benchmarks/run10_w2_reference.json
+            raw/
+          retention-days: 90
+          if-no-files-found: error
