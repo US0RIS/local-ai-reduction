@@ -1,4 +1,5 @@
 #include "larc_q4.h"
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 
@@ -62,6 +63,16 @@ void q4_gemv(const Q4Rows& w,const float* x,float* y) {
         }
         if(j<w.cols) acc+=float(q4_at(row,j))*x[j];
         y[i]=acc*fp16_bits_to_float(w.scales_fp16[i]);
+    }
+}
+
+void q4_transposed_gemv(const Q4Rows& w,const float* x,float* y) {
+    std::fill(y,y+w.cols,0.0f);
+    const std::size_t stride=(w.cols+1)>>1;
+    for(std::size_t i=0;i<w.rows;++i) {
+        const float a=x[i]*fp16_bits_to_float(w.scales_fp16[i]);
+        const std::uint8_t* row=w.packed+i*stride;
+        for(std::size_t j=0;j<w.cols;++j) y[j]+=a*float(q4_at(row,j));
     }
 }
 
