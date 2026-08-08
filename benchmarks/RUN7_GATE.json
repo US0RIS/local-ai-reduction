@@ -12,23 +12,23 @@
     "balanced": {
       "name": "balanced",
       "selected_group_count": 6,
-      "ppl_ratio_vs_fp32": 1.3664241367842618,
-      "ppl_ratio_vs_row_q4": 2.256098016642127,
+      "ppl_ratio_vs_fp32": 1.366420878979134,
+      "ppl_ratio_vs_row_q4": 2.0993878725753206,
       "whole_model_weight_reduction_x": 1.0271773634579204
     },
     "aggressive": {
       "name": "aggressive",
       "selected_group_count": 8,
-      "ppl_ratio_vs_fp32": 2.312148558452982,
-      "ppl_ratio_vs_row_q4": 3.748367956882997,
+      "ppl_ratio_vs_fp32": 2.3121408408374267,
+      "ppl_ratio_vs_row_q4": 3.632159397677409,
       "whole_model_weight_reduction_x": 1.087162637010369
     }
   },
   "best_under_gate": {
     "name": "balanced",
     "selected_group_count": 6,
-    "ppl_ratio_vs_fp32": 1.3664241367842618,
-    "ppl_ratio_vs_row_q4": 2.256098016642127,
+    "ppl_ratio_vs_fp32": 1.366420878979134,
+    "ppl_ratio_vs_row_q4": 2.0993878725753206,
     "whole_model_weight_reduction_x": 1.0271773634579204
   },
   "precommitted_thresholds": {
