@@ -13,3 +13,9 @@ jobs:
       - run: python tools/check_benchmark_provenance.py
       - run: python tools/run4_context_sweep.py
       - run: git diff --exit-code -- benchmarks/run4_context_sweep.json
+      - run: python tools/run4_packed_context_sweep.py
+      - run: git diff --exit-code -- benchmarks/run4_packed_attention_context_sweep.json
+      - name: Native packed-Q2 attention correctness
+        run: |
+          g++ -O3 -std=c++17 runtime/larc_q4.cpp runtime/larc_q2_attention.cpp tests/native_q2_attention.cpp -o /tmp/larc-q2-attn
+          /tmp/larc-q2-attn
