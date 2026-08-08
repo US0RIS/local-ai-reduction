@@ -1,5 +1,5 @@
 {
-  "policy_version": 7,
+  "policy_version": 8,
   "rules": {
     "promoted_requires_committed_generator": true,
     "superseded_artifacts_may_remain_for_history": true,
@@ -11,7 +11,8 @@
     "full_runtime_gate_requires_weight_and_kv_native_primitives_plus_integrated_measurement": true,
     "real_model_gate_thresholds_must_be_committed_before_observing_results": true,
     "negative_real_model_results_must_not_be_overridden_by_synthetic_success": true,
-    "external_competitive_baseline_required_before_new_real_model_compression_claim": true
+    "external_competitive_baseline_required_before_new_real_model_compression_claim": true,
+    "operator_level_mechanism_success_must_not_be_promoted_as_end_to_end_model_quality": true
   },
   "artifacts": [
     {"path":"benchmark_hrvq_run1.json","status":"historical","generator":"tools/benchmark_synthetic.py"},
@@ -53,6 +54,8 @@
     {"path":"RUN8_GATE.json","status":"current_real_model_gate","generator":"tools/run8_decision_gate.py","note":"precommitted gate rejected naive activation-RMS residual VQ"},
     {"path":"run8_residual_pq_real_model.json","status":"current_L3_precheck_failed_residual_pq","generator":"tools/run8_residual_pq_real_model.py"},
     {"path":"RUN8_RPQ_GATE.json","status":"current_real_model_gate","generator":"tools/run8_rpq_decision_gate.py","note":"precommitted gate rejected naive per-layer residual product quantization"},
-    {"path":"RUN8_FINAL_STATUS.json","status":"summary","generator":null}
+    {"path":"RUN8_FINAL_STATUS.json","status":"summary","generator":null},
+    {"path":"RUN11_STATUS.json","status":"superseded_pending_status","generator":null},
+    {"path":"RUN11_FINAL_STATUS.json","status":"current_L3_operator_mechanism_diagnostic","generator":"tools/run11_second_order_diagnostic.py","note":"Hadamard + block second-order error feedback is a positive operator-level mechanism only; no end-to-end quality or memory promotion. Full per-site JSON retained as recorded workflow artifact."}
   ]
 }
