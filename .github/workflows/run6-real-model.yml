@@ -1,0 +1,87 @@
+name: Run 6 real-model falsification
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tools/run6_real_model_falsification.py'
+      - 'tools/run6_activation_aware_projection.py'
+      - 'tools/run6_partial_real_conversion.py'
+      - 'tools/run6_decision_gate.py'
+      - '.github/workflows/run6-real-model.yml'
+
+jobs:
+  smollm2-real-model-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install CPU inference dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers safetensors huggingface_hub
+
+      - name: Run real pretrained-model falsification
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          python tools/run6_real_model_falsification.py \
+            --model HuggingFaceTB/SmolLM2-135M \
+            --cal-tokens 256 --eval-tokens 256 \
+            --layers 0,5,10,15,20,25,29 \
+            --ranks 8,16,32,64,128 \
+            --out benchmarks/run6_real_model_falsification.json
+
+      - name: Run activation-aware reduced-rank operator test
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          python tools/run6_activation_aware_projection.py \
+            --model HuggingFaceTB/SmolLM2-135M \
+            --cal-tokens 256 --eval-tokens 256 \
+            --layers 0,5,10,15,20,25,29 \
+            --ranks 8,16,32,64,128 \
+            --out benchmarks/run6_activation_aware_projection.json
+
+      - name: Run partial real-model sharing + QAT recovery
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+          TOKENIZERS_PARALLELISM: 'false'
+        run: |
+          python tools/run6_partial_real_conversion.py \
+            --model HuggingFaceTB/SmolLM2-135M \
+            --group 14,15,16,17 --donor 15 \
+            --steps 24 --window 64 --train-windows 8 \
+            --out benchmarks/run6_partial_real_conversion.json
+
+      - name: Apply precommitted decision gate
+        run: |
+          python tools/run6_decision_gate.py \
+            --falsification benchmarks/run6_real_model_falsification.json \
+            --activation-aware benchmarks/run6_activation_aware_projection.json \
+            --partial benchmarks/run6_partial_real_conversion.json \
+            --out benchmarks/RUN6_GATE.json
+
+      - name: Show decision
+        run: cat benchmarks/RUN6_GATE.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run6-real-model-results
+          path: |
+            benchmarks/run6_real_model_falsification.json
+            benchmarks/run6_activation_aware_projection.json
+            benchmarks/run6_partial_real_conversion.json
+            benchmarks/RUN6_GATE.json
+          if-no-files-found: error

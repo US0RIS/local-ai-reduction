@@ -1,0 +1,28 @@
+{
+  "model": "SmolLM2-135M geometry",
+  "source_geometry": {"hidden":576,"ff":1536,"vocab":49152,"layers":30,"q_heads":9,"kv_heads":3,"head_dim":64},
+  "per_layer": {
+    "projection_breakdown": [
+      {"name":"q_proj","rows":576,"cols":576,"row_q4_bytes":167040,"group64_q4_bytes":176256},
+      {"name":"k_proj","rows":192,"cols":576,"row_q4_bytes":55680,"group64_q4_bytes":58752},
+      {"name":"v_proj","rows":192,"cols":576,"row_q4_bytes":55680,"group64_q4_bytes":58752},
+      {"name":"o_proj","rows":576,"cols":576,"row_q4_bytes":167040,"group64_q4_bytes":176256},
+      {"name":"gate_proj","rows":1536,"cols":576,"row_q4_bytes":445440,"group64_q4_bytes":470016},
+      {"name":"up_proj","rows":1536,"cols":576,"row_q4_bytes":445440,"group64_q4_bytes":470016},
+      {"name":"down_proj","rows":576,"cols":1536,"row_q4_bytes":443520,"group64_q4_bytes":470016}
+    ],
+    "rmsnorm_fp16_bytes": 2304,
+    "row_q4_total_bytes": 1782144,
+    "group64_q4_total_bytes": 1882368
+  },
+  "partial_4_to_1": {
+    "baseline_four_row_q4_blocks_bytes": 7128576,
+    "shared_one_group64_block_bytes": 1882368,
+    "group_weight_reduction_x": 3.7870257037943698,
+    "whole_model_baseline_row_q4_weight_bytes": 67719552,
+    "whole_model_partial_shared_weight_bytes": 62473344,
+    "whole_model_weight_reduction_x": 1.0839751430626157,
+    "whole_model_weight_bytes_saved_fraction": 0.07746962059052015
+  },
+  "note": "Structural arithmetic only. Embedding is counted once because the LM head is tied. No KV or runtime scratch is included."
+}
