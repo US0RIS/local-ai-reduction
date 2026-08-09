@@ -1,0 +1,25 @@
+{
+  "run": 12,
+  "status": "failed_posthoc_embedding_factorization_gate",
+  "workflow_run_id": 31277190614,
+  "artifact_id": 9027352844,
+  "artifact_sha256": "c761654fbc98bcff0e50576d634d80ce98f1713622f186e78620ae6ad8388c93",
+  "fp32_nll": 3.598245859146118,
+  "embedding_elements": 28311552,
+  "embedding_parameter_fraction": 0.2104713252516775,
+  "gate_status": "fail_posthoc_embedding_factorization",
+  "best_quality_point": {
+    "rank": 64,
+    "embedding_reduction_x": 8.895752895752896,
+    "whole_parameter_reduction_x": 1.2297272866097146,
+    "nll": 9.454854965209961,
+    "ppl_ratio_vs_fp32": 349.53688971101406
+  },
+  "rank384": {
+    "embedding_reduction_x": 1.4826254826254825,
+    "embedding_residual_energy_fraction": 0.08812475204467773,
+    "nll": 10.94917106628418,
+    "ppl_ratio_vs_fp32": 1557.6369982369288
+  },
+  "conclusion": "The tied vocabulary/head matrix cannot be compressed post-hoc by ordinary SVD at useful quality. The embedding floor must be addressed by training a factorized head/embedding or using a smaller vocabulary/tokenizer."
+}

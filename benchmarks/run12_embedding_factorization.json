@@ -1,0 +1,121 @@
+{
+  "run": 12,
+  "evidence_level": "L3-precheck real pretrained tied embedding/head structural factorization",
+  "model": "HuggingFaceTB/SmolLM2-135M",
+  "model_commit": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "protocol": {
+    "evaluation_tokens": 512,
+    "ranks": [
+      32,
+      48,
+      64,
+      96,
+      128,
+      192,
+      256,
+      384
+    ],
+    "factorization": "optimal right-singular subspace of tied embedding via 576x576 Gram eigendecomposition",
+    "candidate_forward": "factorized token lookup and factorized output logits; no dense embedding in forward",
+    "factor_dtype": "FP32"
+  },
+  "baseline": {
+    "fp32_nll": 3.598245859146118,
+    "vocab_size": 49152,
+    "hidden_size": 576,
+    "embedding_elements": 28311552,
+    "embedding_parameter_fraction": 0.2104713252516775,
+    "unique_parameter_elements": 134515008
+  },
+  "ranks": [
+    {
+      "rank": 32,
+      "embedding_residual_energy_fraction": 0.4093010127544403,
+      "nll": 9.886978149414062,
+      "delta_nats_vs_fp32": 6.288732290267944,
+      "ppl_ratio_vs_fp32": 538.4702722126918,
+      "original_embedding_elements": 28311552,
+      "factor_elements": 1591296,
+      "embedding_element_reduction_x": 17.79150579150579,
+      "whole_parameter_reduction_x": 1.2478808615840593
+    },
+    {
+      "rank": 48,
+      "embedding_residual_energy_fraction": 0.38844650983810425,
+      "nll": 10.086312294006348,
+      "delta_nats_vs_fp32": 6.4880664348602295,
+      "ppl_ratio_vs_fp32": 657.2512956054965,
+      "original_embedding_elements": 28311552,
+      "factor_elements": 2386944,
+      "embedding_element_reduction_x": 11.86100386100386,
+      "whole_parameter_reduction_x": 1.2387375679618087
+    },
+    {
+      "rank": 64,
+      "embedding_residual_energy_fraction": 0.3689117729663849,
+      "nll": 9.454854965209961,
+      "delta_nats_vs_fp32": 5.856609106063843,
+      "ppl_ratio_vs_fp32": 349.53688971101406,
+      "original_embedding_elements": 28311552,
+      "factor_elements": 3182592,
+      "embedding_element_reduction_x": 8.895752895752896,
+      "whole_parameter_reduction_x": 1.2297272866097146
+    },
+    {
+      "rank": 96,
+      "embedding_residual_energy_fraction": 0.33244752883911133,
+      "nll": 9.495207786560059,
+      "delta_nats_vs_fp32": 5.89696192741394,
+      "ppl_ratio_vs_fp32": 363.93014046354267,
+      "original_embedding_elements": 28311552,
+      "factor_elements": 4773888,
+      "embedding_element_reduction_x": 5.93050193050193,
+      "whole_parameter_reduction_x": 1.2120943171968506
+    },
+    {
+      "rank": 128,
+      "embedding_residual_energy_fraction": 0.29865142703056335,
+      "nll": 10.008845329284668,
+      "delta_nats_vs_fp32": 6.41059947013855,
+      "ppl_ratio_vs_fp32": 608.2582044202012,
+      "original_embedding_elements": 28311552,
+      "factor_elements": 6365184,
+      "embedding_element_reduction_x": 4.447876447876448,
+      "whole_parameter_reduction_x": 1.1949598751481763
+    },
+    {
+      "rank": 192,
+      "embedding_residual_energy_fraction": 0.23695862293243408,
+      "nll": 11.1281099319458,
+      "delta_nats_vs_fp32": 7.529864072799683,
+      "ppl_ratio_vs_fp32": 1862.8522740522983,
+      "original_embedding_elements": 28311552,
+      "factor_elements": 9547776,
+      "embedding_element_reduction_x": 2.965250965250965,
+      "whole_parameter_reduction_x": 1.162104330777231
+    },
+    {
+      "rank": 256,
+      "embedding_residual_energy_fraction": 0.18178479373455048,
+      "nll": 11.833601951599121,
+      "delta_nats_vs_fp32": 8.235356092453003,
+      "ppl_ratio_vs_fp32": 3771.982832534165,
+      "original_embedding_elements": 28311552,
+      "factor_elements": 12730368,
+      "embedding_element_reduction_x": 2.223938223938224,
+      "whole_parameter_reduction_x": 1.1310071725264632
+    },
+    {
+      "rank": 384,
+      "embedding_residual_energy_fraction": 0.08812475204467773,
+      "nll": 10.94917106628418,
+      "delta_nats_vs_fp32": 7.3509252071380615,
+      "ppl_ratio_vs_fp32": 1557.6369982369288,
+      "original_embedding_elements": 28311552,
+      "factor_elements": 19095552,
+      "embedding_element_reduction_x": 1.4826254826254825,
+      "whole_parameter_reduction_x": 1.073552058768095
+    }
+  ],
+  "claim_boundary": "Structural factorization only. Factors remain FP32; no packed bytes/RSS or new tokenizer is claimed."
+}
