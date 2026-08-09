@@ -1,0 +1,17 @@
+{
+  "run": 10,
+  "date": "2026-08-08",
+  "status": "implemented_pending_public_runner_execution",
+  "target_model": "HuggingFaceTB/SmolLM2-135M",
+  "reference_system": "Intel AutoRound 0.14.2",
+  "scheme": "W2A16G64",
+  "tracks": {
+    "pure_rtn": {"iters": 0, "disable_opt_rtn": true},
+    "tuned": {"iters": 200, "nsamples": 128, "seqlen": 2048, "enable_alg_ext": true}
+  },
+  "evaluation": "full WikiText-2 test corpus under one HF tokenization/inference path at context512",
+  "workflow": ".github/workflows/run10-strong-w2-reference.yml",
+  "protocol_doc": "docs/RUN10_STRONG_W2_REFERENCE.md",
+  "pending_artifact": "run10_w2_reference.json",
+  "claim_boundary": "No Run-10 W2 numbers exist until the public workflow completes and is inspected. This is an external PTQ reference, not LARC."
+}
