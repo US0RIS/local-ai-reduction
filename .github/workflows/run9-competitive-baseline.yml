@@ -1,0 +1,187 @@
+name: Run 9 competitive llama.cpp baseline
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tools/run9_baseline_report.py'
+      - '.github/workflows/run9-competitive-baseline.yml'
+      - 'docs/RUN9_COMPETITIVE_BASELINE.md'
+
+permissions:
+  contents: read
+
+jobs:
+  smollm2-llamacpp-baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          path: external/llama.cpp
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build and conversion dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build cmake time libcurl4-openssl-dev
+          python -m pip install --upgrade pip
+          python -m pip install -r external/llama.cpp/requirements.txt
+
+      - name: Build llama.cpp unified CPU app
+        run: |
+          cmake -S external/llama.cpp -B external/llama.cpp/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGGML_NATIVE=ON \
+            -DLLAMA_BUILD_TESTS=OFF
+          cmake --build external/llama.cpp/build -j 2 --target llama-app
+          external/llama.cpp/build/bin/llama version
+          external/llama.cpp/build/bin/llama help
+
+      - name: Convert and quantize SmolLM2-135M
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          HF_XET_HIGH_PERFORMANCE: '1'
+        run: |
+          mkdir -p models raw benchmarks
+          python external/llama.cpp/convert_hf_to_gguf.py \
+            --remote HuggingFaceTB/SmolLM2-135M \
+            --outfile models/SmolLM2-135M-F16.gguf \
+            --outtype f16 \
+            > raw/convert.log 2>&1
+          external/llama.cpp/build/bin/llama quantize \
+            models/SmolLM2-135M-F16.gguf models/SmolLM2-135M-Q4_K_M.gguf Q4_K_M \
+            > raw/quantize_Q4_K_M.log 2>&1
+          external/llama.cpp/build/bin/llama quantize \
+            models/SmolLM2-135M-F16.gguf models/SmolLM2-135M-Q2_K.gguf Q2_K \
+            > raw/quantize_Q2_K.log 2>&1
+          ls -lh models
+
+      - name: Fetch canonical WikiText-2 test corpus
+        run: |
+          (cd external/llama.cpp && bash scripts/get-wikitext-2.sh)
+          test -f external/llama.cpp/wikitext-2-raw/wiki.test.raw
+          sha256sum external/llama.cpp/wikitext-2-raw/wiki.test.raw
+
+      - name: Capture exact provenance
+        env:
+          SOURCE_MODEL: HuggingFaceTB/SmolLM2-135M
+        run: |
+          python - <<'PY'
+          import hashlib,json,os,platform,subprocess
+          from pathlib import Path
+          from huggingface_hub import model_info
+          def digest(p):
+              h=hashlib.sha256()
+              with open(p,'rb') as f:
+                  for b in iter(lambda:f.read(1<<20),b''):h.update(b)
+              return h.hexdigest()
+          models={
+              'F16':Path('models/SmolLM2-135M-F16.gguf'),
+              'Q4_K_M':Path('models/SmolLM2-135M-Q4_K_M.gguf'),
+              'Q2_K':Path('models/SmolLM2-135M-Q2_K.gguf'),
+          }
+          wiki=Path('external/llama.cpp/wikitext-2-raw/wiki.test.raw')
+          llama_sha=subprocess.check_output(['git','-C','external/llama.cpp','rev-parse','HEAD'],text=True).strip()
+          llama_ver=subprocess.check_output(['external/llama.cpp/build/bin/llama','version'],text=True,stderr=subprocess.STDOUT).strip()
+          out={
+              'source_model':os.environ['SOURCE_MODEL'],
+              'source_model_commit':model_info(os.environ['SOURCE_MODEL']).sha,
+              'llama_cpp':{'commit':llama_sha,'version_output':llama_ver,'interface':'unified llama app subcommands'},
+              'runner':{
+                  'os':platform.platform(),
+                  'machine':platform.machine(),
+                  'processor':platform.processor(),
+                  'nproc':os.cpu_count(),
+                  'lscpu':subprocess.check_output(['lscpu'],text=True),
+                  'github_runner_name':os.getenv('RUNNER_NAME'),
+                  'github_runner_arch':os.getenv('RUNNER_ARCH'),
+                  'github_run_id':os.getenv('GITHUB_RUN_ID'),
+                  'github_run_attempt':os.getenv('GITHUB_RUN_ATTEMPT'),
+              },
+              'wikitext2':{'path':str(wiki),'bytes':wiki.stat().st_size,'sha256':digest(wiki)},
+              'models':{q:{'path':str(p),'bytes':p.stat().st_size,'sha256':digest(p)} for q,p in models.items()},
+              'measurement_contract':{
+                  'perplexity':'llama perplexity; full WikiText-2 test set; ctx=512; CPU only; f16 KV; mmap default',
+                  'maxrss':'GNU /usr/bin/time -v; llama cli one-token generation; CPU only; ctx allocations 64/2048/8192; 3 repetitions; mmap and no-mmap',
+                  'throughput':'llama bench JSON; CPU only; mmap on; 3 repetitions; pp=64/2048/8192 and tg128 at depth=64/2048/8064',
+                  'kv_cache':'f16 K and f16 V for all baseline measurements',
+                  'baseline_quantization':'Q4_K_M created from F16 GGUF with llama quantize and no importance matrix',
+                  'comparison_quantization':'Q2_K created from same F16 GGUF with llama quantize and no importance matrix',
+              },
+          }
+          Path('raw/metadata.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps(out,indent=2))
+          PY
+
+      - name: Measure WikiText-2 perplexity
+        run: |
+          THREADS=$(nproc)
+          APP=external/llama.cpp/build/bin/llama
+          WIKI=external/llama.cpp/wikitext-2-raw/wiki.test.raw
+          for Q in F16 Q4_K_M Q2_K; do
+            MODEL="models/SmolLM2-135M-${Q}.gguf"
+            "$APP" perplexity -m "$MODEL" -f "$WIKI" -c 512 -t "$THREADS" -ngl 0 -dev none \
+              > "raw/ppl_${Q}.txt" 2>&1
+            tail -n 5 "raw/ppl_${Q}.txt"
+          done
+
+      - name: Measure process MaxRSS by context and load mode
+        run: |
+          set -euo pipefail
+          THREADS=$(nproc)
+          APP=external/llama.cpp/build/bin/llama
+          for Q in Q4_K_M Q2_K; do
+            MODEL="models/SmolLM2-135M-${Q}.gguf"
+            for CTX in 64 2048 8192; do
+              for MODE in mmap nommap; do
+                FLAG="--mmap"
+                if [ "$MODE" = nommap ]; then FLAG="--no-mmap"; fi
+                for REP in 1 2 3; do
+                  /usr/bin/time -v -o "raw/rss_${Q}_ctx${CTX}_${MODE}_rep${REP}.txt" \
+                    "$APP" cli -m "$MODEL" -c "$CTX" -t "$THREADS" -ngl 0 -dev none \
+                    "$FLAG" --fit off --no-warmup --no-conversation --no-display-prompt \
+                    --seed 1 --temp 0 -p 'Memory baseline probe.' -n 1 \
+                    > "raw/cli_${Q}_ctx${CTX}_${MODE}_rep${REP}.out" \
+                    2> "raw/cli_${Q}_ctx${CTX}_${MODE}_rep${REP}.err"
+                done
+              done
+            done
+          done
+
+      - name: Measure prompt and decode throughput
+        run: |
+          THREADS=$(nproc)
+          APP=external/llama.cpp/build/bin/llama
+          for Q in Q4_K_M Q2_K; do
+            MODEL="models/SmolLM2-135M-${Q}.gguf"
+            "$APP" bench -m "$MODEL" -p 64,2048,8192 -n 0 -r 3 -o json \
+              -t "$THREADS" -ngl 0 -dev none -mmp 1 \
+              > "raw/bench_${Q}_pp.json"
+            "$APP" bench -m "$MODEL" -p 0 -n 128 -d 64,2048,8064 -r 3 -o json \
+              -t "$THREADS" -ngl 0 -dev none -mmp 1 \
+              > "raw/bench_${Q}_tg.json"
+          done
+
+      - name: Assemble baseline report
+        run: |
+          python tools/run9_baseline_report.py \
+            --raw raw \
+            --out benchmarks/run9_llamacpp_baseline.json
+          cat benchmarks/run9_llamacpp_baseline.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run9-competitive-baseline
+          path: |
+            benchmarks/run9_llamacpp_baseline.json
+            raw/
+          if-no-files-found: error
+          retention-days: 90
